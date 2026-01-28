@@ -15,7 +15,11 @@
 		"electron:dev": "wait-on http://localhost:3000 dist/main.js && cross-env NODE_ENV=development electron .",
 		"electron:debug": "wait-on http://localhost:3000 dist/main.js && cross-env NODE_ENV=development DEVTOOLS=true electron .",
 		"dev": "concurrently \"vite\" \"npm run build:watch\"",
-		"package": "npm run build && electron-builder"
+		"package": "npm run build && electron-builder",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
+		"test:run": "vitest run",
+		"test:coverage": "vitest run --coverage"
 	},
 	"keywords": [
 		"electron",
@@ -28,22 +32,28 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.1",
 		"@types/fabric": "^5.3.11",
 		"@types/node": "^20.10.6",
 		"@types/prop-types": "^15.7.15",
 		"@types/react": "^18.2.46",
 		"@types/react-dom": "^18.2.18",
 		"@vitejs/plugin-react": "^4.2.1",
+		"@vitest/ui": "^4.0.18",
 		"autoprefixer": "^10.4.16",
 		"concurrently": "^8.2.2",
 		"cross-env": "^10.1.0",
 		"electron": "^28.1.0",
 		"electron-builder": "^24.9.1",
+		"happy-dom": "^20.4.0",
 		"nodemon": "^3.1.11",
 		"postcss": "^8.4.32",
 		"tailwindcss": "^3.4.0",
 		"typescript": "^5.3.3",
 		"vite": "^5.0.10",
+		"vitest": "^4.0.18",
 		"wait-on": "^7.2.0"
 	},
 	"dependencies": {
