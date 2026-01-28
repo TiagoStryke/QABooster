@@ -1,4 +1,5 @@
 import { HeaderData } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -13,6 +14,8 @@ export default function FolderManager({
 	onFolderChange,
 	headerData,
 }: FolderManagerProps) {
+	const { t } = useLanguage();
+
 	const handleContinueTest = async () => {
 		const folder = await ipcRenderer.invoke('select-folder');
 		if (folder) {
@@ -23,9 +26,7 @@ export default function FolderManager({
 				onFolderChange(folder, false);
 			} else {
 				// Pasta sem teste
-				alert(
-					'Nenhum teste foi encontrado nesta pasta.\n\nPor favor, crie um novo teste clicando em "+ Novo Teste".',
-				);
+				alert(t('noTestFoundInFolder'));
 			}
 		}
 	};
@@ -69,7 +70,7 @@ export default function FolderManager({
 						d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
 					/>
 				</svg>
-				Continuar Teste
+				{t('continueTest')}
 			</button>
 
 			<button
@@ -89,7 +90,7 @@ export default function FolderManager({
 						d="M12 4v16m8-8H4"
 					/>
 				</svg>
-				Novo Teste
+				{t('newTest')}
 			</button>
 
 			{currentFolder && (

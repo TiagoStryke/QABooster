@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ImageData } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -35,6 +36,7 @@ function DraggableImage({
 	onPreview,
 	isSelected,
 }: DraggableImageProps) {
+	const { t } = useLanguage();
 	const [imageData, setImageData] = useState<string>('');
 
 	useEffect(() => {
@@ -94,7 +96,7 @@ function DraggableImage({
 							onPreview();
 						}}
 						className="bg-green-600 hover:bg-green-700 p-1 rounded transition-colors shadow-lg"
-						title="Visualizar"
+						title={t('view')}
 					>
 						<svg
 							className="w-3 h-3"
@@ -122,7 +124,7 @@ function DraggableImage({
 							onSelect();
 						}}
 						className="bg-blue-600 hover:bg-blue-700 p-1 rounded transition-colors shadow-lg"
-						title="Editar"
+						title={t('edit')}
 					>
 						<svg
 							className="w-3 h-3"
@@ -144,7 +146,7 @@ function DraggableImage({
 							onDelete();
 						}}
 						className="bg-red-600 hover:bg-red-700 p-1 rounded transition-colors shadow-lg"
-						title="Deletar"
+						title={t('deleteImage')}
 					>
 						<svg
 							className="w-3 h-3"
@@ -179,6 +181,8 @@ export default function ImageGallery({
 	onImageReorder,
 	selectedImage,
 }: ImageGalleryProps) {
+	const { t } = useLanguage();
+
 	const moveImage = (dragIndex: number, hoverIndex: number) => {
 		const draggedImage = images[dragIndex];
 		const newImages = [...images];
@@ -204,7 +208,7 @@ export default function ImageGallery({
 							d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 						/>
 					</svg>
-					Galeria de Imagens
+					{t('imageGallery')}
 				</h2>
 
 				{images.length === 0 ? (
@@ -222,8 +226,8 @@ export default function ImageGallery({
 								d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 							/>
 						</svg>
-						<p>Nenhuma imagem capturada ainda</p>
-						<p className="text-sm mt-2">Use o atalho para começar</p>
+						<p>{t('noImagesYet')}</p>
+						<p className="text-sm mt-2">{t('useShortcut')}</p>
 					</div>
 				) : (
 					<div className="space-y-4">

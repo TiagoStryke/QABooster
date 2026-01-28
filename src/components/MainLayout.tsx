@@ -1,4 +1,5 @@
 import { HeaderData, ImageData } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 import FolderManager from './FolderManager';
 import Header from './Header';
 import ImageEditor from './ImageEditor';
@@ -45,6 +46,8 @@ export default function MainLayout({
 	handleCloseEditor,
 	handleSaveEdited,
 }: MainLayoutProps) {
+	const { t } = useLanguage();
+
 	return (
 		<div className="h-screen flex bg-slate-900">
 			{/* Conteúdo principal - empurrado para esquerda quando painel abre */}
@@ -70,7 +73,7 @@ export default function MainLayout({
 					onClick={() => setIsNotesPanelOpen(!isNotesPanelOpen)}
 					className="fixed top-3 right-3 text-white p-2.5 rounded-md shadow-lg transition-all z-50 border bg-slate-700 hover:bg-slate-600 border-slate-600"
 					style={{ WebkitAppRegion: 'no-drag' } as any}
-					title={isNotesPanelOpen ? 'Fechar Anotações' : 'Abrir Anotações'}
+					title={isNotesPanelOpen ? t('closeNotes') : t('openNotes')}
 				>
 					<svg
 						className="w-4 h-4"

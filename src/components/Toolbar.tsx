@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, useState } from 'react';
 import { HeaderData, ImageData } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -26,6 +27,7 @@ export default function Toolbar({
 	onSaveHeaderData,
 	onNewTest,
 }: ToolbarProps) {
+	const { t } = useLanguage();
 	const [shortcut, setShortcut] = useState(
 		localStorage.getItem('qabooster-shortcut') || 'CommandOrControl+Shift+S',
 	);
@@ -95,7 +97,7 @@ export default function Toolbar({
 		ipcRenderer.on('area-saved-with-confirmation', (_: any, area: any) => {
 			setIsSelectingArea(false);
 			// Mostra mensagem de confirmação
-			alert(`Área salva: ${area.width}x${area.height}px`);
+			alert(`${t('areaSaved')}: ${area.width}x${area.height}px`);
 			// Marca o checkbox automaticamente
 			setUseSavedArea(true);
 			localStorage.setItem('useSavedArea', 'true');
@@ -118,7 +120,7 @@ export default function Toolbar({
 		localStorage.setItem('qabooster-shortcut', tempShortcut);
 		setShortcut(tempShortcut);
 		setIsEditingShortcut(false);
-		alert('Atalho de tela cheia atualizado!');
+		alert(t('fullscreenShortcutUpdated'));
 	};
 
 	const handleShortcutAreaChange = async () => {
@@ -127,7 +129,7 @@ export default function Toolbar({
 		localStorage.setItem('qabooster-shortcut-area', tempShortcutArea);
 		setShortcutArea(tempShortcutArea);
 		setIsEditingShortcutArea(false);
-		alert('Atalho de área selecionada atualizado!');
+		alert(t('areaShortcutUpdated'));
 	};
 
 	// Funções para cancelar edição
@@ -154,7 +156,7 @@ export default function Toolbar({
 
 	const generatePDF = async () => {
 		if (images.length === 0) {
-			alert('Nenhuma imagem para gerar PDF');
+			alert(t('noImagesToGeneratePDF'));
 			return;
 		}
 
@@ -178,7 +180,7 @@ export default function Toolbar({
 			// First page - Header
 			pdf.setFontSize(18);
 			pdf.setFont('helvetica', 'bold');
-			pdf.text('Evidência de Testes de QA', pageWidth / 2, 30, {
+			pdf.text(t('qaTestEvidence'), pageWidth / 2, 30, {
 				align: 'center',
 			});
 
@@ -190,13 +192,13 @@ export default function Toolbar({
 
 			// Header data
 			const headerItems = [
-				{ label: 'Resultado do Teste:', value: headerData.testName || '-' },
-				{ label: 'Sistema:', value: headerData.system || '-' },
-				{ label: 'Ciclo de Teste:', value: headerData.testCycle || '-' },
-				{ label: 'Caso de Teste:', value: headerData.testCase || '-' },
-				{ label: 'Executor:', value: headerData.executor || '-' },
+				{ label: `${t('testResult')}:`, value: headerData.testName || '-' },
+				{ label: `${t('system')}:`, value: headerData.system || '-' },
+				{ label: `${t('testCycle')}:`, value: headerData.testCycle || '-' },
+				{ label: `${t('testCase')}:`, value: headerData.testCase || '-' },
+				{ label: `${t('executor')}:`, value: headerData.executor || '-' },
 				{
-					label: 'Data e Hora da Execução:',
+					label: `${t('executionDateTime')}:`,
 					value: new Date().toLocaleString('pt-BR'),
 				},
 			];
@@ -259,7 +261,7 @@ export default function Toolbar({
 			}
 
 			const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-			let fileName = `Evidencia_${headerData.testCase || 'teste'}_${date}.pdf`;
+			let fileName = `${t('pdfFilename')}${headerData.testCase || 'teste'}_${date}.pdf`;
 
 			// Verificar se o arquivo já existe
 			const checkResult = await ipcRenderer.invoke('check-pdf-exists', {
@@ -276,7 +278,7 @@ export default function Toolbar({
 				);
 
 				if (!dialogResult.success) {
-					alert(`Erro ao mostrar diálogo: ${dialogResult.error}`);
+					alert(`${t('errorShowingDialog')}: ${dialogResult.error}`);
 					return;
 				}
 
@@ -309,13 +311,13 @@ export default function Toolbar({
 			});
 
 			if (result.success) {
-				alert(`PDF salvo com sucesso na pasta!\n${fileName}`);
+				alert(`${t('pdfSavedSuccessfully')}\n${fileName}`);
 			} else {
-				alert(`Erro ao salvar PDF: ${result.error}`);
+				alert(`${t('errorSavingPDF')}: ${result.error}`);
 			}
 		} catch (error) {
 			console.error('Error generating PDF:', error);
-			alert('Erro ao gerar PDF');
+			alert(t('errorGeneratingPDF'));
 		} finally {
 			setIsGenerating(false);
 		}
@@ -327,7 +329,7 @@ export default function Toolbar({
 				<div className="flex items-center gap-2">
 					{/* Tela Cheia */}
 					<div className="flex items-center gap-1">
-						<label className="text-xs text-slate-300">Tela Cheia:</label>
+						<label className="text-xs text-slate-300">{t('fullScreen')}:</label>
 						<input
 							type="text"
 							className="input-field text-xs w-32 py-1 px-2"
@@ -368,7 +370,7 @@ export default function Toolbar({
 									setTempShortcut(keys.join('+'));
 								}
 							}}
-							placeholder="Pressione teclas"
+							placeholder={t('pressKeys')}
 						/>
 						<button
 							onClick={handleShortcutChange}
@@ -382,7 +384,7 @@ export default function Toolbar({
 								value={selectedDisplay}
 								onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
 								className="input-field text-xs py-1 px-2"
-								title="Monitor"
+								title={t('monitor')}
 							>
 								{displays.map((display) => (
 									<option key={display.id} value={display.id}>
@@ -397,7 +399,7 @@ export default function Toolbar({
 
 					{/* Área */}
 					<div className="flex items-center gap-1">
-						<label className="text-xs text-slate-300">Área:</label>
+						<label className="text-xs text-slate-300">{t('area')}:</label>
 						<input
 							type="text"
 							className="input-field text-xs w-32 py-1 px-2"
@@ -438,7 +440,7 @@ export default function Toolbar({
 									setTempShortcutArea(keys.join('+'));
 								}
 							}}
-							placeholder="Pressione teclas"
+							placeholder={t('pressKeys')}
 						/>
 						<button
 							onClick={handleShortcutAreaChange}
@@ -451,7 +453,7 @@ export default function Toolbar({
 							onClick={handleSelectArea}
 							disabled={isSelectingArea}
 							className="btn-secondary text-xs py-1 px-2"
-							title="Selecionar área de captura"
+							title={t('selectAreaToCapture')}
 						>
 							📐
 						</button>
@@ -475,7 +477,7 @@ export default function Toolbar({
 							}}
 							className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
 						/>
-						<span>Usar última área salva</span>
+						<span>{t('useLastSavedArea')}</span>
 					</label>
 				</div>
 
@@ -492,11 +494,11 @@ export default function Toolbar({
 							}}
 							className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
 						/>
-						<span>🔊 Som</span>
+						<span>{t('sound')}</span>
 					</label>
 
 					<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full">
-						{images.length} {images.length === 1 ? 'imagem' : 'imagens'}
+						{images.length} {images.length === 1 ? t('image') : t('images')}
 					</span>
 
 					<button
@@ -507,7 +509,7 @@ export default function Toolbar({
 						{isGenerating ? (
 							<>
 								<div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-								Gerando PDF...
+								{t('generatingPDF')}
 							</>
 						) : (
 							<>
@@ -524,7 +526,7 @@ export default function Toolbar({
 										d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
 									/>
 								</svg>
-								Gerar PDF
+								{t('generatePDF')}
 							</>
 						)}
 					</button>

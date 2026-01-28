@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -13,6 +14,7 @@ export default function NotesPanel({
 	isOpen,
 	onToggle,
 }: NotesPanelProps) {
+	const { t } = useLanguage();
 	const [content, setContent] = useState('');
 	const [images, setImages] = useState<string[]>([]);
 
@@ -86,17 +88,13 @@ export default function NotesPanel({
 			{/* Header com botão de fechar */}
 			<div className="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between">
 				<div>
-					<h2 className="text-sm font-medium text-slate-300">
-						Anotações do Teste
-					</h2>
-					<p className="text-xs text-slate-500 mt-0.5">
-						Use para BDD, links, massas, etc.
-					</p>
+					<h2 className="text-sm font-medium text-slate-300">{t('notes')}</h2>
+					<p className="text-xs text-slate-500 mt-0.5">{t('notesSubtitle')}</p>
 				</div>
 				<button
 					onClick={onToggle}
 					className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-					title="Fechar anotações"
+					title={t('closeNotes')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -120,7 +118,7 @@ export default function NotesPanel({
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
 					onPaste={handlePaste}
-					placeholder="Cole imagens (Cmd+V) ou digite suas anotações aqui..."
+					placeholder={t('pasteImagesHere')}
 					className="flex-1 bg-slate-900 text-slate-200 text-sm p-4 border-none focus:outline-none resize-none font-mono leading-relaxed"
 					style={{ caretColor: '#3b82f6' }}
 				/>
@@ -138,7 +136,7 @@ export default function NotesPanel({
 								<button
 									onClick={() => removeImage(index)}
 									className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-md shadow-lg"
-									title="Remover imagem"
+									title={t('removeImage')}
 								>
 									<svg
 										className="w-3 h-3"
@@ -163,7 +161,7 @@ export default function NotesPanel({
 			{/* Footer com dica */}
 			<div className="bg-slate-800 border-t border-slate-700 px-4 py-2">
 				<p className="text-xs text-slate-500">
-					💡 Auto-salvo • Cmd+V para colar imagem
+					💡 {t('autosaved')} • {t('tipAutoSave')}
 				</p>
 			</div>
 		</div>

@@ -5,17 +5,42 @@ export default {
 		extend: {
 			colors: {
 				primary: {
+					DEFAULT: 'var(--color-primary)',
+					dark: 'var(--color-primary-dark)',
+					light: 'var(--color-primary-light)',
 					50: '#f0f9ff',
 					100: '#e0f2fe',
 					200: '#bae6fd',
 					300: '#7dd3fc',
 					400: '#38bdf8',
-					500: '#0ea5e9',
-					600: '#0284c7',
-					700: '#0369a1',
+					500: 'var(--color-primary)',
+					600: 'var(--color-primary-dark)',
+					700: 'var(--color-primary-dark)',
 					800: '#075985',
 					900: '#0c4a6e',
 				},
+				background: {
+					DEFAULT: 'var(--color-background)',
+					light: 'var(--color-background-light)',
+					lighter: 'var(--color-background-lighter)',
+				},
+				text: {
+					DEFAULT: 'var(--color-text)',
+					secondary: 'var(--color-text-secondary)',
+					tertiary: 'var(--color-text-tertiary)',
+				},
+				border: {
+					DEFAULT: 'var(--color-border)',
+				},
+			},
+			borderColor: {
+				DEFAULT: 'var(--color-border)',
+			},
+			backgroundColor: {
+				DEFAULT: 'var(--color-background)',
+			},
+			textColor: {
+				DEFAULT: 'var(--color-text)',
 			},
 			keyframes: {
 				'slide-in-right': {

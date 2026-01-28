@@ -16,7 +16,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 	>(
 		(localStorage.getItem('qabooster-pdf-orientation') as
 			| 'portrait'
-			| 'landscape') || 'portrait',
+			| 'landscape') || 'landscape',
 	);
 	const [theme, setTheme] = useState<Theme>(
 		(localStorage.getItem('qabooster-theme') as Theme) || 'blue',
@@ -129,7 +129,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 									e.target.value as 'portrait' | 'landscape',
 								)
 							}
-							className="w-full bg-slate-700 text-slate-100 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="settings-dropdown w-full rounded px-3 py-2 border focus:outline-none focus:ring-2"
 						>
 							<option value="portrait">{t('portrait')}</option>
 							<option value="landscape">{t('landscape')}</option>
@@ -144,13 +144,14 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						<select
 							value={language}
 							onChange={(e) => handleLanguageChange(e.target.value as Language)}
-							className="w-full bg-slate-700 text-slate-100 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="settings-dropdown w-full rounded px-3 py-2 border focus:outline-none focus:ring-2"
 						>
 							<option value="pt">{t('portuguese')}</option>
 							<option value="en">{t('english')}</option>
 						</select>
 					</div>
 
+					{/* Tema */}
 					{/* Tema */}
 					<div className="mb-4">
 						<label className="block text-sm font-semibold text-slate-300 mb-2">
@@ -159,7 +160,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						<select
 							value={theme}
 							onChange={(e) => handleThemeChange(e.target.value as Theme)}
-							className="w-full bg-slate-700 text-slate-100 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="settings-dropdown w-full rounded px-3 py-2 border focus:outline-none focus:ring-2"
 						>
 							{themes.map((t) => (
 								<option key={t.id} value={t.id}>

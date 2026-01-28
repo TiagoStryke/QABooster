@@ -1,6 +1,7 @@
 import { fabric } from 'fabric';
 import { useEffect, useRef, useState } from 'react';
 import { ImageData } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -24,6 +25,7 @@ export default function ImageEditor({
 	onClose,
 	onSave,
 }: ImageEditorProps) {
+	const { t } = useLanguage();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -524,7 +526,7 @@ export default function ImageEditor({
 			{/* Header compacto */}
 			<div className="bg-slate-800 border-b border-slate-700 px-3 py-2 flex items-center justify-between">
 				<div className="flex items-center gap-2 text-xs">
-					<span className="font-medium text-slate-100">Editor de Imagem</span>
+					<span className="font-medium text-slate-100">{t('imageEditor')}</span>
 					<span className="text-slate-400">- {image.name}</span>
 				</div>
 				<button
@@ -552,7 +554,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolChange('select')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'select' ? 'bg-blue-600' : ''}`}
-					title="Selecionar"
+					title={t('select')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -572,7 +574,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('arrow')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'arrow' ? 'bg-blue-600' : ''}`}
-					title="Seta"
+					title={t('arrow')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -592,7 +594,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('line')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'line' ? 'bg-blue-600' : ''}`}
-					title="Linha"
+					title={t('line')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -612,7 +614,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('rectangle')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'rectangle' ? 'bg-blue-600' : ''}`}
-					title="Retângulo"
+					title={t('rectangle')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -627,7 +629,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('circle')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'circle' ? 'bg-blue-600' : ''}`}
-					title="Círculo"
+					title={t('circle')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -642,7 +644,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('text')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'text' ? 'bg-blue-600' : ''}`}
-					title="Texto"
+					title={t('text')}
 				>
 					<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
 						<text
@@ -661,7 +663,7 @@ export default function ImageEditor({
 				<button
 					onClick={() => handleToolClick('pen')}
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'pen' ? 'bg-blue-600' : ''}`}
-					title="Desenho"
+					title={t('pen')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -680,7 +682,7 @@ export default function ImageEditor({
 
 				<div className="w-px h-5 bg-slate-700 mx-1" />
 
-				<label className="text-xs text-slate-300 mr-1">Cor:</label>
+				<label className="text-xs text-slate-300 mr-1">{t('color')}:</label>
 				<input
 					type="color"
 					value={color}
@@ -694,7 +696,7 @@ export default function ImageEditor({
 				<button
 					onClick={handleZoomOut}
 					className="p-1.5 rounded hover:bg-slate-700"
-					title="Zoom Out"
+					title={t('zoomOut')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -718,7 +720,7 @@ export default function ImageEditor({
 				<button
 					onClick={handleZoomIn}
 					className="p-1.5 rounded hover:bg-slate-700"
-					title="Zoom In"
+					title={t('zoomIn')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -738,7 +740,7 @@ export default function ImageEditor({
 				<button
 					onClick={handleZoomReset}
 					className="p-1.5 rounded hover:bg-slate-700"
-					title="Ajustar à tela"
+					title={t('fitToScreen')}
 				>
 					<svg
 						className="w-4 h-4"
@@ -760,7 +762,7 @@ export default function ImageEditor({
 				<button
 					onClick={deleteSelected}
 					className="p-1.5 rounded hover:bg-red-600"
-					title="Deletar"
+					title={t('delete')}
 				>
 					<svg
 						className="w-4 h-4"

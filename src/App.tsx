@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import MainLayout from './components/MainLayout';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { applyTheme, Theme } from './theme/themes';
 
 const { ipcRenderer } = window.require('electron');
@@ -20,6 +20,7 @@ export interface ImageData {
 }
 
 function App() {
+	const { t } = useLanguage();
 	const [currentFolder, setCurrentFolder] = useState<string>('');
 	const [images, setImages] = useState<ImageData[]>([]);
 	const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
@@ -177,7 +178,7 @@ function App() {
 		});
 
 		ipcRenderer.on('screenshot-error', (_: any, message: string) => {
-			alert(message);
+			alert(t('errorGeneratingPDF'));
 		});
 
 		return () => {
@@ -258,22 +259,14 @@ function App() {
 
 		// Se tem pasta E tem dados, confirma e salva antes de limpar
 		if (currentFolder && hasData) {
-			if (
-				!confirm(
-					'Deseja iniciar um novo teste? Os dados do teste atual serão salvos.',
-				)
-			) {
+			if (!confirm(t('confirmNewTest'))) {
 				return;
 			}
 			saveHeaderData();
 		}
 		// Se tem dados mas não tem pasta, só confirma
 		else if (hasData || images.length > 0) {
-			if (
-				!confirm(
-					'Deseja iniciar um novo teste? Os dados atuais serão perdidos.',
-				)
-			) {
+			if (!confirm(t('confirmNewTestLoseData'))) {
 				return;
 			}
 		}
@@ -299,7 +292,7 @@ function App() {
 	};
 
 	const handleImageDelete = async (image: ImageData) => {
-		if (confirm(`Deletar ${image.name}?`)) {
+		if (confirm(`${t('confirmDeleteImage')} ${image.name}?`)) {
 			await ipcRenderer.invoke('delete-image', image.path);
 			loadImages();
 			if (selectedImage?.path === image.path) {

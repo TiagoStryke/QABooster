@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function HelpTips() {
+	const { t } = useLanguage();
 	const [isOpen, setIsOpen] = useState(false);
 
 	return (
@@ -8,7 +10,7 @@ export default function HelpTips() {
 			<button
 				onClick={() => setIsOpen(!isOpen)}
 				className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-300"
-				title="Dicas de Uso"
+				title={t('help')}
 			>
 				<svg
 					className="w-5 h-5"
@@ -67,61 +69,28 @@ export default function HelpTips() {
 					<div className="space-y-2 text-slate-300">
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								� Início Rápido
+								⚡ {t('quickStart')}
 							</h4>
-							<p className="text-[11px]">
-								<strong>1.</strong> Clique em "+ Novo Teste" e escolha onde
-								salvar
-								<br />
-								<strong>2.</strong> Preencha o cabeçalho do teste
-								<br />
-								<strong>3.</strong> A pasta é renomeada automaticamente com a
-								data e caso de teste
-							</p>
+							<p className="text-[11px]">{t('quickStartText')}</p>
 						</div>
 
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								📸 Captura de Screenshots
+								📸 {t('capture')}
 							</h4>
-							<p className="text-[11px]">
-								<strong>Atalhos:</strong> Configure acima (Tela Cheia e Área)
-								<br />
-								<strong>Área fixa:</strong> Use o botão 📐 para definir área
-								reutilizável
-								<br />
-								<strong>Monitor:</strong> Selecione qual tela capturar (se tiver
-								múltiplos)
-							</p>
+							<p className="text-[11px]">{t('captureText')} </p>
 						</div>
-
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								✏️ Edição de Imagens
+								✏️ {t('edition')}
 							</h4>
-							<p className="text-[11px]">
-								Clique no <strong>botão azul</strong> da miniatura para editar
-								<br />
-								<strong>Ferramentas:</strong> Setas, círculos, retângulos, texto
-								livre e desenho
-								<br />
-								<strong>Reordenar:</strong> Arraste miniaturas para mudar ordem
-							</p>
+							<p className="text-[11px]">{t('editionText')} </p>
 						</div>
-
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								📄 Gerar PDF
+								📄 {t('pdfGeneration')}
 							</h4>
-							<p className="text-[11px]">
-								<strong>Automático:</strong> Inclui cabeçalho, todas as imagens
-								e dados
-								<br />
-								<strong>Salvamento:</strong> PDF gerado na mesma pasta do teste
-								<br />
-								<strong>Continuar:</strong> Use "Continuar Teste" para abrir
-								pasta existente
-							</p>
+							<p className="text-[11px]">{t('pdfText')}</p>
 						</div>
 					</div>
 				</div>
