@@ -433,6 +433,69 @@ ipcMain.handle('get-saved-area', async () => {
 	return savedArea;
 });
 
+ipcMain.handle('show-pdf-exists-dialog', async (_, { filename }) => {
+	try {
+		const result = await dialog.showMessageBox({
+			type: 'question',
+			title: 'Arquivo já existe',
+			message: `Um arquivo PDF com este nome já existe:\n${filename}`,
+			buttons: ['Substituir', 'Criar nova cópia', 'Cancelar'],
+			defaultId: 1,
+			cancelId: 2,
+		});
+
+		// result.response: 0 = Substituir, 1 = Criar nova cópia, 2 = Cancelar
+		return { success: true, action: result.response };
+	} catch (error) {
+		console.error('Error showing dialog:', error);
+		return { success: false, error: String(error) };
+	}
+});
+
+ipcMain.handle('check-pdf-exists', async (_, { filename }) => {
+	try {
+		if (!currentFolder) {
+			return { success: false, error: 'Nenhuma pasta selecionada' };
+		}
+
+		const filepath = path.join(currentFolder, filename);
+		const exists = fs.existsSync(filepath);
+
+		return { success: true, exists };
+	} catch (error) {
+		console.error('Error checking PDF:', error);
+		return { success: false, error: String(error) };
+	}
+});
+
+ipcMain.handle('find-next-filename', async (_, { baseFilename }) => {
+	try {
+		if (!currentFolder) {
+			return { success: false, error: 'Nenhuma pasta selecionada' };
+		}
+
+		// Extrair nome e extensão
+		const ext = path.extname(baseFilename);
+		const nameWithoutExt = path.basename(baseFilename, ext);
+
+		let counter = 2;
+		let newFilename = baseFilename;
+		let filepath = path.join(currentFolder, newFilename);
+
+		// Encontrar próximo número disponível
+		while (fs.existsSync(filepath)) {
+			newFilename = `${nameWithoutExt} (${counter})${ext}`;
+			filepath = path.join(currentFolder, newFilename);
+			counter++;
+		}
+
+		return { success: true, filename: newFilename };
+	} catch (error) {
+		console.error('Error finding next filename:', error);
+		return { success: false, error: String(error) };
+	}
+});
+
 ipcMain.handle('save-pdf', async (_, { pdfData, filename }) => {
 	try {
 		if (!currentFolder) {

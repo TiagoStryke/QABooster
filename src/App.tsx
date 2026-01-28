@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import MainLayout from './components/MainLayout';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { applyTheme, Theme } from './theme/themes';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -32,6 +34,29 @@ function App() {
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
 	const isRenamingRef = useRef(false);
 	const isLoadingFolderRef = useRef(false); // Flag para indicar que está abrindo pasta existente
+
+	// Aplicar tema inicial e escutar mudanças
+	useEffect(() => {
+		const savedTheme =
+			(localStorage.getItem('qabooster-theme') as Theme) || 'blue';
+		applyTheme(savedTheme);
+
+		const handleThemeChange = (e: CustomEvent) => {
+			applyTheme(e.detail);
+		};
+
+		window.addEventListener(
+			'theme-changed',
+			handleThemeChange as EventListener,
+		);
+
+		return () => {
+			window.removeEventListener(
+				'theme-changed',
+				handleThemeChange as EventListener,
+			);
+		};
+	}, []);
 
 	// Salvar executor no localStorage sempre que mudar
 	useEffect(() => {
@@ -340,4 +365,10 @@ function App() {
 	);
 }
 
-export default App;
+export default function AppWithProviders() {
+	return (
+		<LanguageProvider>
+			<App />
+		</LanguageProvider>
+	);
+}

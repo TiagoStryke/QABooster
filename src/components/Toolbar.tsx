@@ -50,6 +50,32 @@ export default function Toolbar({
 	const [useSavedArea, setUseSavedArea] = useState(
 		localStorage.getItem('qabooster-use-saved-area') === 'true',
 	);
+	const [pdfOrientation, setPdfOrientation] = useState<
+		'portrait' | 'landscape'
+	>(
+		(localStorage.getItem('qabooster-pdf-orientation') as
+			| 'portrait'
+			| 'landscape') || 'portrait',
+	);
+
+	useEffect(() => {
+		// Escutar mudanças de orientação do PDF vindas do Settings
+		const handlePdfOrientationChange = (e: CustomEvent) => {
+			setPdfOrientation(e.detail);
+		};
+
+		window.addEventListener(
+			'pdf-orientation-changed',
+			handlePdfOrientationChange as EventListener,
+		);
+
+		return () => {
+			window.removeEventListener(
+				'pdf-orientation-changed',
+				handlePdfOrientationChange as EventListener,
+			);
+		};
+	}, []);
 
 	useEffect(() => {
 		// Carregar displays disponíveis
@@ -138,11 +164,16 @@ export default function Toolbar({
 		await onSaveHeaderData();
 
 		try {
-			// PDF em modo paisagem (landscape)
-			const pdf = new jsPDF('l', 'mm', 'a4');
+			// Usar a orientação configurada
+			const pdf = new jsPDF(
+				pdfOrientation === 'landscape' ? 'l' : 'p',
+				'mm',
+				'a4',
+			);
 			const pageWidth = pdf.internal.pageSize.getWidth();
 			const pageHeight = pdf.internal.pageSize.getHeight();
 			const margin = 15;
+			const imageMargin = 2; // Margem mínima para imagens (2mm)
 
 			// First page - Header
 			pdf.setFontSize(18);
@@ -180,7 +211,8 @@ export default function Toolbar({
 
 			// Images - carregar via IPC para converter em base64
 			for (let i = 0; i < images.length; i++) {
-				pdf.addPage('a4', 'l'); // Paisagem
+				// Usar a orientação configurada para cada página de imagem
+				pdf.addPage('a4', pdfOrientation === 'landscape' ? 'l' : 'p');
 
 				try {
 					// Ler imagem como base64 via IPC
@@ -206,14 +238,17 @@ export default function Toolbar({
 					const imgHeight = img.height;
 					const ratio = imgWidth / imgHeight;
 
-					let width = pageWidth - 2 * margin;
-					let height = width / ratio;
+					// Priorizar altura máxima (ocupar todo espaço vertical com margem mínima)
+					let height = pageHeight - 2 * imageMargin;
+					let width = height * ratio;
 
-					if (height > pageHeight - 2 * margin) {
-						height = pageHeight - 2 * margin;
-						width = height * ratio;
+					// Se a largura exceder a página, ajustar pela largura
+					if (width > pageWidth - 2 * imageMargin) {
+						width = pageWidth - 2 * imageMargin;
+						height = width / ratio;
 					}
 
+					// Centralizar tanto horizontal quanto verticalmente
 					const x = (pageWidth - width) / 2;
 					const y = (pageHeight - height) / 2;
 
@@ -224,7 +259,47 @@ export default function Toolbar({
 			}
 
 			const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-			const fileName = `Evidencia_${headerData.testCase || 'teste'}_${date}.pdf`;
+			let fileName = `Evidencia_${headerData.testCase || 'teste'}_${date}.pdf`;
+
+			// Verificar se o arquivo já existe
+			const checkResult = await ipcRenderer.invoke('check-pdf-exists', {
+				filename: fileName,
+			});
+
+			if (checkResult.success && checkResult.exists) {
+				// Mostrar diálogo de confirmação com botões claros
+				const dialogResult = await ipcRenderer.invoke(
+					'show-pdf-exists-dialog',
+					{
+						filename: fileName,
+					},
+				);
+
+				if (!dialogResult.success) {
+					alert(`Erro ao mostrar diálogo: ${dialogResult.error}`);
+					return;
+				}
+
+				// action: 0 = Substituir, 1 = Criar nova cópia, 2 = Cancelar
+				if (dialogResult.action === 2) {
+					// Usuário cancelou
+					return;
+				} else if (dialogResult.action === 1) {
+					// Criar nova cópia - buscar próximo nome disponível
+					const nextFileResult = await ipcRenderer.invoke(
+						'find-next-filename',
+						{ baseFilename: fileName },
+					);
+
+					if (nextFileResult.success) {
+						fileName = nextFileResult.filename;
+					} else {
+						alert(`Erro ao buscar nome disponível: ${nextFileResult.error}`);
+						return;
+					}
+				}
+				// Se action === 0, mantém o fileName original para substituir
+			}
 
 			// Salvar PDF diretamente na pasta selecionada via IPC
 			const pdfData = pdf.output('datauristring');
@@ -423,6 +498,7 @@ export default function Toolbar({
 					<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full">
 						{images.length} {images.length === 1 ? 'imagem' : 'imagens'}
 					</span>
+
 					<button
 						onClick={generatePDF}
 						disabled={isGenerating || images.length === 0}
