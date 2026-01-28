@@ -311,7 +311,16 @@ export default function Toolbar({
 			});
 
 			if (result.success) {
-				alert(`${t('pdfSavedSuccessfully')}\n${fileName}`);
+				// Mostrar dialog com opção de visualizar
+				const response = await ipcRenderer.invoke('show-pdf-saved-dialog', {
+					filename: fileName,
+					filepath: result.filepath,
+				});
+
+				if (response.action === 'view') {
+					// Abrir PDF no visualizador
+					await ipcRenderer.invoke('open-pdf', result.filepath);
+				}
 			} else {
 				alert(`${t('errorSavingPDF')}: ${result.error}`);
 			}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const { ipcRenderer } = window.require('electron');
+
 interface SettingsProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -24,6 +26,14 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 	const [language, setLanguage] = useState<Language>(
 		(localStorage.getItem('qabooster-language') as Language) || 'pt',
 	);
+	const [copyToClipboard, setCopyToClipboard] = useState<boolean>(
+		localStorage.getItem('qabooster-copy-to-clipboard') === 'true',
+	);
+
+	// Enviar preferência de clipboard para o main process ao montar
+	useEffect(() => {
+		ipcRenderer.invoke('set-copy-to-clipboard', copyToClipboard);
+	}, []);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -69,6 +79,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		window.dispatchEvent(
 			new CustomEvent('language-changed', { detail: newLanguage }),
 		);
+	};
+
+	const handleCopyToClipboardChange = (enabled: boolean) => {
+		setCopyToClipboard(enabled);
+		localStorage.setItem('qabooster-copy-to-clipboard', enabled.toString());
+		ipcRenderer.invoke('set-copy-to-clipboard', enabled);
 	};
 
 	if (!isOpen) return null;
@@ -168,6 +184,26 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 								</option>
 							))}
 						</select>
+					</div>
+
+					{/* Copiar para área de transferência */}
+					<div className="mb-4">
+						<label className="flex items-start gap-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={copyToClipboard}
+								onChange={(e) => handleCopyToClipboardChange(e.target.checked)}
+								className="w-5 h-5 mt-0.5 rounded border-slate-600 bg-slate-700 text-primary-500 focus:ring-2 focus:ring-primary-500"
+							/>
+							<div className="flex-1">
+								<div className="text-sm font-semibold text-slate-300">
+									{t('copyToClipboard')}
+								</div>
+								<div className="text-xs text-slate-400 mt-0.5">
+									{t('copyToClipboardDesc')}
+								</div>
+							</div>
+						</label>
 					</div>
 				</div>
 			</div>

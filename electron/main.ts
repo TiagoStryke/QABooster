@@ -1,6 +1,7 @@
 import {
 	app,
 	BrowserWindow,
+	clipboard,
 	desktopCapturer,
 	dialog,
 	globalShortcut,
@@ -21,6 +22,7 @@ let shortcutKey: string = 'CommandOrControl+Shift+S';
 let shortcutKeyArea: string = 'CommandOrControl+Shift+A';
 let selectedDisplayId: number = 0; // ID do display selecionado
 let useSavedArea: boolean = false; // Se deve usar área salva ou sempre perguntar
+let copyToClipboard: boolean = false; // Se deve copiar para área de transferência
 let savedArea: { x: number; y: number; width: number; height: number } | null =
 	null;
 let originalWindowWidth: number = 1400; // Largura original da janela
@@ -142,8 +144,15 @@ function registerGlobalShortcut() {
 				const filename = `screenshot-${timestamp}.png`;
 				const filepath = path.join(currentFolder, filename);
 
-				const image = sources[selectedDisplayId].thumbnail.toPNG();
-				fs.writeFileSync(filepath, image);
+				const image = sources[selectedDisplayId].thumbnail;
+				const pngBuffer = image.toPNG();
+
+				fs.writeFileSync(filepath, pngBuffer);
+
+				// Copiar para clipboard se habilitado
+				if (copyToClipboard) {
+					clipboard.writeImage(image);
+				}
 
 				mainWindow?.webContents.send('screenshot-captured', {
 					filepath,
@@ -195,6 +204,11 @@ function registerGlobalShortcut() {
 					const cropped = image.crop(savedArea);
 
 					fs.writeFileSync(filepath, cropped.toPNG());
+
+					// Copiar para clipboard se habilitado
+					if (copyToClipboard) {
+						clipboard.writeImage(cropped);
+					}
 
 					mainWindow?.webContents.send('screenshot-captured', {
 						filepath,
@@ -389,6 +403,11 @@ ipcMain.handle('set-use-saved-area', async (_, useArea: boolean) => {
 	return true;
 });
 
+ipcMain.handle('set-copy-to-clipboard', async (_, enabled: boolean) => {
+	copyToClipboard = enabled;
+	return true;
+});
+
 ipcMain.handle('set-shortcut', async (_, newShortcut: string) => {
 	shortcutKey = newShortcut;
 	registerGlobalShortcut();
@@ -509,6 +528,47 @@ ipcMain.handle('save-pdf', async (_, { pdfData, filename }) => {
 		return { success: true, filepath };
 	} catch (error) {
 		console.error('Error saving PDF:', error);
+		return { success: false, error: String(error) };
+	}
+});
+
+ipcMain.handle('show-pdf-saved-dialog', async (_, { filename }) => {
+	try {
+		const result = await dialog.showMessageBox(mainWindow!, {
+			type: 'info',
+			title: 'PDF Salvo',
+			message: 'PDF salvo com sucesso!',
+			detail: filename,
+			buttons: ['OK', 'Visualizar PDF'],
+			defaultId: 1,
+			cancelId: 0,
+		});
+
+		return {
+			action: result.response === 1 ? 'view' : 'ok',
+		};
+	} catch (error) {
+		console.error('Error showing dialog:', error);
+		return { action: 'ok' };
+	}
+});
+
+ipcMain.handle('open-pdf', async (_, filepath) => {
+	try {
+		await shell.openPath(filepath);
+		return { success: true };
+	} catch (error) {
+		console.error('Error opening PDF:', error);
+		return { success: false, error: String(error) };
+	}
+});
+
+ipcMain.handle('open-folder-in-finder', async (_, folderPath) => {
+	try {
+		await shell.openPath(folderPath);
+		return { success: true };
+	} catch (error) {
+		console.error('Error opening folder:', error);
 		return { success: false, error: String(error) };
 	}
 });
@@ -691,6 +751,11 @@ ipcMain.on('area-selected-for-screenshot', (_, area) => {
 			const filepath = path.join(currentFolder, filename);
 
 			fs.writeFileSync(filepath, cropped.toPNG());
+
+			// Copiar para clipboard se habilitado
+			if (copyToClipboard) {
+				clipboard.writeImage(cropped);
+			}
 
 			mainWindow?.webContents.send('screenshot-captured', {
 				filepath,

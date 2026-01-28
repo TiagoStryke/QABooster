@@ -36,6 +36,7 @@ export const translations = {
 		// Folder Manager
 		continueTest: 'Continuar Teste',
 		newTest: 'Novo Teste',
+		openFolderInFinder: 'Abrir pasta no Finder',
 
 		// Image Gallery
 		imageGallery: 'Galeria de Imagens',
@@ -90,6 +91,8 @@ export const translations = {
 		themeRose: 'Rosa',
 		themeLight: 'Claro',
 		themeGreen: 'Verde',
+		copyToClipboard: 'Copiar prints para área de transferência',
+		copyToClipboardDesc: 'Permite colar com Ctrl+V em outros programas',
 
 		// Help
 		help: 'Ajuda',
@@ -109,6 +112,8 @@ export const translations = {
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'Nenhuma imagem para gerar PDF',
 		pdfSavedSuccessfully: 'PDF salvo com sucesso na pasta!',
+		viewPDF: 'Visualizar PDF',
+		ok: 'OK',
 		errorSavingPDF: 'Erro ao salvar PDF',
 		pdfAlreadyExists: 'Um arquivo PDF com este nome já existe',
 		replace: 'Substituir',
@@ -166,6 +171,7 @@ export const translations = {
 		// Folder Manager
 		continueTest: 'Continue Test',
 		newTest: 'New Test',
+		openFolderInFinder: 'Open folder in Finder',
 
 		// Image Gallery
 		imageGallery: 'Image Gallery',
@@ -220,6 +226,8 @@ export const translations = {
 		themeRose: 'Rose',
 		themeLight: 'Light',
 		themeGreen: 'Green',
+		copyToClipboard: 'Copy screenshots to clipboard',
+		copyToClipboardDesc: 'Allows pasting with Ctrl+V in other programs',
 
 		// Help
 		help: 'Help',
@@ -239,6 +247,8 @@ export const translations = {
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'No images to generate PDF',
 		pdfSavedSuccessfully: 'PDF saved successfully in the folder!',
+		viewPDF: 'View PDF',
+		ok: 'OK',
 		errorSavingPDF: 'Error saving PDF',
 		pdfAlreadyExists: 'A PDF file with this name already exists',
 		replace: 'Replace',
