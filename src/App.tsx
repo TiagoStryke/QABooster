@@ -1,10 +1,5 @@
-import { useEffect, useState } from 'react';
-import FolderManager from './components/FolderManager';
-import Header from './components/Header';
-import ImageEditor from './components/ImageEditor';
-import ImageGallery from './components/ImageGallery';
-import NotesPanel from './components/NotesPanel';
-import Toolbar from './components/Toolbar';
+import { useEffect, useRef, useState } from 'react';
+import MainLayout from './components/MainLayout';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -35,6 +30,8 @@ function App() {
 	});
 	const [showEditor, setShowEditor] = useState(false);
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
+	const isRenamingRef = useRef(false);
+	const isLoadingFolderRef = useRef(false); // Flag para indicar que está abrindo pasta existente
 
 	// Salvar executor no localStorage sempre que mudar
 	useEffect(() => {
@@ -57,7 +54,9 @@ function App() {
 	// Renomear pasta quando o caso de teste é preenchido
 	useEffect(() => {
 		const renameFolderIfNeeded = async () => {
-			if (!currentFolder || !headerData.testCase) return;
+			// NÃO renomeia se está carregando pasta existente ou se não tem dados
+			if (!currentFolder || !headerData.testCase || isLoadingFolderRef.current)
+				return;
 
 			// Extrai o nome da pasta atual
 			const folderName = currentFolder.split('/').pop() || '';
@@ -71,7 +70,7 @@ function App() {
 			let dateStr = '';
 
 			if (dateOnlyPattern.test(folderName)) {
-				// Pasta só com data
+				// Pasta só com data (recém criada)
 				dateStr = folderName;
 				shouldRename = true;
 			} else if (dateWithCasePattern.test(folderName)) {
@@ -80,12 +79,18 @@ function App() {
 				if (match) {
 					dateStr = match[1];
 					const currentCase = match[2];
-					// Só renomeia se o caso de teste mudou
+					// Só renomeia se o caso de teste mudou E não está carregando
 					shouldRename = currentCase !== headerData.testCase;
 				}
 			}
 
 			if (shouldRename && dateStr) {
+				// Marca que estamos renomeando
+				isRenamingRef.current = true;
+
+				// Salva os dados do header ANTES de renomear
+				await ipcRenderer.invoke('save-header-data', headerData);
+
 				// Cria novo nome: Data_caso-de-teste
 				const newFolderName = `${dateStr}_${headerData.testCase}`;
 
@@ -96,6 +101,7 @@ function App() {
 					newFolderName,
 				);
 				if (newPath) {
+					// Atualiza o currentFolder sem disparar loadHeaderData
 					setCurrentFolder(newPath);
 				}
 			}
@@ -165,7 +171,15 @@ function App() {
 
 	useEffect(() => {
 		loadImages();
-		loadHeaderData();
+		// Só carrega headerData se NÃO for uma renomeação
+		if (!isRenamingRef.current) {
+			loadHeaderData();
+		} else {
+			// Reset flag após renomear
+			isRenamingRef.current = false;
+		}
+		// Reset flag de loading após processar
+		isLoadingFolderRef.current = false;
 	}, [currentFolder]);
 
 	const loadHeaderData = async () => {
@@ -187,11 +201,25 @@ function App() {
 		}
 	};
 
-	const handleFolderChange = async (folder: string) => {
+	const handleFolderChange = async (folder: string, isNewFolder = false) => {
 		// Salvar dados da pasta anterior antes de mudar
 		if (currentFolder) {
 			await saveHeaderData();
 		}
+
+		// Se está abrindo pasta EXISTENTE (não é nova), limpa o cabeçalho primeiro
+		if (!isNewFolder) {
+			isLoadingFolderRef.current = true;
+			const savedExecutor = headerData.executor; // Mantém executor
+			setHeaderData({
+				testName: '',
+				executor: savedExecutor,
+				system: '',
+				testCycle: '',
+				testCase: '',
+			});
+		}
+
 		setCurrentFolder(folder);
 	};
 
@@ -290,49 +318,25 @@ function App() {
 	};
 
 	return (
-		<div className="h-screen flex flex-col bg-slate-900">
-			<Header headerData={headerData} setHeaderData={setHeaderData} />
-
-			<Toolbar
-				currentFolder={currentFolder}
-				images={images}
-				headerData={headerData}
-				onSaveHeaderData={saveHeaderData}
-				onNewTest={handleNewTest}
-			/>
-
-			<FolderManager
-				currentFolder={currentFolder}
-				onFolderChange={handleFolderChange}
-				headerData={headerData}
-			/>
-
-			<div className="flex-1 flex overflow-hidden">
-				<div className="flex-1 flex overflow-hidden">
-					<ImageGallery
-						images={images}
-						onImageSelect={handleImageSelect}
-						onImageDelete={handleImageDelete}
-						onImagePreview={handleImagePreview}
-						onImageReorder={handleImageReorder}
-						selectedImage={selectedImage}
-					/>
-
-					{showEditor && selectedImage && (
-						<ImageEditor
-							image={selectedImage}
-							onClose={handleCloseEditor}
-							onSave={handleSaveEdited}
-						/>
-					)}
-				</div>
-				<NotesPanel
-					currentFolder={currentFolder}
-					isOpen={isNotesPanelOpen}
-					onToggle={() => setIsNotesPanelOpen(!isNotesPanelOpen)}
-				/>
-			</div>
-		</div>
+		<MainLayout
+			headerData={headerData}
+			setHeaderData={setHeaderData}
+			currentFolder={currentFolder}
+			images={images}
+			onSaveHeaderData={saveHeaderData}
+			onNewTest={handleNewTest}
+			onFolderChange={handleFolderChange}
+			selectedImage={selectedImage}
+			showEditor={showEditor}
+			isNotesPanelOpen={isNotesPanelOpen}
+			setIsNotesPanelOpen={setIsNotesPanelOpen}
+			handleImageSelect={handleImageSelect}
+			handleImageDelete={handleImageDelete}
+			handleImagePreview={handleImagePreview}
+			handleImageReorder={handleImageReorder}
+			handleCloseEditor={handleCloseEditor}
+			handleSaveEdited={handleSaveEdited}
+		/>
 	);
 }
 

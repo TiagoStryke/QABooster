@@ -4,7 +4,7 @@ const { ipcRenderer } = window.require('electron');
 
 interface FolderManagerProps {
 	currentFolder: string;
-	onFolderChange: (folder: string) => void;
+	onFolderChange: (folder: string, isNewFolder?: boolean) => void;
 	headerData: HeaderData;
 }
 
@@ -19,8 +19,8 @@ export default function FolderManager({
 			// Verifica se existe JSON na pasta
 			const result = await ipcRenderer.invoke('load-header-data', folder);
 			if (result.success && result.data) {
-				// Pasta com teste existente
-				onFolderChange(folder);
+				// Pasta com teste existente - isNewFolder = false
+				onFolderChange(folder, false);
 			} else {
 				// Pasta sem teste
 				alert(
@@ -45,7 +45,8 @@ export default function FolderManager({
 		);
 
 		if (folder) {
-			onFolderChange(folder);
+			// Pasta nova - isNewFolder = true
+			onFolderChange(folder, true);
 		}
 	};
 

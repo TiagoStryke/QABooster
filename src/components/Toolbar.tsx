@@ -1,7 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, useState } from 'react';
 import { HeaderData, ImageData } from '../App';
-import HelpTips from './HelpTips';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -34,6 +33,11 @@ export default function Toolbar({
 		localStorage.getItem('qabooster-shortcut-area') ||
 			'CommandOrControl+Shift+A',
 	);
+	// Estados temporários para edição
+	const [tempShortcut, setTempShortcut] = useState('');
+	const [tempShortcutArea, setTempShortcutArea] = useState('');
+	const [isEditingShortcut, setIsEditingShortcut] = useState(false);
+	const [isEditingShortcutArea, setIsEditingShortcutArea] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [soundEnabled, setSoundEnabled] = useState(
 		localStorage.getItem('qabooster-sound') === 'true',
@@ -83,15 +87,32 @@ export default function Toolbar({
 	}, []);
 
 	const handleShortcutChange = async () => {
-		await ipcRenderer.invoke('set-shortcut', shortcut);
-		localStorage.setItem('qabooster-shortcut', shortcut);
+		if (!tempShortcut) return;
+		await ipcRenderer.invoke('set-shortcut', tempShortcut);
+		localStorage.setItem('qabooster-shortcut', tempShortcut);
+		setShortcut(tempShortcut);
+		setIsEditingShortcut(false);
 		alert('Atalho de tela cheia atualizado!');
 	};
 
 	const handleShortcutAreaChange = async () => {
-		await ipcRenderer.invoke('set-area-shortcut', shortcutArea);
-		localStorage.setItem('qabooster-shortcut-area', shortcutArea);
+		if (!tempShortcutArea) return;
+		await ipcRenderer.invoke('set-area-shortcut', tempShortcutArea);
+		localStorage.setItem('qabooster-shortcut-area', tempShortcutArea);
+		setShortcutArea(tempShortcutArea);
+		setIsEditingShortcutArea(false);
 		alert('Atalho de área selecionada atualizado!');
+	};
+
+	// Funções para cancelar edição
+	const handleCancelShortcutEdit = () => {
+		setTempShortcut('');
+		setIsEditingShortcut(false);
+	};
+
+	const handleCancelShortcutAreaEdit = () => {
+		setTempShortcutArea('');
+		setIsEditingShortcutArea(false);
 	};
 
 	const handleDisplayChange = async (displayId: number) => {
@@ -235,9 +256,27 @@ export default function Toolbar({
 						<input
 							type="text"
 							className="input-field text-xs w-32 py-1 px-2"
-							value={shortcut}
+							value={isEditingShortcut ? tempShortcut : shortcut}
 							readOnly
+							onFocus={() => {
+								setIsEditingShortcut(true);
+								setTempShortcut(shortcut);
+							}}
+							onBlur={() => {
+								// Delay para permitir clicar no botão ✓
+								setTimeout(() => {
+									if (isEditingShortcut) handleCancelShortcutEdit();
+								}, 150);
+							}}
 							onKeyDown={(e) => {
+								if (e.key === 'Escape') {
+									handleCancelShortcutEdit();
+									return;
+								}
+								if (e.key === 'Enter') {
+									handleShortcutChange();
+									return;
+								}
 								e.preventDefault();
 								const keys = [];
 								if (e.metaKey) keys.push('Cmd');
@@ -251,7 +290,7 @@ export default function Toolbar({
 									keys.push(e.key.toUpperCase());
 								}
 								if (keys.length > 0) {
-									setShortcut(keys.join('+'));
+									setTempShortcut(keys.join('+'));
 								}
 							}}
 							placeholder="Pressione teclas"
@@ -259,21 +298,24 @@ export default function Toolbar({
 						<button
 							onClick={handleShortcutChange}
 							className="btn-secondary text-xs py-1 px-2"
+							disabled={!isEditingShortcut || !tempShortcut}
 						>
 							✓
 						</button>
-						<select
-							value={selectedDisplay}
-							onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
-							className="input-field text-xs py-1 px-2"
-							title="Monitor"
-						>
-							{displays.map((display) => (
-								<option key={display.id} value={display.id}>
-									{display.label}
-								</option>
-							))}
-						</select>
+						{displays.length > 1 && (
+							<select
+								value={selectedDisplay}
+								onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
+								className="input-field text-xs py-1 px-2"
+								title="Monitor"
+							>
+								{displays.map((display) => (
+									<option key={display.id} value={display.id}>
+										{display.label}
+									</option>
+								))}
+							</select>
+						)}
 					</div>
 
 					<div className="w-px h-6 bg-slate-700" />
@@ -284,9 +326,27 @@ export default function Toolbar({
 						<input
 							type="text"
 							className="input-field text-xs w-32 py-1 px-2"
-							value={shortcutArea}
+							value={isEditingShortcutArea ? tempShortcutArea : shortcutArea}
 							readOnly
+							onFocus={() => {
+								setIsEditingShortcutArea(true);
+								setTempShortcutArea(shortcutArea);
+							}}
+							onBlur={() => {
+								// Delay para permitir clicar no botão ✓
+								setTimeout(() => {
+									if (isEditingShortcutArea) handleCancelShortcutAreaEdit();
+								}, 150);
+							}}
 							onKeyDown={(e) => {
+								if (e.key === 'Escape') {
+									handleCancelShortcutAreaEdit();
+									return;
+								}
+								if (e.key === 'Enter') {
+									handleShortcutAreaChange();
+									return;
+								}
 								e.preventDefault();
 								const keys = [];
 								if (e.metaKey) keys.push('Cmd');
@@ -300,7 +360,7 @@ export default function Toolbar({
 									keys.push(e.key.toUpperCase());
 								}
 								if (keys.length > 0) {
-									setShortcutArea(keys.join('+'));
+									setTempShortcutArea(keys.join('+'));
 								}
 							}}
 							placeholder="Pressione teclas"
@@ -308,6 +368,7 @@ export default function Toolbar({
 						<button
 							onClick={handleShortcutAreaChange}
 							className="btn-secondary text-xs py-1 px-2"
+							disabled={!isEditingShortcutArea || !tempShortcutArea}
 						>
 							✓
 						</button>
@@ -359,27 +420,6 @@ export default function Toolbar({
 						<span>🔊 Som</span>
 					</label>
 
-					<button
-						onClick={onNewTest}
-						className="btn-secondary text-xs py-1.5 px-3"
-						title="Limpar e iniciar novo teste"
-					>
-						<svg
-							className="w-4 h-4 inline mr-1"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M12 4v16m8-8H4"
-							/>
-						</svg>
-						Novo Teste
-					</button>
-					<HelpTips />
 					<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full">
 						{images.length} {images.length === 1 ? 'imagem' : 'imagens'}
 					</span>

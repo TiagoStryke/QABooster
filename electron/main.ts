@@ -1,14 +1,14 @@
 import {
-    app,
-    BrowserWindow,
-    desktopCapturer,
-    dialog,
-    globalShortcut,
-    ipcMain,
-    nativeImage,
-    screen,
-    shell,
-    Tray,
+	app,
+	BrowserWindow,
+	desktopCapturer,
+	dialog,
+	globalShortcut,
+	ipcMain,
+	nativeImage,
+	screen,
+	shell,
+	Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -521,665 +521,86 @@ ipcMain.handle('open-image-preview', async (_, imagePath: string) => {
 	}
 });
 
-// Area selection overlay function - para TIRAR PRINT
-async function openAreaSelectorForScreenshot() {
-	console.log('🔵 [1] openAreaSelectorForScreenshot - INICIOU');
+// Função base para overlay de seleção de área
+async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 	if (overlayWindow) {
-		console.log('🔵 [2] Fechando overlay anterior');
 		overlayWindow.close();
+		overlayWindow = null;
 	}
 
-	console.log('🔵 [3] Obtendo displays');
 	const displays = screen.getAllDisplays();
 	const display = displays[selectedDisplayId] || displays[0];
 	const { x, y, width, height } = display.bounds;
 
-	// Captura screenshot ANTES de abrir overlay
-	console.log('🔵 [4] CAPTURANDO SCREENSHOT - pode piscar branco aqui');
+	// Captura screenshot ANTES de criar a janela
 	const sources = await desktopCapturer.getSources({
 		types: ['screen'],
 		thumbnailSize: { width, height },
 	});
-	console.log('🔵 [5] Screenshot capturado');
 
-	const fullScreenshot = sources[selectedDisplayId].thumbnail;
-	pendingScreenshot = fullScreenshot; // Guarda para salvar depois
-	const screenshotDataURL = fullScreenshot.toDataURL();
-	console.log('🔵 [6] Screenshot convertido para DataURL');
+	const screenshot = sources[selectedDisplayId].thumbnail;
+	if (saveScreenshot) {
+		pendingScreenshot = screenshot;
+	}
 
-	console.log('🔵 [7] CRIANDO BROWSERWINDOW - pode piscar branco aqui');
+	const screenshotDataURL = screenshot.toDataURL();
+
+	// Cria overlay transparente sem animação
 	overlayWindow = new BrowserWindow({
 		x,
 		y,
 		width,
 		height,
 		frame: false,
-		transparent: false,
+		transparent: true,
 		alwaysOnTop: true,
 		skipTaskbar: true,
 		resizable: false,
 		movable: false,
-		fullscreen: true,
+		hasShadow: false,
+		focusable: true,
 		show: false,
-		paintWhenInitiallyHidden: true,
-		backgroundColor: '#000000',
 		webPreferences: {
 			nodeIntegration: true,
 			contextIsolation: false,
-			backgroundThrottling: false,
 		},
 	});
-	console.log('🔵 [8] BrowserWindow criada');
 
-	overlayWindow.once('ready-to-show', () => {
-		console.log('🔵 [9] ready-to-show DISPAROU');
-		if (mainWindow) {
-			console.log('🔵 [10] ESCONDENDO mainWindow');
-			mainWindow.hide(); // Esconde imediatamente sem animação
-		}
-		console.log('🔵 [11] MOSTRANDO overlayWindow com showInactive');
-		overlayWindow?.showInactive(); // Mostra sem animação e sem focus
-		setTimeout(() => {
-			console.log('🔵 [12] Dando focus no overlay');
-			overlayWindow?.focus();
-		}, 50); // Dá focus depois
-	});
+	// Não esconde a janela principal - apenas mostra o overlay por cima
+	overlayWindow.setIgnoreMouseEvents(false);
+	overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+	overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 
-	const overlayHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-	<style>
-		* { margin: 0; padding: 0; box-sizing: border-box; }
-		body { 
-			cursor: crosshair; 
-			overflow: hidden;
-			background: #000;
-			width: 100vw;
-			height: 100vh;
-			position: relative;
-		}
-		#screenshot {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			object-fit: fill;
-			user-select: none;
-			pointer-events: none;
-		}
-		#selection {
-			position: absolute;
-			border: 3px solid #3b82f6;
-			background: transparent;
-			display: none;
-			box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-			cursor: move;
-		}
-		.resize-handle {
-			position: absolute;
-			width: 12px;
-			height: 12px;
-			background: #3b82f6;
-			border: 2px solid white;
-			border-radius: 50%;
-			display: none;
-		}
-		.handle-tl { top: -6px; left: -6px; cursor: nwse-resize; }
-		.handle-tr { top: -6px; right: -6px; cursor: nesw-resize; }
-		.handle-bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
-		.handle-br { bottom: -6px; right: -6px; cursor: nwse-resize; }
-		.handle-t { top: -6px; left: 50%; margin-left: -6px; cursor: ns-resize; }
-		.handle-b { bottom: -6px; left: 50%; margin-left: -6px; cursor: ns-resize; }
-		.handle-l { left: -6px; top: 50%; margin-top: -6px; cursor: ew-resize; }
-		.handle-r { right: -6px; top: 50%; margin-top: -6px; cursor: ew-resize; }
-		#confirmBtn {
-			position: absolute;
-			bottom: -40px;
-			right: 0;
-			background: #3b82f6;
-			color: white;
-			border: none;
-			padding: 8px 16px;
-			border-radius: 6px;
-			cursor: pointer;
-			font-family: system-ui;
-			font-size: 13px;
-			font-weight: 500;
-			display: none;
-			box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-		}
-		#confirmBtn:hover {
-			background: #2563eb;
-		}
-		#info {
-			position: fixed;
-			top: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: rgba(0, 0, 0, 0.85);
-			color: white;
-			padding: 12px 24px;
-			border-radius: 8px;
-			font-family: system-ui;
-			font-size: 14px;
-			z-index: 10000;
-			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-		}
-	</style>
-</head>
-<body>
-	<img id="screenshot" src="${screenshotDataURL}" />
-	<div id="info">Clique e arraste para selecionar a área • ESC para cancelar</div>
-	<div id="selection">
-		<div class="resize-handle handle-tl"></div>
-		<div class="resize-handle handle-tr"></div>
-		<div class="resize-handle handle-bl"></div>
-		<div class="resize-handle handle-br"></div>
-		<div class="resize-handle handle-t"></div>
-		<div class="resize-handle handle-b"></div>
-		<div class="resize-handle handle-l"></div>
-		<div class="resize-handle handle-r"></div>
-		<button id="confirmBtn">OK</button>
-	</div>
-	<script>
-		const { ipcRenderer } = require('electron');
-		
-		let startX, startY;
-		let isDrawing = false;
-		let isResizing = false;
-		let isDragging = false;
-		let resizeHandle = null;
-		let dragStartX, dragStartY, selectionStartX, selectionStartY;
-		
-		const selection = document.getElementById('selection');
-		const confirmBtn = document.getElementById('confirmBtn');
-		const handles = document.querySelectorAll('.resize-handle');
-		const info = document.getElementById('info');
-		
-		// Desenhar seleção inicial
-		document.addEventListener('mousedown', (e) => {
-			if (e.target.classList.contains('resize-handle')) {
-				isResizing = true;
-				resizeHandle = e.target;
-				e.stopPropagation();
-				return;
-			}
-			
-			if (e.target === confirmBtn) {
-				return;
-			}
-			
-			if (e.target === selection) {
-				isDragging = true;
-				dragStartX = e.clientX;
-				dragStartY = e.clientY;
-				selectionStartX = parseInt(selection.style.left);
-				selectionStartY = parseInt(selection.style.top);
-				e.stopPropagation();
-				return;
-			}
-			
-			if (selection.style.display === 'block') return;
-			
-			startX = e.clientX;
-			startY = e.clientY;
-			isDrawing = true;
-			selection.style.left = startX + 'px';
-			selection.style.top = startY + 'px';
-			selection.style.width = '0px';
-			selection.style.height = '0px';
-			selection.style.display = 'block';
-		});
-		
-		document.addEventListener('mousemove', (e) => {
-			if (isResizing && resizeHandle) {
-				const rect = {
-					left: parseInt(selection.style.left),
-					top: parseInt(selection.style.top),
-					width: parseInt(selection.style.width),
-					height: parseInt(selection.style.height)
-				};
-				
-				const handle = resizeHandle.classList;
-				
-				if (handle.contains('handle-br')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-bl')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.width = newWidth + 'px';
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-tr')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-tl')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.width = newWidth + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-t')) {
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-b')) {
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-l')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.width = newWidth + 'px';
-				} else if (handle.contains('handle-r')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-				}
-				return;
-			}
-			
-			if (isDragging) {
-				const deltaX = e.clientX - dragStartX;
-				const deltaY = e.clientY - dragStartY;
-				selection.style.left = (selectionStartX + deltaX) + 'px';
-				selection.style.top = (selectionStartY + deltaY) + 'px';
-				return;
-			}
-			
-			if (!isDrawing) return;
-			
-			const currentX = e.clientX;
-			const currentY = e.clientY;
-			
-			const width = Math.abs(currentX - startX);
-			const height = Math.abs(currentY - startY);
-			const left = Math.min(startX, currentX);
-			const top = Math.min(startY, currentY);
-			
-			selection.style.left = left + 'px';
-			selection.style.top = top + 'px';
-			selection.style.width = width + 'px';
-			selection.style.height = height + 'px';
-		});
-		
-		document.addEventListener('mouseup', (e) => {
-			if (isDrawing) {
-				isDrawing = false;
-				const width = parseInt(selection.style.width);
-				const height = parseInt(selection.style.height);
-				
-				if (width > 10 && height > 10) {
-					// Mostra handles e botão OK
-					handles.forEach(h => h.style.display = 'block');
-					confirmBtn.style.display = 'block';
-					info.textContent = 'Ajuste a seleção • Clique OK para confirmar • ESC para cancelar';
-				} else {
-					selection.style.display = 'none';
-				}
-			}
-			
-			isResizing = false;
-			isDragging = false;
-			resizeHandle = null;
-		});
-		
-		confirmBtn.addEventListener('click', () => {
-			const x = parseInt(selection.style.left);
-			const y = parseInt(selection.style.top);
-			const width = parseInt(selection.style.width);
-			const height = parseInt(selection.style.height);
-			
-			ipcRenderer.send('area-selected-for-screenshot', { x, y, width, height });
-			window.close();
-		});
-		
-		document.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') {
-				ipcRenderer.send('area-selection-cancelled');
-				window.close();
-			}
-		});
-	</script>
-</body>
-</html>
-	`;
+	const htmlPath = path.join(__dirname, 'area-selector', 'area-selector.html');
 
-	overlayWindow.loadURL(
-		`data:text/html;charset=utf-8,${encodeURIComponent(overlayHTML)}`,
-	);
-	overlayWindow.setFullScreen(true);
+	await overlayWindow.loadFile(htmlPath);
+
+	// Injeta o screenshot e eventName
+	await overlayWindow.webContents.executeJavaScript(`
+		document.getElementById('screenshot').src = '${screenshotDataURL}';
+		window.eventName = '${eventName}';
+	`);
+
+	// Mostra imediatamente sem ready-to-show para evitar animação
+	overlayWindow.show();
+	overlayWindow.focus();
 
 	overlayWindow.on('closed', () => {
 		overlayWindow = null;
-		pendingScreenshot = null;
-		if (mainWindow && !mainWindow.isVisible()) {
-			mainWindow.show();
+		if (saveScreenshot) {
+			pendingScreenshot = null;
 		}
 	});
 }
 
-// Area selection overlay function - SÓ PARA SELECIONAR ÁREA (botão)
+// Wrapper para tirar screenshot com seleção de área
+async function openAreaSelectorForScreenshot() {
+	await openAreaSelector('area-selected-for-screenshot', true);
+}
+
+// Wrapper para apenas selecionar área (não salva screenshot)
 async function openAreaSelectorOnly() {
-	if (overlayWindow) {
-		overlayWindow.close();
-	}
-
-	const displays = screen.getAllDisplays();
-	const display = displays[selectedDisplayId] || displays[0];
-	const { x, y, width, height } = display.bounds;
-
-	// Captura screenshot só para mostrar (não vai salvar)
-	const sources = await desktopCapturer.getSources({
-		types: ['screen'],
-		thumbnailSize: { width, height },
-	});
-
-	const screenshotDataURL = sources[selectedDisplayId].thumbnail.toDataURL();
-
-	overlayWindow = new BrowserWindow({
-		x,
-		y,
-		width,
-		height,
-		frame: false,
-		transparent: false,
-		alwaysOnTop: true,
-		skipTaskbar: true,
-		resizable: false,
-		movable: false,
-		fullscreen: true,
-		show: false,
-		paintWhenInitiallyHidden: true,
-		backgroundColor: '#000000',
-		webPreferences: {
-			nodeIntegration: true,
-			contextIsolation: false,
-			backgroundThrottling: false,
-		},
-	});
-
-	overlayWindow.once('ready-to-show', () => {
-		if (mainWindow) {
-			mainWindow.hide();
-		}
-		overlayWindow?.showInactive();
-		setTimeout(() => overlayWindow?.focus(), 50);
-	});
-
-	// Usa o mesmo HTML mas muda o evento para 'area-selected-only'
-	const overlayHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-	<style>
-		* { margin: 0; padding: 0; box-sizing: border-box; }
-		body { 
-			cursor: crosshair; 
-			overflow: hidden;
-			background: #000;
-			width: 100vw;
-			height: 100vh;
-			position: relative;
-		}
-		#screenshot {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			object-fit: fill;
-			user-select: none;
-			pointer-events: none;
-		}
-		#selection {
-			position: absolute;
-			border: 3px solid #3b82f6;
-			background: transparent;
-			display: none;
-			box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-			cursor: move;
-		}
-		.resize-handle {
-			position: absolute;
-			width: 12px;
-			height: 12px;
-			background: #3b82f6;
-			border: 2px solid white;
-			border-radius: 50%;
-			display: none;
-		}
-		.handle-tl { top: -6px; left: -6px; cursor: nwse-resize; }
-		.handle-tr { top: -6px; right: -6px; cursor: nesw-resize; }
-		.handle-bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
-		.handle-br { bottom: -6px; right: -6px; cursor: nwse-resize; }
-		.handle-t { top: -6px; left: 50%; margin-left: -6px; cursor: ns-resize; }
-		.handle-b { bottom: -6px; left: 50%; margin-left: -6px; cursor: ns-resize; }
-		.handle-l { left: -6px; top: 50%; margin-top: -6px; cursor: ew-resize; }
-		.handle-r { right: -6px; top: 50%; margin-top: -6px; cursor: ew-resize; }
-		#confirmBtn {
-			position: absolute;
-			bottom: -40px;
-			right: 0;
-			background: #3b82f6;
-			color: white;
-			border: none;
-			padding: 8px 16px;
-			border-radius: 6px;
-			cursor: pointer;
-			font-family: system-ui;
-			font-size: 13px;
-			font-weight: 500;
-			display: none;
-			box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-		}
-		#confirmBtn:hover {
-			background: #2563eb;
-		}
-		#info {
-			position: fixed;
-			top: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: rgba(0, 0, 0, 0.85);
-			color: white;
-			padding: 12px 24px;
-			border-radius: 8px;
-			font-family: system-ui;
-			font-size: 14px;
-			z-index: 10000;
-			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-		}
-	</style>
-</head>
-<body>
-	<img id="screenshot" src="${screenshotDataURL}" />
-	<div id="info">Clique e arraste para selecionar a área • ESC para cancelar</div>
-	<div id="selection">
-		<div class="resize-handle handle-tl"></div>
-		<div class="resize-handle handle-tr"></div>
-		<div class="resize-handle handle-bl"></div>
-		<div class="resize-handle handle-br"></div>
-		<div class="resize-handle handle-t"></div>
-		<div class="resize-handle handle-b"></div>
-		<div class="resize-handle handle-l"></div>
-		<div class="resize-handle handle-r"></div>
-		<button id="confirmBtn">OK</button>
-	</div>
-	<script>
-		const { ipcRenderer } = require('electron');
-		
-		let startX, startY;
-		let isDrawing = false;
-		let isResizing = false;
-		let isDragging = false;
-		let resizeHandle = null;
-		let dragStartX, dragStartY, selectionStartX, selectionStartY;
-		
-		const selection = document.getElementById('selection');
-		const confirmBtn = document.getElementById('confirmBtn');
-		const handles = document.querySelectorAll('.resize-handle');
-		const info = document.getElementById('info');
-		
-		// Mesmo código de desenho e redimensionamento...
-		document.addEventListener('mousedown', (e) => {
-			if (e.target.classList.contains('resize-handle')) {
-				isResizing = true;
-				resizeHandle = e.target;
-				e.stopPropagation();
-				return;
-			}
-			
-			if (e.target === confirmBtn) {
-				return;
-			}
-			
-			if (e.target === selection) {
-				isDragging = true;
-				dragStartX = e.clientX;
-				dragStartY = e.clientY;
-				selectionStartX = parseInt(selection.style.left);
-				selectionStartY = parseInt(selection.style.top);
-				e.stopPropagation();
-				return;
-			}
-			
-			if (selection.style.display === 'block') return;
-			
-			startX = e.clientX;
-			startY = e.clientY;
-			isDrawing = true;
-			selection.style.left = startX + 'px';
-			selection.style.top = startY + 'px';
-			selection.style.width = '0px';
-			selection.style.height = '0px';
-			selection.style.display = 'block';
-		});
-		
-		document.addEventListener('mousemove', (e) => {
-			if (isResizing && resizeHandle) {
-				const rect = {
-					left: parseInt(selection.style.left),
-					top: parseInt(selection.style.top),
-					width: parseInt(selection.style.width),
-					height: parseInt(selection.style.height)
-				};
-				
-				const handle = resizeHandle.classList;
-				
-				if (handle.contains('handle-br')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-bl')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.width = newWidth + 'px';
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-tr')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-tl')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.width = newWidth + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-t')) {
-					const newHeight = Math.max(20, rect.top + rect.height - e.clientY);
-					selection.style.top = (rect.top + rect.height - newHeight) + 'px';
-					selection.style.height = newHeight + 'px';
-				} else if (handle.contains('handle-b')) {
-					selection.style.height = Math.max(20, e.clientY - rect.top) + 'px';
-				} else if (handle.contains('handle-l')) {
-					const newWidth = Math.max(20, rect.left + rect.width - e.clientX);
-					selection.style.left = (rect.left + rect.width - newWidth) + 'px';
-					selection.style.width = newWidth + 'px';
-				} else if (handle.contains('handle-r')) {
-					selection.style.width = Math.max(20, e.clientX - rect.left) + 'px';
-				}
-				return;
-			}
-			
-			if (isDragging) {
-				const deltaX = e.clientX - dragStartX;
-				const deltaY = e.clientY - dragStartY;
-				selection.style.left = (selectionStartX + deltaX) + 'px';
-				selection.style.top = (selectionStartY + deltaY) + 'px';
-				return;
-			}
-			
-			if (!isDrawing) return;
-			
-			const currentX = e.clientX;
-			const currentY = e.clientY;
-			
-			const width = Math.abs(currentX - startX);
-			const height = Math.abs(currentY - startY);
-			const left = Math.min(startX, currentX);
-			const top = Math.min(startY, currentY);
-			
-			selection.style.left = left + 'px';
-			selection.style.top = top + 'px';
-			selection.style.width = width + 'px';
-			selection.style.height = height + 'px';
-		});
-		
-		document.addEventListener('mouseup', (e) => {
-			if (isDrawing) {
-				isDrawing = false;
-				const width = parseInt(selection.style.width);
-				const height = parseInt(selection.style.height);
-				
-				if (width > 10 && height > 10) {
-					handles.forEach(h => h.style.display = 'block');
-					confirmBtn.style.display = 'block';
-					info.textContent = 'Ajuste a seleção • Clique OK para confirmar • ESC para cancelar';
-				} else {
-					selection.style.display = 'none';
-				}
-			}
-			
-			isResizing = false;
-			isDragging = false;
-			resizeHandle = null;
-		});
-		
-		confirmBtn.addEventListener('click', () => {
-			const x = parseInt(selection.style.left);
-			const y = parseInt(selection.style.top);
-			const width = parseInt(selection.style.width);
-			const height = parseInt(selection.style.height);
-			
-			ipcRenderer.send('area-selected-only', { x, y, width, height });
-			window.close();
-		});
-		
-		document.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') {
-				ipcRenderer.send('area-selection-cancelled');
-				window.close();
-			}
-		});
-	</script>
-</body>
-</html>
-	`;
-
-	overlayWindow.loadURL(
-		`data:text/html;charset=utf-8,${encodeURIComponent(overlayHTML)}`,
-	);
-	overlayWindow.setFullScreen(true);
-
-	overlayWindow.on('closed', () => {
-		overlayWindow = null;
-		if (mainWindow && !mainWindow.isVisible()) {
-			mainWindow.show();
-		}
-	});
+	await openAreaSelector('area-selected-only', false);
 }
 
 // IPC handler to open area selector
@@ -1191,6 +612,12 @@ ipcMain.handle('open-area-selector', async () => {
 // Handler para quando área é selecionada PARA SCREENSHOT
 ipcMain.on('area-selected-for-screenshot', (_, area) => {
 	savedArea = area;
+
+	// Fecha o overlay imediatamente
+	if (overlayWindow) {
+		overlayWindow.close();
+		overlayWindow = null;
+	}
 
 	// Salva o screenshot com crop da área
 	if (pendingScreenshot && currentFolder) {
@@ -1219,10 +646,21 @@ ipcMain.on('area-selected-for-screenshot', (_, area) => {
 // Handler para quando área é selecionada SÓ PARA GUARDAR (botão selecionar área)
 ipcMain.on('area-selected-only', (_, area) => {
 	savedArea = area;
+
+	// Fecha o overlay
+	if (overlayWindow) {
+		overlayWindow.close();
+		overlayWindow = null;
+	}
+
 	mainWindow?.webContents.send('area-saved-with-confirmation', area);
 });
 
 ipcMain.on('area-selection-cancelled', () => {
+	if (overlayWindow) {
+		overlayWindow.close();
+		overlayWindow = null;
+	}
 	pendingScreenshot = null;
 	mainWindow?.webContents.send('area-selection-cancelled');
 });

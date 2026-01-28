@@ -67,39 +67,60 @@ export default function HelpTips() {
 					<div className="space-y-2 text-slate-300">
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								📸 Atalhos
+								� Início Rápido
 							</h4>
 							<p className="text-[11px]">
-								<strong>Cmd+Shift+S</strong> = Tela cheia
+								<strong>1.</strong> Clique em "+ Novo Teste" e escolha onde
+								salvar
 								<br />
-								<strong>Cmd+Shift+A</strong> = Área fixa (configure com 📐)
+								<strong>2.</strong> Preencha o cabeçalho do teste
+								<br />
+								<strong>3.</strong> A pasta é renomeada automaticamente com a
+								data e caso de teste
 							</p>
 						</div>
 
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								✏️ Edição
+								📸 Captura de Screenshots
 							</h4>
 							<p className="text-[11px]">
-								Clique no botão azul nas miniaturas para adicionar setas,
-								círculos, texto e desenhos
+								<strong>Atalhos:</strong> Configure acima (Tela Cheia e Área)
+								<br />
+								<strong>Área fixa:</strong> Use o botão 📐 para definir área
+								reutilizável
+								<br />
+								<strong>Monitor:</strong> Selecione qual tela capturar (se tiver
+								múltiplos)
 							</p>
 						</div>
 
 						<div className="bg-slate-900 p-2 rounded">
 							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								⚡ Workflow
+								✏️ Edição de Imagens
 							</h4>
 							<p className="text-[11px]">
-								1. Crie um novo teste (+ Novo Teste)
+								Clique no <strong>botão azul</strong> da miniatura para editar
 								<br />
-								2. Preencha o cabeçalho
+								<strong>Ferramentas:</strong> Setas, círculos, retângulos, texto
+								livre e desenho
 								<br />
-								3. Use os atalhos para capturar evidências
+								<strong>Reordenar:</strong> Arraste miniaturas para mudar ordem
+							</p>
+						</div>
+
+						<div className="bg-slate-900 p-2 rounded">
+							<h4 className="text-xs font-semibold text-primary-300 mb-1">
+								📄 Gerar PDF
+							</h4>
+							<p className="text-[11px]">
+								<strong>Automático:</strong> Inclui cabeçalho, todas as imagens
+								e dados
 								<br />
-								4. Reordene arrastando as miniaturas
+								<strong>Salvamento:</strong> PDF gerado na mesma pasta do teste
 								<br />
-								5. Gere o PDF final
+								<strong>Continuar:</strong> Use "Continuar Teste" para abrir
+								pasta existente
 							</p>
 						</div>
 					</div>

@@ -1,4 +1,5 @@
 import { HeaderData } from '../App';
+import HelpTips from './HelpTips';
 
 interface HeaderProps {
 	headerData: HeaderData;
@@ -15,9 +16,14 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 			className="bg-slate-800 border-b border-slate-700 p-3"
 			style={{ WebkitAppRegion: 'drag' } as any}
 		>
-			<h1 className="text-base font-bold text-primary-400 mb-2 ml-20">
-				QA Booster - Gerador de evidências de testes
-			</h1>
+			<div className="flex items-center gap-3 mb-2 ml-20">
+				<h1 className="text-base font-bold text-primary-400">
+					QA Booster - Gerador de evidências de testes
+				</h1>
+				<div style={{ WebkitAppRegion: 'no-drag' } as any}>
+					<HelpTips />
+				</div>
+			</div>
 
 			<div
 				className="grid grid-cols-3 gap-2"
