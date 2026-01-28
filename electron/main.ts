@@ -28,6 +28,9 @@ let savedArea: { x: number; y: number; width: number; height: number } | null =
 let originalWindowWidth: number = 1400; // Largura original da janela
 let pendingScreenshot: Electron.NativeImage | null = null; // Screenshot pendente para salvar
 
+// Desabilitar verificação de certificado SSL para evitar erros no console
+app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
+
 function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 1400,
@@ -45,7 +48,10 @@ function createWindow() {
 
 	if (process.env.NODE_ENV === 'development') {
 		mainWindow.loadURL('http://localhost:3000');
-		mainWindow.webContents.openDevTools();
+		// Apenas abre DevTools se a variável DEVTOOLS estiver definida
+		if (process.env.DEVTOOLS === 'true') {
+			mainWindow.webContents.openDevTools();
+		}
 	} else {
 		// Em produção, usa app.getAppPath() que funciona mesmo empacotado
 		const indexPath = path.join(

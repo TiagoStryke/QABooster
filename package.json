@@ -5,6 +5,7 @@
 	"main": "dist/main.js",
 	"scripts": {
 		"start": "concurrently \"npm run dev\" \"npm run electron:dev\"",
+		"start:debug": "concurrently \"npm run dev\" \"npm run electron:debug\"",
 		"build": "npm run build:renderer && npm run build:main && npm run copy:assets",
 		"build:renderer": "vite build",
 		"build:main": "tsc -p tsconfig.main.json",
@@ -12,6 +13,7 @@
 		"copy:assets": "mkdir -p dist/area-selector && cp -r electron/area-selector/* dist/area-selector/",
 		"watch:assets": "nodemon --watch electron/area-selector --exec \"npm run copy:assets\"",
 		"electron:dev": "wait-on http://localhost:3000 dist/main.js && cross-env NODE_ENV=development electron .",
+		"electron:debug": "wait-on http://localhost:3000 dist/main.js && cross-env NODE_ENV=development DEVTOOLS=true electron .",
 		"dev": "concurrently \"vite\" \"npm run build:watch\"",
 		"package": "npm run build && electron-builder"
 	},

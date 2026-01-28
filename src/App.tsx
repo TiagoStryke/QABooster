@@ -130,6 +130,8 @@ function App() {
 					// Atualiza o currentFolder sem disparar loadHeaderData
 					setCurrentFolder(newPath);
 				}
+
+				isRenamingRef.current = false;
 			}
 		};
 
@@ -139,16 +141,17 @@ function App() {
 		}, 500);
 
 		return () => clearTimeout(timeoutId);
-	}, [headerData.testCase, currentFolder]);
+	}, [headerData.testCase, currentFolder]); // APENAS testCase e currentFolder, não todo headerData
 
+	// Event listeners do IPC - sem dependencies para evitar recriar
 	useEffect(() => {
-		// Listen for screenshot captures
-		ipcRenderer.on('screenshot-captured', () => {
-			loadImages();
-		});
+		const handleScreenshotCaptured = () => {
+			if (currentFolder) {
+				ipcRenderer.invoke('get-images', currentFolder).then(setImages);
+			}
+		};
 
-		// Tray animation and sound feedback
-		ipcRenderer.on('trigger-screenshot-flash', () => {
+		const handleScreenshotFlash = () => {
 			// Toca som se habilitado
 			const soundEnabled = localStorage.getItem('qabooster-sound') === 'true';
 			if (soundEnabled) {
@@ -175,18 +178,23 @@ function App() {
 
 			// Envia sinal para o main process animar o tray
 			ipcRenderer.send('screenshot-flash');
-		});
+		};
 
-		ipcRenderer.on('screenshot-error', (_: any, message: string) => {
+		const handleScreenshotError = (_: any, message: string) => {
 			alert(t('errorGeneratingPDF'));
-		});
+		};
+
+		// Listen for screenshot captures
+		ipcRenderer.on('screenshot-captured', handleScreenshotCaptured);
+		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
+		ipcRenderer.on('screenshot-error', handleScreenshotError);
 
 		return () => {
 			ipcRenderer.removeAllListeners('screenshot-captured');
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
 		};
-	}, [currentFolder]);
+	}, []); // Sem dependencies - listeners criados apenas uma vez
 
 	const loadImages = async () => {
 		if (currentFolder) {
