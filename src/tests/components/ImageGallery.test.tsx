@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ImageGallery from '../../components/ImageGallery';
@@ -83,7 +83,7 @@ describe('ImageGallery', () => {
 		renderComponent();
 
 		// Aguarda as imagens carregarem
-		await vi.waitFor(() => {
+		await waitFor(() => {
 			expect(mockIpc.invoke).toHaveBeenCalledWith(
 				'read-image-as-base64',
 				mockImages[0].path,
@@ -112,7 +112,7 @@ describe('ImageGallery', () => {
 		const user = userEvent.setup();
 		renderComponent();
 
-		await vi.waitFor(() => {
+		await waitFor(() => {
 			expect(mockIpc.invoke).toHaveBeenCalled();
 		});
 
@@ -126,7 +126,7 @@ describe('ImageGallery', () => {
 		const user = userEvent.setup();
 		renderComponent();
 
-		await vi.waitFor(() => {
+		await waitFor(() => {
 			expect(mockIpc.invoke).toHaveBeenCalled();
 		});
 
@@ -140,7 +140,7 @@ describe('ImageGallery', () => {
 		const user = userEvent.setup();
 		renderComponent();
 
-		await vi.waitFor(() => {
+		await waitFor(() => {
 			expect(mockIpc.invoke).toHaveBeenCalled();
 		});
 
