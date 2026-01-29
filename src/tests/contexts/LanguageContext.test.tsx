@@ -107,8 +107,8 @@ describe('LanguageContext', () => {
 			});
 
 			// Testa tradução em português
-			expect(result.current.t('selectFolder')).toBe('Selecionar Pasta');
-			expect(result.current.t('newFolder')).toBe('Nova Pasta');
+			expect(result.current.t('appTitle')).toBe('QA Booster - Gerador de evidências de testes');
+			expect(result.current.t('newTest')).toBe('Novo Teste');
 
 			// Troca para inglês
 			act(() => {
@@ -116,8 +116,8 @@ describe('LanguageContext', () => {
 			});
 
 			// Testa tradução em inglês
-			expect(result.current.t('selectFolder')).toBe('Select Folder');
-			expect(result.current.t('newFolder')).toBe('New Folder');
+			expect(result.current.t('appTitle')).toBe('QA Booster - Test Evidence Generator');
+			expect(result.current.t('newTest')).toBe('New Test');
 		});
 
 		it('deve retornar chave quando tradução não existe', () => {

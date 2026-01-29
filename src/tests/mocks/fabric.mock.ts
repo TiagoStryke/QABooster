@@ -21,6 +21,8 @@ export const createMockFabricCanvas = () => ({
 	setActiveObject: vi.fn(),
 	getActiveObject: vi.fn(),
 	clear: vi.fn(),
+	setZoom: vi.fn(),
+	isDrawingMode: false,
 	backgroundColor: '#ffffff',
 });
 

@@ -9,6 +9,14 @@ const renderWithProvider = (component: React.ReactElement) => {
 	return render(<LanguageProvider>{component}</LanguageProvider>);
 };
 
+const mockHeaderData = {
+	testName: 'Teste Exemplo',
+	executor: 'Tester',
+	system: 'Sistema Web',
+	testCycle: 'Sprint 1',
+	testCase: 'TC-001',
+};
+
 describe('FolderManager Component', () => {
 	let mockIpc: ReturnType<typeof setupIpcMock>;
 
@@ -21,35 +29,35 @@ describe('FolderManager Component', () => {
 		it('deve renderizar botão de selecionar pasta', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
 			expect(
-				screen.getByText(/selecionar pasta|select folder/i),
+				screen.getByText(/continuar teste|continue test/i),
 			).toBeInTheDocument();
 		});
 
 		it('deve renderizar botão de nova pasta', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
-			expect(screen.getByText(/nova pasta|new folder/i)).toBeInTheDocument();
+			expect(screen.getByText(/novo teste|new test/i)).toBeInTheDocument();
 		});
 
 		it('não deve mostrar caminho quando não há pasta', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -59,9 +67,9 @@ describe('FolderManager Component', () => {
 		it('deve mostrar caminho da pasta quando selecionada', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder="/fake/path/to/folder"
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -80,13 +88,13 @@ describe('FolderManager Component', () => {
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={onFolderChange}
-					onNewFolder={() => {}}
 				/>,
 			);
 
-			const selectButton = screen.getByText(/selecionar pasta|select folder/i);
+			const selectButton = screen.getByText(/continuar teste|continue test/i);
 			await user.click(selectButton);
 
 			await waitFor(() => {
@@ -103,13 +111,13 @@ describe('FolderManager Component', () => {
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={onFolderChange}
-					onNewFolder={() => {}}
 				/>,
 			);
 
-			const selectButton = screen.getByText(/selecionar pasta|select folder/i);
+			const selectButton = screen.getByText(/continuar teste|continue test/i);
 			await user.click(selectButton);
 
 			await waitFor(() => {
@@ -120,49 +128,49 @@ describe('FolderManager Component', () => {
 	});
 
 	describe('New Folder Creation', () => {
-		it('deve chamar onNewFolder ao criar nova pasta', async () => {
+		it('deve chamar onFolderChange ao criar nova pasta', async () => {
 			const user = userEvent.setup();
-			const onNewFolder = vi.fn();
+			const onFolderChange = vi.fn();
 
 			mockIpc.invoke.mockResolvedValueOnce('/new/folder/path');
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
-					onFolderChange={() => {}}
-					onNewFolder={onNewFolder}
+					onFolderChange={onFolderChange}
 				/>,
 			);
 
-			const newFolderButton = screen.getByText(/nova pasta|new folder/i);
+			const newFolderButton = screen.getByText(/novo teste|new test/i);
 			await user.click(newFolderButton);
 
 			await waitFor(() => {
 				expect(mockIpc.invoke).toHaveBeenCalledWith('create-new-folder');
-				expect(onNewFolder).toHaveBeenCalledWith('/new/folder/path');
+				expect(onFolderChange).toHaveBeenCalledWith('/new/folder/path', true);
 			});
 		});
 
-		it('não deve chamar onNewFolder se criação falhar', async () => {
+		it('não deve chamar onFolderChange se criação falhar', async () => {
 			const user = userEvent.setup();
-			const onNewFolder = vi.fn();
+			const onFolderChange = vi.fn();
 
 			mockIpc.invoke.mockResolvedValueOnce(null);
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
-					onFolderChange={() => {}}
-					onNewFolder={onNewFolder}
+					onFolderChange={onFolderChange}
 				/>,
 			);
 
-			const newFolderButton = screen.getByText(/nova pasta|new folder/i);
+			const newFolderButton = screen.getByText(/novo teste|new test/i);
 			await user.click(newFolderButton);
 
 			await waitFor(() => {
 				expect(mockIpc.invoke).toHaveBeenCalledWith('create-new-folder');
-				expect(onNewFolder).not.toHaveBeenCalled();
+				expect(onFolderChange).not.toHaveBeenCalled();
 			});
 		});
 	});
@@ -171,9 +179,9 @@ describe('FolderManager Component', () => {
 		it('deve mostrar botão para abrir pasta quando há pasta selecionada', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder="/fake/path"
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -188,9 +196,9 @@ describe('FolderManager Component', () => {
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder="/fake/path"
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -210,9 +218,9 @@ describe('FolderManager Component', () => {
 		it('botões devem ter tooltips', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder="/fake/path"
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -228,9 +236,9 @@ describe('FolderManager Component', () => {
 		it('deve ter hover states nos botões', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -245,22 +253,22 @@ describe('FolderManager Component', () => {
 		it('botões devem ter estilos corretos', () => {
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
-			const selectButton = screen.getByText(/selecionar pasta|select folder/i);
+			const selectButton = screen.getByText(/continuar teste|continue test/i);
 			expect(selectButton).toHaveClass('btn-primary');
 		});
 
 		it('deve ter layout flex apropriado', () => {
 			const { container } = renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder="/fake/path"
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
@@ -280,13 +288,13 @@ describe('FolderManager Component', () => {
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder=""
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
-			const selectButton = screen.getByText(/selecionar pasta|select folder/i);
+			const selectButton = screen.getByText(/continuar teste|continue test/i);
 			await user.click(selectButton);
 
 			// Não deve quebrar a aplicação
@@ -303,9 +311,9 @@ describe('FolderManager Component', () => {
 
 			renderWithProvider(
 				<FolderManager
+					headerData={mockHeaderData}
 					currentFolder={longPath}
 					onFolderChange={() => {}}
-					onNewFolder={() => {}}
 				/>,
 			);
 
