@@ -74,7 +74,11 @@
 			"target": [
 				"dmg",
 				"zip"
-			]
+			],
+			"extendInfo": {
+				"NSAppleEventsUsageDescription": "QABooster precisa de permissão para capturar screenshots com atalhos globais.",
+				"NSAccessibilityUsageDescription": "QABooster precisa de acesso de Acessibilidade para registrar atalhos globais de screenshot."
+			}
 		},
 		"files": [
 			"dist/**/*",

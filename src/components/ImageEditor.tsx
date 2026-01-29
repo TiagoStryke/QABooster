@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { ImageData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 
+// Import stickers
+import clickSticker from '../assets/stickers/click.png';
+import thumbsDownSticker from '../assets/stickers/thumbs-down.png';
+
 const { ipcRenderer } = window.require('electron');
 
 interface ImageEditorProps {
@@ -18,7 +22,9 @@ type Tool =
 	| 'rectangle'
 	| 'circle'
 	| 'text'
-	| 'pen';
+	| 'pen'
+	| 'sticker-click'
+	| 'sticker-thumbsdown';
 
 export default function ImageEditor({
 	image,
@@ -461,6 +467,13 @@ export default function ImageEditor({
 			fontSize: lastFontSize,
 			fontFamily: 'Arial',
 			selectable: true,
+			// Adiciona sombra sutil para dar destaque
+			shadow: {
+				color: 'rgba(0, 0, 0, 0.6)',
+				blur: 4,
+				offsetX: 2,
+				offsetY: 2,
+			} as fabric.Shadow,
 		});
 
 		// Salva o tamanho quando o texto for modificado
@@ -474,6 +487,37 @@ export default function ImageEditor({
 		canvas.setActiveObject(text);
 		text.enterEditing();
 		canvas.renderAll();
+	};
+	const addSticker = (stickerUrl: string) => {
+		const canvas = fabricCanvasRef.current;
+		if (!canvas) return;
+
+		fabric.Image.fromURL(stickerUrl, (img: fabric.Image) => {
+			if (!img) return;
+
+			// Define tamanho do sticker (ajuste conforme necessário)
+			const maxSize = 150;
+			const scale = Math.min(
+				maxSize / (img.width || maxSize),
+				maxSize / (img.height || maxSize),
+			);
+
+			img.set({
+				left: 100,
+				top: 100,
+				scaleX: scale,
+				scaleY: scale,
+				selectable: true,
+				evented: true,
+			});
+
+			canvas.add(img);
+			canvas.setActiveObject(img);
+			canvas.renderAll();
+		});
+
+		// Volta para select após adicionar
+		handleToolChange('select');
 	};
 
 	const deleteSelected = () => {
@@ -519,6 +563,8 @@ export default function ImageEditor({
 		else if (tool === 'rectangle') addRectangle();
 		else if (tool === 'circle') addCircle();
 		else if (tool === 'text') addText();
+		else if (tool === 'sticker-click') addSticker(clickSticker);
+		else if (tool === 'sticker-thumbsdown') addSticker(thumbsDownSticker);
 	};
 
 	return (
@@ -677,6 +723,29 @@ export default function ImageEditor({
 							strokeWidth={2}
 							d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
 						/>
+					</svg>
+				</button>
+
+				<div className="w-px h-5 bg-slate-700 mx-1" />
+
+				{/* Stickers */}
+				<button
+					onClick={() => handleToolClick('sticker-click')}
+					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'sticker-click' ? 'bg-blue-600' : ''}`}
+					title={t('stickerClick')}
+				>
+					<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 448 512">
+						<path d="M128 40c0-22.1 17.9-40 40-40s40 17.9 40 40V188.2c8.5-7.6 19.7-12.2 32-12.2c20.6 0 38.2 13 45 31.2c8.8-9.3 21.2-15.2 35-15.2c25.3 0 46 19.5 47.9 44.3c8.5-7.7 19.8-12.3 32.1-12.3c26.5 0 48 21.5 48 48v48 16 48c0 70.7-57.3 128-128 128l-16 0H240l-.1 0h-5.2c-5 0-9.9-.3-14.7-1c-55.3-5.6-106.2-34-140-79L8 336c-13.3-17.7-9.7-42.7 8-56s42.7-9.7 56 8l56 74.7V40zM240 304c0-8.8-7.2-16-16-16s-16 7.2-16 16v96c0 8.8 7.2 16 16 16s16-7.2 16-16V304zm48-16c-8.8 0-16 7.2-16 16v96c0 8.8 7.2 16 16 16s16-7.2 16-16V304c0-8.8-7.2-16-16-16zm80 16c0-8.8-7.2-16-16-16s-16 7.2-16 16v96c0 8.8 7.2 16 16 16s16-7.2 16-16V304z" />
+					</svg>
+				</button>
+
+				<button
+					onClick={() => handleToolClick('sticker-thumbsdown')}
+					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'sticker-thumbsdown' ? 'bg-blue-600' : ''}`}
+					title={t('stickerThumbsDown')}
+				>
+					<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+						<path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z" />
 					</svg>
 				</button>
 

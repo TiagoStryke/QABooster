@@ -141,17 +141,16 @@ function App() {
 		}, 500);
 
 		return () => clearTimeout(timeoutId);
-	}, [headerData.testCase, currentFolder]); // APENAS testCase e currentFolder, não todo headerData
+	}, [headerData.testCase, currentFolder]);
 
-	// Event listeners do IPC - sem dependencies para evitar recriar
 	useEffect(() => {
-		const handleScreenshotCaptured = () => {
-			if (currentFolder) {
-				ipcRenderer.invoke('get-images', currentFolder).then(setImages);
-			}
-		};
+		// Listen for screenshot captures
+		ipcRenderer.on('screenshot-captured', () => {
+			loadImages();
+		});
 
-		const handleScreenshotFlash = () => {
+		// Tray animation and sound feedback
+		ipcRenderer.on('trigger-screenshot-flash', () => {
 			// Toca som se habilitado
 			const soundEnabled = localStorage.getItem('qabooster-sound') === 'true';
 			if (soundEnabled) {
@@ -178,23 +177,18 @@ function App() {
 
 			// Envia sinal para o main process animar o tray
 			ipcRenderer.send('screenshot-flash');
-		};
+		});
 
-		const handleScreenshotError = (_: any, message: string) => {
-			alert(t('errorGeneratingPDF'));
-		};
-
-		// Listen for screenshot captures
-		ipcRenderer.on('screenshot-captured', handleScreenshotCaptured);
-		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
-		ipcRenderer.on('screenshot-error', handleScreenshotError);
+		ipcRenderer.on('screenshot-error', (_: any, message: string) => {
+			alert(message);
+		});
 
 		return () => {
 			ipcRenderer.removeAllListeners('screenshot-captured');
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
 		};
-	}, []); // Sem dependencies - listeners criados apenas uma vez
+	}, [currentFolder]);
 
 	const loadImages = async () => {
 		if (currentFolder) {
@@ -204,16 +198,18 @@ function App() {
 	};
 
 	useEffect(() => {
-		loadImages();
-		// Só carrega headerData se NÃO for uma renomeação
-		if (!isRenamingRef.current) {
-			loadHeaderData();
-		} else {
-			// Reset flag após renomear
-			isRenamingRef.current = false;
+		if (currentFolder) {
+			loadImages();
+			// Só carrega headerData se NÃO for uma renomeação
+			if (!isRenamingRef.current) {
+				loadHeaderData();
+			} else {
+				// Reset flag após renomear
+				isRenamingRef.current = false;
+			}
+			// Reset flag de loading após processar
+			isLoadingFolderRef.current = false;
 		}
-		// Reset flag de loading após processar
-		isLoadingFolderRef.current = false;
 	}, [currentFolder]);
 
 	const loadHeaderData = async () => {
