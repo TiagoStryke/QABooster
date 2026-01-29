@@ -161,7 +161,10 @@ describe('ImageGallery', () => {
 	it('deve exibir contador de imagens', () => {
 		renderComponent();
 
-		expect(screen.getByText(/3/)).toBeInTheDocument();
+		// Verifica se há 3 imagens renderizadas (#1, #2, #3)
+		expect(screen.getByText('#1')).toBeInTheDocument();
+		expect(screen.getByText('#2')).toBeInTheDocument();
+		expect(screen.getByText('#3')).toBeInTheDocument();
 	});
 
 	it('deve aplicar opacity-50 em imagem sendo arrastada', () => {

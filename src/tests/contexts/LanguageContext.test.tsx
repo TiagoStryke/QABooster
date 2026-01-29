@@ -1,4 +1,10 @@
-import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import {
+    act,
+    render,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider, useLanguage } from '../../contexts/LanguageContext';
 
@@ -107,7 +113,9 @@ describe('LanguageContext', () => {
 			});
 
 			// Testa tradução em português
-			expect(result.current.t('appTitle')).toBe('QA Booster - Gerador de evidências de testes');
+			expect(result.current.t('appTitle')).toBe(
+				'QA Booster - Gerador de evidências de testes',
+			);
 			expect(result.current.t('newTest')).toBe('Novo Teste');
 
 			// Troca para inglês
@@ -116,7 +124,9 @@ describe('LanguageContext', () => {
 			});
 
 			// Testa tradução em inglês
-			expect(result.current.t('appTitle')).toBe('QA Booster - Test Evidence Generator');
+			expect(result.current.t('appTitle')).toBe(
+				'QA Booster - Test Evidence Generator',
+			);
 			expect(result.current.t('newTest')).toBe('New Test');
 		});
 

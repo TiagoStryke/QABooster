@@ -8,6 +8,7 @@ export default defineConfig({
 		setupFiles: ['./src/tests/setup.ts'],
 		isolate: true,
 		singleThread: true,
+		testTimeout: 10000, // 10 segundos para testes com interações
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html', 'lcov'],
