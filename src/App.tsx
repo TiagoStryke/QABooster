@@ -22,6 +22,7 @@ export interface ImageData {
 function App() {
 	const { t } = useLanguage();
 	const [currentFolder, setCurrentFolder] = useState<string>('');
+	const currentFolderRef = useRef<string>('');
 	const [images, setImages] = useState<ImageData[]>([]);
 	const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
 	const [headerData, setHeaderData] = useState<HeaderData>({
@@ -33,8 +34,15 @@ function App() {
 	});
 	const [showEditor, setShowEditor] = useState(false);
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
+	const [selectedImages, setSelectedImages] = useState<string[]>([]);
+	const [shouldOpenEditor, setShouldOpenEditor] = useState(false);
 	const isRenamingRef = useRef(false);
 	const isLoadingFolderRef = useRef(false); // Flag para indicar que está abrindo pasta existente
+
+	// Mantém ref sincronizado com state
+	useEffect(() => {
+		currentFolderRef.current = currentFolder;
+	}, [currentFolder]);
 
 	// Aplicar tema inicial e escutar mudanças
 	useEffect(() => {
@@ -143,11 +151,12 @@ function App() {
 		return () => clearTimeout(timeoutId);
 	}, [headerData.testCase, currentFolder]); // APENAS testCase e currentFolder, não todo headerData
 
-	// Event listeners do IPC - sem dependencies para evitar recriar
+	// Event listeners do IPC - usa ref para acessar currentFolder atualizado sem recriar listeners
 	useEffect(() => {
 		const handleScreenshotCaptured = () => {
-			if (currentFolder) {
-				ipcRenderer.invoke('get-images', currentFolder).then(setImages);
+			const folder = currentFolderRef.current;
+			if (folder) {
+				ipcRenderer.invoke('get-images', folder).then(setImages);
 			}
 		};
 
@@ -194,7 +203,7 @@ function App() {
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
 		};
-	}, []); // Sem dependencies - listeners criados apenas uma vez
+	}, []); // Sem dependencies - usa ref para acessar currentFolder sempre atualizado
 
 	const loadImages = async () => {
 		if (currentFolder) {
