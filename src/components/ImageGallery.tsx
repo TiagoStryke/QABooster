@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ImageData } from '../App';
@@ -182,6 +182,21 @@ export default function ImageGallery({
 	selectedImage,
 }: ImageGalleryProps) {
 	const { t } = useLanguage();
+	const galleryRef = useRef<HTMLDivElement>(null);
+	const lastImageCountRef = useRef(images.length);
+
+	// Auto-scroll quando adicionar nova imagem
+	useEffect(() => {
+		if (images.length > lastImageCountRef.current && galleryRef.current) {
+			// Nova imagem adicionada - scroll para o final
+			setTimeout(() => {
+				if (galleryRef.current) {
+					galleryRef.current.scrollTop = galleryRef.current.scrollHeight;
+				}
+			}, 100);
+		}
+		lastImageCountRef.current = images.length;
+	}, [images.length]);
 
 	const moveImage = (dragIndex: number, hoverIndex: number) => {
 		const draggedImage = images[dragIndex];
@@ -193,7 +208,10 @@ export default function ImageGallery({
 
 	return (
 		<DndProvider backend={HTML5Backend}>
-			<div className="w-80 bg-slate-800 border-r border-slate-700 overflow-y-auto p-4">
+			<div
+				ref={galleryRef}
+				className="w-80 bg-slate-800 border-r border-slate-700 overflow-y-auto p-4"
+			>
 				<h2 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
 					<svg
 						className="w-5 h-5"

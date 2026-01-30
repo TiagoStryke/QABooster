@@ -22,23 +22,21 @@ export default function FolderManager({
 			// Verifica se existe JSON na pasta
 			const result = await ipcRenderer.invoke('load-header-data', folder);
 			if (result.success && result.data) {
-				// Pasta com teste existente - isNewFolder = false
 				onFolderChange(folder, false);
 			} else {
-				// Pasta sem teste
 				alert(t('noTestFoundInFolder'));
 			}
 		}
 	};
 
 	const handleNewTest = async () => {
-		// Abre dialog para selecionar onde será salvo
 		const baseFolder = await ipcRenderer.invoke('select-folder');
 		if (!baseFolder) return;
 
 		// Cria pasta com data
 		const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-		const folderName = date; // Inicialmente só com data
+		const folderName = date;
+
 		const folder = await ipcRenderer.invoke(
 			'create-subfolder',
 			baseFolder,
@@ -46,7 +44,6 @@ export default function FolderManager({
 		);
 
 		if (folder) {
-			// Pasta nova - isNewFolder = true
 			onFolderChange(folder, true);
 		}
 	};

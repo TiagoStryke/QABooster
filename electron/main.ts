@@ -1,15 +1,15 @@
 import {
-	app,
-	BrowserWindow,
-	clipboard,
-	desktopCapturer,
-	dialog,
-	globalShortcut,
-	ipcMain,
-	nativeImage,
-	screen,
-	shell,
-	Tray,
+    app,
+    BrowserWindow,
+    clipboard,
+    desktopCapturer,
+    dialog,
+    globalShortcut,
+    ipcMain,
+    nativeImage,
+    screen,
+    shell,
+    Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -579,13 +579,13 @@ ipcMain.handle('open-folder-in-finder', async (_, folderPath) => {
 	}
 });
 
-ipcMain.handle('save-header-data', async (_, headerData) => {
+ipcMain.handle('save-header-data', async (_, folderPath, headerData) => {
 	try {
-		if (!currentFolder) {
-			return { success: false, error: 'Nenhuma pasta selecionada' };
+		if (!folderPath) {
+			return { success: false, error: 'Nenhuma pasta especificada' };
 		}
 
-		const configPath = path.join(currentFolder, '.qabooster-config.json');
+		const configPath = path.join(folderPath, '.qabooster-config.json');
 		fs.writeFileSync(configPath, JSON.stringify(headerData, null, 2), 'utf-8');
 
 		return { success: true };
@@ -601,7 +601,15 @@ ipcMain.handle('load-header-data', async (_, folderPath: string) => {
 
 		if (fs.existsSync(configPath)) {
 			const data = fs.readFileSync(configPath, 'utf-8');
-			return { success: true, data: JSON.parse(data) };
+			const parsedData = JSON.parse(data);
+
+			// Validação: se parsedData for string, arquivo está corrompido
+			if (typeof parsedData === 'string') {
+				fs.unlinkSync(configPath);
+				return { success: false, error: 'Arquivo corrompido e removido' };
+			}
+
+			return { success: true, data: parsedData };
 		}
 
 		return { success: false, error: 'Config file not found' };

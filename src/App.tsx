@@ -34,10 +34,9 @@ function App() {
 	});
 	const [showEditor, setShowEditor] = useState(false);
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
-	const [selectedImages, setSelectedImages] = useState<string[]>([]);
-	const [shouldOpenEditor, setShouldOpenEditor] = useState(false);
 	const isRenamingRef = useRef(false);
-	const isLoadingFolderRef = useRef(false); // Flag para indicar que está abrindo pasta existente
+	const isNewFolderRef = useRef(false); // Flag para indicar pasta NOVA (não deve carregar header)
+	const executorRef = useRef(localStorage.getItem('qabooster-executor') || ''); // Ref para evitar dependência de headerData
 
 	// Mantém ref sincronizado com state
 	useEffect(() => {
@@ -71,6 +70,7 @@ function App() {
 	useEffect(() => {
 		if (headerData.executor) {
 			localStorage.setItem('qabooster-executor', headerData.executor);
+			executorRef.current = headerData.executor; // Mantém ref sincronizado
 		}
 	}, [headerData.executor]);
 
@@ -78,8 +78,15 @@ function App() {
 	useEffect(() => {
 		if (!currentFolder) return;
 
+		// Captura os valores atuais no momento do agendamento
+		const folderToSave = currentFolder;
+		const dataToSave = headerData;
+
 		const timeoutId = setTimeout(() => {
-			saveHeaderData();
+			// Salva na pasta capturada, não na pasta atual
+			if (folderToSave && dataToSave.testCase) {
+				ipcRenderer.invoke('save-header-data', folderToSave, dataToSave);
+			}
 		}, 1000); // Salva 1 segundo após parar de digitar
 
 		return () => clearTimeout(timeoutId);
@@ -88,9 +95,8 @@ function App() {
 	// Renomear pasta quando o caso de teste é preenchido
 	useEffect(() => {
 		const renameFolderIfNeeded = async () => {
-			// NÃO renomeia se está carregando pasta existente ou se não tem dados
-			if (!currentFolder || !headerData.testCase || isLoadingFolderRef.current)
-				return;
+			// NÃO renomeia se não tem dados
+			if (!currentFolder || !headerData.testCase) return;
 
 			// Extrai o nome da pasta atual
 			const folderName = currentFolder.split('/').pop() || '';
@@ -123,7 +129,7 @@ function App() {
 				isRenamingRef.current = true;
 
 				// Salva os dados do header ANTES de renomear
-				await ipcRenderer.invoke('save-header-data', headerData);
+				await ipcRenderer.invoke('save-header-data', currentFolder, headerData);
 
 				// Cria novo nome: Data_caso-de-teste
 				const newFolderName = `${dateStr}_${headerData.testCase}`;
@@ -137,9 +143,8 @@ function App() {
 				if (newPath) {
 					// Atualiza o currentFolder sem disparar loadHeaderData
 					setCurrentFolder(newPath);
+					// NÃO reseta isRenamingRef aqui - deixa o useEffect fazer isso
 				}
-
-				isRenamingRef.current = false;
 			}
 		};
 
@@ -213,83 +218,87 @@ function App() {
 	};
 
 	useEffect(() => {
-		loadImages();
-		// Só carrega headerData se NÃO for uma renomeação
-		if (!isRenamingRef.current) {
-			loadHeaderData();
-		} else {
-			// Reset flag após renomear
-			isRenamingRef.current = false;
+		if (!currentFolder) {
+			setImages([]);
+			return;
 		}
-		// Reset flag de loading após processar
-		isLoadingFolderRef.current = false;
+
+		// Carrega images
+		loadImages();
+
+		// Se é renomeação, não faz nada com header
+		if (isRenamingRef.current) {
+			isRenamingRef.current = false;
+			return;
+		}
+
+		// Limpa header primeiro (mantém apenas executor)
+		const savedExecutor = executorRef.current;
+		setHeaderData({
+			testName: '',
+			executor: savedExecutor,
+			system: '',
+			testCycle: '',
+			testCase: '',
+		});
+
+		// Se é pasta NOVA, NÃO carrega header
+		if (isNewFolderRef.current) {
+			isNewFolderRef.current = false;
+			return;
+		}
+
+		// Caso contrário, carrega header (se existir)
+		const folderToLoad = currentFolder;
+		setTimeout(() => {
+			loadHeaderData(folderToLoad);
+		}, 0);
 	}, [currentFolder]);
 
-	const loadHeaderData = async () => {
-		if (currentFolder) {
-			const result = await ipcRenderer.invoke(
-				'load-header-data',
-				currentFolder,
-			);
+	const loadHeaderData = async (folder: string) => {
+		if (folder) {
+			const result = await ipcRenderer.invoke('load-header-data', folder);
 			if (result.success && result.data) {
 				setHeaderData(result.data);
 			}
 		}
 	};
 
-	// Salvar headerData apenas quando explicitamente solicitado
-	const saveHeaderData = async () => {
-		if (currentFolder) {
-			await ipcRenderer.invoke('save-header-data', headerData);
+	const saveHeaderData = async (folder: string, data: HeaderData) => {
+		if (folder && data.testCase) {
+			await ipcRenderer.invoke('save-header-data', folder, data);
 		}
 	};
 
 	const handleFolderChange = async (folder: string, isNewFolder = false) => {
-		// Salvar dados da pasta anterior antes de mudar
-		if (currentFolder) {
-			await saveHeaderData();
+		// Salvar dados da pasta anterior se tiver
+		if (currentFolder && headerData.testCase) {
+			await saveHeaderData(currentFolder, headerData);
 		}
 
-		// Se está abrindo pasta EXISTENTE (não é nova), limpa o cabeçalho primeiro
-		if (!isNewFolder) {
-			isLoadingFolderRef.current = true;
-			const savedExecutor = headerData.executor; // Mantém executor
-			setHeaderData({
-				testName: '',
-				executor: savedExecutor,
-				system: '',
-				testCycle: '',
-				testCase: '',
-			});
-		}
+		// Marca se é pasta nova
+		isNewFolderRef.current = isNewFolder;
 
+		// Muda a pasta - useEffect vai lidar com header
 		setCurrentFolder(folder);
 	};
 
 	const handleNewTest = () => {
-		// Verifica se há dados preenchidos
 		const hasData =
 			headerData.testName ||
 			headerData.system ||
 			headerData.testCycle ||
 			headerData.testCase;
 
-		// Se tem pasta E tem dados, confirma e salva antes de limpar
 		if (currentFolder && hasData) {
-			if (!confirm(t('confirmNewTest'))) {
-				return;
-			}
-			saveHeaderData();
-		}
-		// Se tem dados mas não tem pasta, só confirma
-		else if (hasData || images.length > 0) {
-			if (!confirm(t('confirmNewTestLoseData'))) {
-				return;
-			}
+			if (!confirm(t('confirmNewTest'))) return;
+			saveHeaderData(currentFolder, headerData);
+		} else if (hasData || images.length > 0) {
+			if (!confirm(t('confirmNewTestLoseData'))) return;
 		}
 
-		// Limpar cabeçalho para novo teste (mantém o executor salvo)
-		const savedExecutor = localStorage.getItem('qabooster-executor') || '';
+		// Limpa TUDO
+		const savedExecutor = executorRef.current;
 		setHeaderData({
 			testName: '',
 			executor: savedExecutor,
@@ -358,7 +367,7 @@ function App() {
 			setHeaderData={setHeaderData}
 			currentFolder={currentFolder}
 			images={images}
-			onSaveHeaderData={saveHeaderData}
+			onSaveHeaderData={() => saveHeaderData(currentFolder, headerData)}
 			onNewTest={handleNewTest}
 			onFolderChange={handleFolderChange}
 			selectedImage={selectedImage}
