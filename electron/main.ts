@@ -143,7 +143,6 @@ function registerGlobalShortcut() {
 					width: width,
 					height: height,
 				},
-				fetchWindowIcons: true, // Captura o cursor do mouse
 			});
 
 			if (sources.length > selectedDisplayId) {
@@ -200,7 +199,6 @@ function registerGlobalShortcut() {
 				const sources = await desktopCapturer.getSources({
 					types: ['screen'],
 					thumbnailSize: { width, height },
-					fetchWindowIcons: true, // Captura o cursor do mouse
 				});
 
 				if (sources.length > selectedDisplayId) {
@@ -239,39 +237,7 @@ function registerGlobalShortcut() {
 	});
 
 	if (!ret || !retArea) {
-		console.error('⚠️ Falha ao registrar atalhos globais');
-		console.error('Permissão de Acessibilidade pode estar faltando');
-
-		// Mostra dialog explicando o problema
-		if (mainWindow) {
-			setTimeout(() => {
-				dialog
-					.showMessageBox(mainWindow!, {
-						type: 'warning',
-						title: 'Permissão Necessária',
-						message: 'Atalhos globais não puderam ser registrados',
-						detail:
-							'Para usar os atalhos de screenshot, você precisa dar permissão de Acessibilidade ao QABooster.\n\n' +
-							'1. Abra Configurações do Sistema\n' +
-							'2. Vá em Privacidade e Segurança > Acessibilidade\n' +
-							'3. Adicione QABooster à lista\n' +
-							'4. Reinicie o aplicativo\n\n' +
-							'Atalhos configurados:\n' +
-							`• Tela cheia: ${shortcutKey}\n` +
-							`• Área: ${shortcutKeyArea}`,
-						buttons: ['Abrir Configurações', 'OK'],
-						defaultId: 0,
-					})
-					.then((response) => {
-						if (response.response === 0) {
-							// Abre as configurações de acessibilidade
-							shell.openExternal(
-								'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
-							);
-						}
-					});
-			}, 2000); // Aguarda 2s para window estar pronta
-		}
+		console.log('Falha ao registrar atalho global');
 	}
 }
 
@@ -699,7 +665,6 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 	const sources = await desktopCapturer.getSources({
 		types: ['screen'],
 		thumbnailSize: { width, height },
-		fetchWindowIcons: true, // Captura o cursor do mouse
 	});
 
 	const screenshot = sources[selectedDisplayId].thumbnail;
