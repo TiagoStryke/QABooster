@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, useState } from 'react';
 import { HeaderData, ImageData } from '../App';
+import golLogo from '../assets/logos/logo-gol-1024.png';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const { ipcRenderer } = window.require('electron');
@@ -174,22 +175,53 @@ export default function Toolbar({
 			const margin = 15;
 			const imageMargin = 2; // Margem mínima para imagens (2mm)
 
+			// Logo da GOL no topo - manter aspect ratio
+			const logoMaxWidth = 50;
+			const logoImg = new Image();
+			logoImg.src = golLogo;
+			await new Promise((resolve) => {
+				logoImg.onload = resolve;
+			});
+			const logoRatio = logoImg.width / logoImg.height;
+			const logoWidth = logoMaxWidth;
+			const logoHeight = logoWidth / logoRatio;
+
+			pdf.addImage(
+				golLogo,
+				'PNG',
+				pageWidth / 2 - logoWidth / 2,
+				10,
+				logoWidth,
+				logoHeight,
+			);
+
 			// First page - Header
 			pdf.setFontSize(18);
 			pdf.setFont('helvetica', 'bold');
-			pdf.text(t('qaTestEvidence'), pageWidth / 2, 30, {
+			pdf.text(t('qaTestEvidence'), pageWidth / 2, 10 + logoHeight + 8, {
 				align: 'center',
 			});
 
 			pdf.setFontSize(12);
 			pdf.setFont('helvetica', 'normal');
 
-			let yPos = 50;
+			let yPos = 10 + logoHeight + 28;
 			const lineHeight = 10;
+
+			// Traduz o resultado do teste se for uma chave conhecida
+			const getTestResultLabel = (value: string) => {
+				if (value === 'approved') return 'Aprovado [OK]';
+				if (value === 'reproved') return 'Reprovado [NOK]';
+				if (value === 'partial') return 'Parcial [!]';
+				return value;
+			};
 
 			// Header data
 			const headerItems = [
-				{ label: `${t('testResult')}:`, value: headerData.testName || '-' },
+				{
+					label: `${t('testResult')}:`,
+					value: getTestResultLabel(headerData.testName) || '-',
+				},
 				{ label: `${t('system')}:`, value: headerData.system || '-' },
 				{ label: `${t('testCycle')}:`, value: headerData.testCycle || '-' },
 				{ label: `${t('testCase')}:`, value: headerData.testCase || '-' },
@@ -200,11 +232,29 @@ export default function Toolbar({
 				},
 			];
 
+			// Calcular as maiores larguras de label e valor
+			pdf.setFont('helvetica', 'bold');
+			const maxLabelWidth = Math.max(
+				...headerItems.map((item) => pdf.getTextWidth(item.label)),
+			);
+
+			pdf.setFont('helvetica', 'normal');
+			const maxValueWidth = Math.max(
+				...headerItems.map((item) => pdf.getTextWidth(item.value)),
+			);
+
+			// Calcular a largura total real da tabela
+			const spacing = 10; // Espaço entre label e valor
+			const totalTableWidth = maxLabelWidth + spacing + maxValueWidth;
+
+			// Centralizar a tabela baseado no seu ponto médio
+			const tableStartX = (pageWidth - totalTableWidth) / 2;
+
 			headerItems.forEach((item) => {
 				pdf.setFont('helvetica', 'bold');
-				pdf.text(item.label, margin, yPos);
+				pdf.text(item.label, tableStartX, yPos);
 				pdf.setFont('helvetica', 'normal');
-				pdf.text(item.value, margin + 60, yPos);
+				pdf.text(item.value, tableStartX + maxLabelWidth + spacing, yPos);
 				yPos += lineHeight;
 			});
 

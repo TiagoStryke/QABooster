@@ -75,9 +75,9 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						onChange={(e) => handleChange('testName', e.target.value)}
 					>
 						<option value="">{t('selectOption')}</option>
-						<option value="✅ Aprovado">{t('approved')}</option>
-						<option value="❌ Reprovado">{t('reproved')}</option>
-						<option value="⚠️ Parcial">{t('partial')}</option>
+						<option value="approved">{t('approved')}</option>
+						<option value="reproved">{t('reproved')}</option>
+						<option value="partial">{t('partial')}</option>
 					</select>
 				</div>
 
