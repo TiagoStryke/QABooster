@@ -136,6 +136,13 @@ export const translations = {
 		noTestFoundInFolder:
 			'Nenhum teste foi encontrado nesta pasta.\n\nPor favor, crie um novo teste clicando em "+ Novo Teste".',
 		pdfFilename: 'Evidencia_',
+		confirmUnsavedTitle: 'Alterações não salvas',
+		confirmUnsavedMessage:
+			'Deseja salvar as alterações antes de fechar o editor?',
+		saveButton: 'Salvar',
+		discardButton: 'Descartar',
+		closeEditorFirst:
+			'Por favor, feche o editor de imagens antes de iniciar um novo teste ou continuar outro teste.',
 
 		// PDF Content
 		qaTestEvidence: 'Evidência de Testes de QA',
@@ -275,6 +282,13 @@ export const translations = {
 		noTestFoundInFolder:
 			'No test was found in this folder.\n\nPlease create a new test by clicking "+ New Test".',
 		pdfFilename: 'Evidence_',
+		confirmUnsavedTitle: 'Unsaved Changes',
+		confirmUnsavedMessage:
+			'Do you want to save the changes before closing the editor?',
+		saveButton: 'Save',
+		discardButton: 'Discard',
+		closeEditorFirst:
+			'Please close the image editor before starting a new test or continuing another test.',
 
 		// PDF Content
 		qaTestEvidence: 'QA Test Evidence',

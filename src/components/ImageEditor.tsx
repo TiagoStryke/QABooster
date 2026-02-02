@@ -2,6 +2,7 @@ import { fabric } from 'fabric';
 import { useEffect, useRef, useState } from 'react';
 import { ImageData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import ConfirmationDialog from './ConfirmationDialog';
 
 // Import stickers
 import clickSticker from '../assets/stickers/click.png';
@@ -37,8 +38,17 @@ export default function ImageEditor({
 	const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
 	const backgroundImageRef = useRef<fabric.Image | null>(null);
 	const [currentTool, setCurrentTool] = useState<Tool>('select');
-	const [color, setColor] = useState('#FF0000');
+	const [color, setColor] = useState(
+		localStorage.getItem('lastEditorColor') || '#FF0000',
+	);
 	const [zoom, setZoom] = useState(1);
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+	// Salva a cor no localStorage quando ela mudar
+	useEffect(() => {
+		localStorage.setItem('lastEditorColor', color);
+	}, [color]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
@@ -96,7 +106,19 @@ export default function ImageEditor({
 
 		loadImage();
 
+		// Rastreia mudanças no canvas
+		const handleCanvasChange = () => {
+			setHasUnsavedChanges(true);
+		};
+
+		canvas.on('object:added', handleCanvasChange);
+		canvas.on('object:modified', handleCanvasChange);
+		canvas.on('object:removed', handleCanvasChange);
+
 		return () => {
+			canvas.off('object:added', handleCanvasChange);
+			canvas.off('object:modified', handleCanvasChange);
+			canvas.off('object:removed', handleCanvasChange);
 			canvas.dispose();
 		};
 	}, [image]);
@@ -467,6 +489,7 @@ export default function ImageEditor({
 			fontSize: lastFontSize,
 			fontFamily: 'Arial',
 			selectable: true,
+			editable: true,
 			// Adiciona sombra sutil para dar destaque
 			shadow: {
 				color: 'rgba(0, 0, 0, 0.6)',
@@ -485,8 +508,13 @@ export default function ImageEditor({
 
 		canvas.add(text);
 		canvas.setActiveObject(text);
-		text.enterEditing();
 		canvas.renderAll();
+
+		// Entra em modo de edição após renderizar
+		setTimeout(() => {
+			text.enterEditing();
+			canvas.renderAll();
+		}, 10);
 	};
 	const addSticker = (stickerUrl: string) => {
 		const canvas = fabricCanvasRef.current;
@@ -551,8 +579,31 @@ export default function ImageEditor({
 		canvas.setZoom(currentZoom);
 		canvas.renderAll();
 
+		setHasUnsavedChanges(false);
 		onSave(dataUrl);
 		onClose();
+	};
+
+	const handleCloseAttempt = () => {
+		if (hasUnsavedChanges) {
+			setShowConfirmDialog(true);
+		} else {
+			onClose();
+		}
+	};
+
+	const handleConfirmSave = () => {
+		setShowConfirmDialog(false);
+		handleSave();
+	};
+
+	const handleConfirmDiscard = () => {
+		setShowConfirmDialog(false);
+		onClose();
+	};
+
+	const handleConfirmCancel = () => {
+		setShowConfirmDialog(false);
 	};
 
 	const handleToolClick = (tool: Tool) => {
@@ -576,7 +627,7 @@ export default function ImageEditor({
 					<span className="text-slate-400">- {image.name}</span>
 				</div>
 				<button
-					onClick={onClose}
+					onClick={handleCloseAttempt}
 					className="text-slate-400 hover:text-white p-1"
 				>
 					<svg
@@ -692,17 +743,18 @@ export default function ImageEditor({
 					className={`p-1.5 rounded hover:bg-slate-700 ${currentTool === 'text' ? 'bg-blue-600' : ''}`}
 					title={t('text')}
 				>
-					<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-						<text
-							x="12"
-							y="18"
-							textAnchor="middle"
-							fontSize="16"
-							fontWeight="bold"
-							fontFamily="Arial, sans-serif"
-						>
-							T
-						</text>
+					<svg
+						className="w-4 h-4"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M4 6h16M4 12h16M4 18h7"
+						/>
 					</svg>
 				</button>
 
@@ -878,6 +930,15 @@ export default function ImageEditor({
 			>
 				<canvas ref={canvasRef} />
 			</div>
+
+			<ConfirmationDialog
+				isOpen={showConfirmDialog}
+				title={t('confirmUnsavedTitle')}
+				message={t('confirmUnsavedMessage')}
+				onSave={handleConfirmSave}
+				onDiscard={handleConfirmDiscard}
+				onCancel={handleConfirmCancel}
+			/>
 		</div>
 	);
 }
