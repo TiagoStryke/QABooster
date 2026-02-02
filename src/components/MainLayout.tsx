@@ -66,9 +66,9 @@ export default function MainLayout({
 					currentFolder={currentFolder}
 					onFolderChange={onFolderChange}
 					headerData={headerData}
+					showEditor={showEditor}
 				/>
 
-				{/* Botão flutuante para abrir/fechar anotações */}
 				<button
 					onClick={() => setIsNotesPanelOpen(!isNotesPanelOpen)}
 					className="fixed top-3 right-3 text-white p-2.5 rounded-md shadow-lg transition-all z-50 border bg-slate-700 hover:bg-slate-600 border-slate-600"

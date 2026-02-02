@@ -7,16 +7,22 @@ interface FolderManagerProps {
 	currentFolder: string;
 	onFolderChange: (folder: string, isNewFolder?: boolean) => void;
 	headerData: HeaderData;
+	showEditor: boolean;
 }
 
 export default function FolderManager({
 	currentFolder,
 	onFolderChange,
 	headerData,
+	showEditor,
 }: FolderManagerProps) {
 	const { t } = useLanguage();
 
 	const handleContinueTest = async () => {
+		if (showEditor) {
+			alert(t('closeEditorFirst'));
+			return;
+		}
 		const folder = await ipcRenderer.invoke('select-folder');
 		if (folder) {
 			// Verifica se existe JSON na pasta
@@ -30,6 +36,10 @@ export default function FolderManager({
 	};
 
 	const handleNewTest = async () => {
+		if (showEditor) {
+			alert(t('closeEditorFirst'));
+			return;
+		}
 		const baseFolder = await ipcRenderer.invoke('select-folder');
 		if (!baseFolder) return;
 

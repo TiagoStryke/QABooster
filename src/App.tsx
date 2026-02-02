@@ -271,12 +271,6 @@ function App() {
 	};
 
 	const handleFolderChange = async (folder: string, isNewFolder = false) => {
-		// Se o editor estiver aberto, fecha primeiro
-		if (showEditor) {
-			alert(t('closeEditorFirst'));
-			return;
-		}
-
 		// Salvar dados da pasta anterior se tiver
 		if (currentFolder && headerData.testCase) {
 			await saveHeaderData(currentFolder, headerData);
@@ -290,12 +284,6 @@ function App() {
 	};
 
 	const handleNewTest = () => {
-		// Se o editor estiver aberto, fecha primeiro (o editor vai mostrar diálogo se tiver mudanças)
-		if (showEditor) {
-			alert(t('closeEditorFirst'));
-			return;
-		}
-
 		const hasData =
 			headerData.testName ||
 			headerData.system ||
