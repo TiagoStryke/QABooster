@@ -1,15 +1,15 @@
 import {
-    app,
-    BrowserWindow,
-    clipboard,
-    desktopCapturer,
-    dialog,
-    globalShortcut,
-    ipcMain,
-    nativeImage,
-    screen,
-    shell,
-    Tray,
+	app,
+	BrowserWindow,
+	clipboard,
+	desktopCapturer,
+	dialog,
+	globalShortcut,
+	ipcMain,
+	nativeImage,
+	screen,
+	shell,
+	Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -23,10 +23,61 @@ let shortcutKeyArea: string = 'CommandOrControl+Shift+A';
 let selectedDisplayId: number = 0; // ID do display selecionado
 let useSavedArea: boolean = false; // Se deve usar área salva ou sempre perguntar
 let copyToClipboard: boolean = false; // Se deve copiar para área de transferência
+let soundEnabled: boolean = true; // Se deve tocar som ao capturar
+let cursorInScreenshots: boolean = true; // Se deve desenhar cursor nas capturas
 let savedArea: { x: number; y: number; width: number; height: number } | null =
 	null;
 let originalWindowWidth: number = 1400; // Largura original da janela
 let pendingScreenshot: Electron.NativeImage | null = null; // Screenshot pendente para salvar
+
+// Cursor SVG em base64
+const CURSOR_SVG = `data:image/svg+xml;base64,${Buffer.from(
+	`
+<svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+	<path d="M 5.5 3.5 L 5.5 28.5 L 12.5 21.5 L 16.5 32.5 L 20.5 31.5 L 16.5 20.5 L 24.5 20.5 Z" fill="rgba(0,0,0,0.5)"/>
+	<path d="M 4 2 L 4 27 L 11 20 L 15 31 L 19 30 L 15 19 L 23 19 Z" fill="white" stroke="black" stroke-width="1"/>
+</svg>
+`,
+).toString('base64')}`;
+
+// Função para adicionar cursor ao screenshot usando IPC
+async function addCursorToScreenshot(
+	screenshot: Electron.NativeImage,
+	cursorX: number,
+	cursorY: number,
+): Promise<Electron.NativeImage> {
+	if (!mainWindow) return screenshot;
+
+	const size = screenshot.getSize();
+	const dataURL = screenshot.toDataURL();
+
+	// Envia para o renderer fazer a composição
+	const result = await mainWindow.webContents.executeJavaScript(`
+		new Promise((resolve) => {
+			const canvas = document.createElement('canvas');
+			canvas.width = ${size.width};
+			canvas.height = ${size.height};
+			const ctx = canvas.getContext('2d');
+			
+			const img = new Image();
+			img.onload = () => {
+				ctx.drawImage(img, 0, 0);
+				
+				const cursor = new Image();
+				cursor.onload = () => {
+					ctx.drawImage(cursor, ${Math.round(cursorX)}, ${Math.round(cursorY)}, 24, 36);
+					resolve(canvas.toDataURL());
+				};
+				cursor.onerror = () => resolve('${dataURL}');
+				cursor.src = '${CURSOR_SVG}';
+			};
+			img.onerror = () => resolve('${dataURL}');
+			img.src = '${dataURL}';
+		});
+	`);
+
+	return nativeImage.createFromDataURL(result);
+}
 
 // Desabilitar verificação de certificado SSL para evitar erros no console
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
@@ -151,13 +202,35 @@ function registerGlobalShortcut() {
 				const filepath = path.join(currentFolder, filename);
 
 				const image = sources[selectedDisplayId].thumbnail;
-				const pngBuffer = image.toPNG();
+
+				// Adiciona cursor APENAS se estiver dentro do monitor
+				const cursorPos = screen.getCursorScreenPoint();
+				const relativeCursorX = cursorPos.x - display.bounds.x;
+				const relativeCursorY = cursorPos.y - display.bounds.y;
+
+				// Verifica se cursor está dentro dos bounds do monitor
+				const isCursorInDisplay =
+					relativeCursorX >= 0 &&
+					relativeCursorX < display.bounds.width &&
+					relativeCursorY >= 0 &&
+					relativeCursorY < display.bounds.height;
+
+				const imageWithCursor =
+					cursorInScreenshots && isCursorInDisplay
+						? await addCursorToScreenshot(
+								image,
+								relativeCursorX,
+								relativeCursorY,
+							)
+						: image; // Se cursor fora ou desabilitado, não adiciona
+
+				const pngBuffer = imageWithCursor.toPNG();
 
 				fs.writeFileSync(filepath, pngBuffer);
 
 				// Copiar para clipboard se habilitado
 				if (copyToClipboard) {
-					clipboard.writeImage(image);
+					clipboard.writeImage(imageWithCursor);
 				}
 
 				mainWindow?.webContents.send('screenshot-captured', {
@@ -207,8 +280,29 @@ function registerGlobalShortcut() {
 					const filepath = path.join(currentFolder, filename);
 
 					const image = sources[selectedDisplayId].thumbnail;
-					const cropped = image.crop(savedArea);
 
+					// Adiciona cursor APENAS se estiver dentro do monitor
+					const cursorPos = screen.getCursorScreenPoint();
+					const relativeCursorX = cursorPos.x - display.bounds.x;
+					const relativeCursorY = cursorPos.y - display.bounds.y;
+
+					// Verifica se cursor está dentro dos bounds do monitor
+					const isCursorInDisplay =
+						relativeCursorX >= 0 &&
+						relativeCursorX < display.bounds.width &&
+						relativeCursorY >= 0 &&
+						relativeCursorY < display.bounds.height;
+
+					const imageWithCursor =
+						cursorInScreenshots && isCursorInDisplay
+							? await addCursorToScreenshot(
+									image,
+									relativeCursorX,
+									relativeCursorY,
+								)
+							: image; // Se cursor fora ou desabilitado, não adiciona
+
+					const cropped = imageWithCursor.crop(savedArea);
 					fs.writeFileSync(filepath, cropped.toPNG());
 
 					// Copiar para clipboard se habilitado
@@ -411,6 +505,16 @@ ipcMain.handle('set-use-saved-area', async (_, useArea: boolean) => {
 
 ipcMain.handle('set-copy-to-clipboard', async (_, enabled: boolean) => {
 	copyToClipboard = enabled;
+	return true;
+});
+
+ipcMain.handle('set-sound-enabled', async (_, enabled: boolean) => {
+	soundEnabled = enabled;
+	return true;
+});
+
+ipcMain.handle('set-cursor-in-screenshots', async (_, enabled: boolean) => {
+	cursorInScreenshots = enabled;
 	return true;
 });
 
@@ -675,7 +779,29 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 		thumbnailSize: { width, height },
 	});
 
-	const screenshot = sources[selectedDisplayId].thumbnail;
+	let screenshot = sources[selectedDisplayId].thumbnail;
+
+	// Adiciona cursor ao overlay APENAS se estiver dentro do monitor
+	const cursorPos = screen.getCursorScreenPoint();
+	const relativeCursorX = cursorPos.x - x;
+	const relativeCursorY = cursorPos.y - y;
+
+	// Verifica se cursor está dentro dos bounds do monitor
+	const isCursorInDisplay =
+		relativeCursorX >= 0 &&
+		relativeCursorX < width &&
+		relativeCursorY >= 0 &&
+		relativeCursorY < height;
+
+	screenshot =
+		cursorInScreenshots && isCursorInDisplay
+			? await addCursorToScreenshot(
+					screenshot,
+					relativeCursorX,
+					relativeCursorY,
+				)
+			: screenshot; // Se cursor fora ou desabilitado, não adiciona
+
 	if (saveScreenshot) {
 		pendingScreenshot = screenshot;
 	}

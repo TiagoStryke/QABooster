@@ -29,6 +29,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 	const [copyToClipboard, setCopyToClipboard] = useState<boolean>(
 		localStorage.getItem('qabooster-copy-to-clipboard') === 'true',
 	);
+	const [soundEnabled, setSoundEnabled] = useState<boolean>(
+		localStorage.getItem('qabooster-sound') !== 'false',
+	);
+	const [cursorInScreenshots, setCursorInScreenshots] = useState<boolean>(
+		localStorage.getItem('qabooster-cursor-in-screenshots') !== 'false',
+	);
 
 	// Enviar preferência de clipboard para o main process ao montar
 	useEffect(() => {
@@ -85,6 +91,18 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		setCopyToClipboard(enabled);
 		localStorage.setItem('qabooster-copy-to-clipboard', enabled.toString());
 		ipcRenderer.invoke('set-copy-to-clipboard', enabled);
+	};
+
+	const handleSoundEnabledChange = (enabled: boolean) => {
+		setSoundEnabled(enabled);
+		localStorage.setItem('qabooster-sound', enabled.toString());
+		ipcRenderer.invoke('set-sound-enabled', enabled);
+	};
+
+	const handleCursorInScreenshotsChange = (enabled: boolean) => {
+		setCursorInScreenshots(enabled);
+		localStorage.setItem('qabooster-cursor-in-screenshots', enabled.toString());
+		ipcRenderer.invoke('set-cursor-in-screenshots', enabled);
 	};
 
 	if (!isOpen) return null;
@@ -201,6 +219,48 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 								</div>
 								<div className="text-xs text-slate-400 mt-0.5">
 									{t('copyToClipboardDesc')}
+								</div>
+							</div>
+						</label>
+					</div>
+
+					{/* Som de captura */}
+					<div className="mb-4">
+						<label className="flex items-start gap-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={soundEnabled}
+								onChange={(e) => handleSoundEnabledChange(e.target.checked)}
+								className="w-5 h-5 mt-0.5 rounded border-slate-600 bg-slate-700 text-primary-500 focus:ring-2 focus:ring-primary-500"
+							/>
+							<div className="flex-1">
+								<div className="text-sm font-semibold text-slate-300">
+									{t('soundEnabled')}
+								</div>
+								<div className="text-xs text-slate-400 mt-0.5">
+									{t('soundEnabledDesc')}
+								</div>
+							</div>
+						</label>
+					</div>
+
+					{/* Cursor nos screenshots */}
+					<div className="mb-4">
+						<label className="flex items-start gap-3 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={cursorInScreenshots}
+								onChange={(e) =>
+									handleCursorInScreenshotsChange(e.target.checked)
+								}
+								className="w-5 h-5 mt-0.5 rounded border-slate-600 bg-slate-700 text-primary-500 focus:ring-2 focus:ring-primary-500"
+							/>
+							<div className="flex-1">
+								<div className="text-sm font-semibold text-slate-300">
+									{t('cursorInScreenshots')}
+								</div>
+								<div className="text-xs text-slate-400 mt-0.5">
+									{t('cursorInScreenshotsDesc')}
 								</div>
 							</div>
 						</label>

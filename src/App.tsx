@@ -166,8 +166,8 @@ function App() {
 		};
 
 		const handleScreenshotFlash = () => {
-			// Toca som se habilitado
-			const soundEnabled = localStorage.getItem('qabooster-sound') === 'true';
+			// Toca som se habilitado (padrão: true)
+			const soundEnabled = localStorage.getItem('qabooster-sound') !== 'false';
 			if (soundEnabled) {
 				// Som minimalista de câmera usando Web Audio API
 				const audioContext = new AudioContext();

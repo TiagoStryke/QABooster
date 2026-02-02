@@ -41,9 +41,6 @@ export default function Toolbar({
 	const [isEditingShortcut, setIsEditingShortcut] = useState(false);
 	const [isEditingShortcutArea, setIsEditingShortcutArea] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
-	const [soundEnabled, setSoundEnabled] = useState(
-		localStorage.getItem('qabooster-sound') === 'true',
-	);
 	const [displays, setDisplays] = useState<Display[]>([]);
 	const [selectedDisplay, setSelectedDisplay] = useState(
 		parseInt(localStorage.getItem('qabooster-display') || '0'),
@@ -491,21 +488,6 @@ export default function Toolbar({
 				</div>
 
 				<div className="flex items-center gap-2">
-					{/* Checkbox para habilitar som */}
-					<label className="flex items-center gap-1 text-xs text-slate-300 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={soundEnabled}
-							onChange={(e) => {
-								const enabled = e.target.checked;
-								setSoundEnabled(enabled);
-								localStorage.setItem('qabooster-sound', enabled.toString());
-							}}
-							className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
-						/>
-						<span>{t('sound')}</span>
-					</label>
-
 					<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full">
 						{images.length} {images.length === 1 ? t('image') : t('images')}
 					</span>
