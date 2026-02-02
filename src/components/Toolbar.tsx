@@ -1,6 +1,9 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, useState } from 'react';
 import { HeaderData, ImageData } from '../App';
+import approvedIcon from '../assets/icons/approved.png';
+import partialIcon from '../assets/icons/partial.png';
+import reprovedIcon from '../assets/icons/reproved.png';
 import golLogo from '../assets/logos/logo-gol-1024.png';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -208,19 +211,24 @@ export default function Toolbar({
 			let yPos = 10 + logoHeight + 28;
 			const lineHeight = 10;
 
-			// Traduz o resultado do teste se for uma chave conhecida
-			const getTestResultLabel = (value: string) => {
-				if (value === 'approved') return 'Aprovado [OK]';
-				if (value === 'reproved') return 'Reprovado [NOK]';
-				if (value === 'partial') return 'Parcial [!]';
-				return value;
+			// Traduz o resultado do teste e retorna info para imagem
+			const getTestResultInfo = (value: string) => {
+				if (value === 'approved')
+					return { text: 'Aprovado', icon: approvedIcon };
+				if (value === 'reproved')
+					return { text: 'Reprovado', icon: reprovedIcon };
+				if (value === 'partial') return { text: 'Parcial', icon: partialIcon };
+				return { text: value, icon: null };
 			};
+
+			const testResultInfo = getTestResultInfo(headerData.testName);
 
 			// Header data
 			const headerItems = [
 				{
 					label: `${t('testResult')}:`,
-					value: getTestResultLabel(headerData.testName) || '-',
+					value: testResultInfo.text || '-',
+					icon: testResultInfo.icon,
 				},
 				{ label: `${t('system')}:`, value: headerData.system || '-' },
 				{ label: `${t('testCycle')}:`, value: headerData.testCycle || '-' },
@@ -250,11 +258,41 @@ export default function Toolbar({
 			// Centralizar a tabela baseado no seu ponto médio
 			const tableStartX = (pageWidth - totalTableWidth) / 2;
 
+			// Desenhar retângulo laranja com bordas arredondadas em volta dos dados
+			const padding = 5; // Padding interno do retângulo
+			const boxX = tableStartX - padding;
+			const boxY = yPos - 7; // Ajuste para começar acima do primeiro item
+			const boxWidth = totalTableWidth + padding * 2 + 8; // +8 para incluir o ícone
+			const boxHeight = headerItems.length * lineHeight + padding;
+			const cornerRadius = 3;
+
+			// Cor laranja da GOL (#FF6B00)
+			pdf.setDrawColor(255, 107, 0);
+			pdf.setLineWidth(0.5);
+			pdf.roundedRect(
+				boxX,
+				boxY,
+				boxWidth,
+				boxHeight,
+				cornerRadius,
+				cornerRadius,
+			);
+
 			headerItems.forEach((item) => {
 				pdf.setFont('helvetica', 'bold');
 				pdf.text(item.label, tableStartX, yPos);
 				pdf.setFont('helvetica', 'normal');
 				pdf.text(item.value, tableStartX + maxLabelWidth + spacing, yPos);
+
+				// Adiciona ícone se existir
+				if (item.icon) {
+					const iconSize = 5; // Tamanho do ícone em mm
+					const valueWidth = pdf.getTextWidth(item.value); // Largura real do texto
+					const iconX = tableStartX + maxLabelWidth + spacing + valueWidth + 2;
+					const iconY = yPos - iconSize + 1; // Ajuste vertical para alinhar
+					pdf.addImage(item.icon, 'PNG', iconX, iconY, iconSize, iconSize);
+				}
+
 				yPos += lineHeight;
 			});
 
