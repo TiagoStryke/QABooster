@@ -1,15 +1,15 @@
 import {
-	app,
-	BrowserWindow,
-	clipboard,
-	desktopCapturer,
-	dialog,
-	globalShortcut,
-	ipcMain,
-	nativeImage,
-	screen,
-	shell,
-	Tray,
+    app,
+    BrowserWindow,
+    clipboard,
+    desktopCapturer,
+    dialog,
+    globalShortcut,
+    ipcMain,
+    nativeImage,
+    screen,
+    shell,
+    Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -29,6 +29,26 @@ let savedArea: { x: number; y: number; width: number; height: number } | null =
 	null;
 let originalWindowWidth: number = 1400; // Largura original da janela
 let pendingScreenshot: Electron.NativeImage | null = null; // Screenshot pendente para salvar
+
+// Função para gerar nome de arquivo sequencial
+function getNextScreenshotFilename(folder: string): string {
+	// Lista todos os arquivos PNG da pasta
+	const files = fs.readdirSync(folder).filter((f) => f.endsWith('.png'));
+
+	// Extrai os números dos arquivos screenshot-XXX.png
+	const numbers = files
+		.map((f) => {
+			const match = f.match(/^screenshot-(\d+)\.png$/);
+			return match ? parseInt(match[1], 10) : 0;
+		})
+		.filter((n) => n > 0);
+
+	// Próximo número é o maior + 1 (ou 1 se não houver arquivos)
+	const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+
+	// Formata com 3 dígitos: screenshot-001.png
+	return `screenshot-${String(nextNumber).padStart(3, '0')}.png`;
+}
 
 // Cursor SVG em base64
 const CURSOR_SVG = `data:image/svg+xml;base64,${Buffer.from(
@@ -197,8 +217,7 @@ function registerGlobalShortcut() {
 			});
 
 			if (sources.length > selectedDisplayId) {
-				const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-				const filename = `screenshot-${timestamp}.png`;
+				const filename = getNextScreenshotFilename(currentFolder);
 				const filepath = path.join(currentFolder, filename);
 
 				const image = sources[selectedDisplayId].thumbnail;
@@ -275,8 +294,7 @@ function registerGlobalShortcut() {
 				});
 
 				if (sources.length > selectedDisplayId) {
-					const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-					const filename = `screenshot-${timestamp}.png`;
+					const filename = getNextScreenshotFilename(currentFolder);
 					const filepath = path.join(currentFolder, filename);
 
 					const image = sources[selectedDisplayId].thumbnail;
@@ -886,8 +904,7 @@ ipcMain.on('area-selected-for-screenshot', (_, area) => {
 	if (pendingScreenshot && currentFolder) {
 		try {
 			const cropped = pendingScreenshot.crop(area);
-			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-			const filename = `screenshot-${timestamp}.png`;
+			const filename = getNextScreenshotFilename(currentFolder);
 			const filepath = path.join(currentFolder, filename);
 
 			fs.writeFileSync(filepath, cropped.toPNG());
