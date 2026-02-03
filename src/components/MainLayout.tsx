@@ -60,6 +60,7 @@ export default function MainLayout({
 					headerData={headerData}
 					onSaveHeaderData={onSaveHeaderData}
 					onNewTest={onNewTest}
+					showEditor={showEditor}
 				/>
 
 				<FolderManager

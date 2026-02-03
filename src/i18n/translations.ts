@@ -142,7 +142,9 @@ export const translations = {
 		saveButton: 'Salvar',
 		discardButton: 'Descartar',
 		closeEditorFirst:
-			'Por favor, feche o editor de imagens antes de iniciar um novo teste ou continuar outro teste.',
+			'Por favor, salve as edições na imagem antes de começar um novo teste ou continuar outro teste.',
+		saveEditsBeforePDF:
+			'Por favor, salve as edições na imagem antes de gerar o PDF.',
 
 		// PDF Content
 		qaTestEvidence: 'Evidência de Testes de QA',
@@ -288,7 +290,9 @@ export const translations = {
 		saveButton: 'Save',
 		discardButton: 'Discard',
 		closeEditorFirst:
-			'Please close the image editor before starting a new test or continuing another test.',
+			'Please save your image edits before starting a new test or continuing another test.',
+		saveEditsBeforePDF:
+			'Please save your image edits before generating the PDF.',
 
 		// PDF Content
 		qaTestEvidence: 'QA Test Evidence',

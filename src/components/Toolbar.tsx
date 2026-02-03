@@ -15,6 +15,7 @@ interface ToolbarProps {
 	headerData: HeaderData;
 	onSaveHeaderData: () => void;
 	onNewTest: () => void;
+	showEditor?: boolean;
 }
 
 interface Display {
@@ -30,6 +31,7 @@ export default function Toolbar({
 	headerData,
 	onSaveHeaderData,
 	onNewTest,
+	showEditor = false,
 }: ToolbarProps) {
 	const { t } = useLanguage();
 	const [shortcut, setShortcut] = useState(
@@ -156,6 +158,11 @@ export default function Toolbar({
 	};
 
 	const generatePDF = async () => {
+		if (showEditor) {
+			alert(t('saveEditsBeforePDF'));
+			return;
+		}
+
 		if (images.length === 0) {
 			alert(t('noImagesToGeneratePDF'));
 			return;
