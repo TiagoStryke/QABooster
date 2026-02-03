@@ -203,10 +203,34 @@ function App() {
 		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
 		ipcRenderer.on('screenshot-error', handleScreenshotError);
 
+		// Listen for shortcut registration failures
+		const handleShortcutRegistrationFailed = (
+			_: any,
+			data: { shortcuts: Array<{ type: string; key: string }> },
+		) => {
+			const shortcutNames = data.shortcuts.map((s) => {
+				const nameMap: Record<string, string> = {
+					fullscreen: t('fullScreen'),
+					area: t('area'),
+					quick: t('quickPrint'),
+				};
+				return `${nameMap[s.type] || s.type} (${s.key})`;
+			});
+
+			const message = `${t('shortcutRegistrationFailedMessage')}\n${shortcutNames.join('\n')}\n\n${t('shortcutConflictHint')}`;
+			alert(message);
+		};
+
+		ipcRenderer.on(
+			'shortcut-registration-failed',
+			handleShortcutRegistrationFailed,
+		);
+
 		return () => {
 			ipcRenderer.removeAllListeners('screenshot-captured');
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
+			ipcRenderer.removeAllListeners('shortcut-registration-failed');
 		};
 	}, []); // Sem dependencies - usa ref para acessar currentFolder sempre atualizado
 

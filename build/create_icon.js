@@ -76,4 +76,3 @@ ctx.stroke();
 // Salva
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('icon.png', buffer);
-console.log('✅ Ícone 1024x1024 criado com sucesso!');

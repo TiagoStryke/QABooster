@@ -20,6 +20,7 @@ let tray: Tray | null = null;
 let currentFolder: string = '';
 let shortcutKey: string = 'CommandOrControl+Shift+S';
 let shortcutKeyArea: string = 'CommandOrControl+Shift+A';
+let shortcutKeyQuick: string = 'CommandOrControl+Shift+Q';
 let selectedDisplayId: number = 0; // ID do display selecionado
 let useSavedArea: boolean = false; // Se deve usar área salva ou sempre perguntar
 let copyToClipboard: boolean = false; // Se deve copiar para área de transferência
@@ -348,8 +349,25 @@ function registerGlobalShortcut() {
 		}
 	});
 
-	if (!ret || !retArea) {
-		console.log('Falha ao registrar atalho global');
+	const retQuick = globalShortcut.register(shortcutKeyQuick, async () => {
+		await openAreaSelectorQuick();
+	});
+
+	// Verifica quais atalhos falharam e notifica o usuário
+	const failedShortcuts = [];
+	if (!ret) failedShortcuts.push({ type: 'fullscreen', key: shortcutKey });
+	if (!retArea) failedShortcuts.push({ type: 'area', key: shortcutKeyArea });
+	if (!retQuick) failedShortcuts.push({ type: 'quick', key: shortcutKeyQuick });
+
+	if (failedShortcuts.length > 0) {
+		console.error('Falha ao registrar atalhos:', failedShortcuts);
+
+		// Notifica o usuário na interface (frontend formatará com i18n)
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send('shortcut-registration-failed', {
+				shortcuts: failedShortcuts,
+			});
+		}
 	}
 }
 
@@ -613,6 +631,12 @@ ipcMain.handle('read-image-as-base64', async (_, filepath: string) => {
 
 ipcMain.handle('set-area-shortcut', async (_, newShortcut: string) => {
 	shortcutKeyArea = newShortcut;
+	registerGlobalShortcut();
+	return true;
+});
+
+ipcMain.handle('set-quick-shortcut', async (_, newShortcut: string) => {
+	shortcutKeyQuick = newShortcut;
 	registerGlobalShortcut();
 	return true;
 });
@@ -935,6 +959,14 @@ async function openAreaSelectorOnly() {
 	await openAreaSelector('area-selected-only', false);
 }
 
+// Wrapper para quick print (sempre copia, nunca salva)
+async function openAreaSelectorQuick() {
+	const originalClipboard = copyToClipboard;
+	copyToClipboard = true; // Força clipboard
+	await openAreaSelector('area-selected-quick', true);
+	copyToClipboard = originalClipboard; // Restaura
+}
+
 // IPC handler to open area selector
 ipcMain.handle('open-area-selector', async () => {
 	await openAreaSelectorOnly();
@@ -990,6 +1022,24 @@ ipcMain.on('area-selected-only', (_, area) => {
 	}
 
 	mainWindow?.webContents.send('area-saved-with-confirmation', area);
+});
+
+// Handler para quick print (sempre clipboard, nunca salva)
+ipcMain.on('area-selected-quick', (_, area) => {
+	// Fecha o overlay
+	if (overlayWindow) {
+		overlayWindow.close();
+		overlayWindow = null;
+	}
+
+	// Apenas copia para clipboard, NÃO salva arquivo
+	if (pendingScreenshot) {
+		const cropped = pendingScreenshot.crop(area);
+		clipboard.writeImage(cropped);
+		mainWindow?.webContents.send('trigger-screenshot-flash');
+	}
+
+	pendingScreenshot = null;
 });
 
 ipcMain.on('area-selection-cancelled', () => {

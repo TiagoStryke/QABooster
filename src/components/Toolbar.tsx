@@ -34,18 +34,6 @@ export default function Toolbar({
 	showEditor = false,
 }: ToolbarProps) {
 	const { t } = useLanguage();
-	const [shortcut, setShortcut] = useState(
-		localStorage.getItem('qabooster-shortcut') || 'CommandOrControl+Shift+S',
-	);
-	const [shortcutArea, setShortcutArea] = useState(
-		localStorage.getItem('qabooster-shortcut-area') ||
-			'CommandOrControl+Shift+A',
-	);
-	// Estados temporários para edição
-	const [tempShortcut, setTempShortcut] = useState('');
-	const [tempShortcutArea, setTempShortcutArea] = useState('');
-	const [isEditingShortcut, setIsEditingShortcut] = useState(false);
-	const [isEditingShortcutArea, setIsEditingShortcutArea] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [displays, setDisplays] = useState<Display[]>([]);
 	const [selectedDisplay, setSelectedDisplay] = useState(
@@ -55,6 +43,7 @@ export default function Toolbar({
 	const [useSavedArea, setUseSavedArea] = useState(
 		localStorage.getItem('qabooster-use-saved-area') === 'true',
 	);
+	const [hasAreaDefined, setHasAreaDefined] = useState(false);
 	const [pdfOrientation, setPdfOrientation] = useState<
 		'portrait' | 'landscape'
 	>(
@@ -90,12 +79,10 @@ export default function Toolbar({
 
 		// Listener para mudanças nos displays
 		const handleDisplaysUpdated = (_: any, updatedDisplays: Display[]) => {
-			console.log('Displays atualizados:', updatedDisplays);
 			setDisplays(updatedDisplays);
 		};
 
 		const handleDisplayChanged = (_: any, newDisplayId: number) => {
-			console.log('Display selecionado mudou para:', newDisplayId);
 			setSelectedDisplay(newDisplayId);
 			localStorage.setItem('qabooster-display', newDisplayId.toString());
 		};
@@ -106,14 +93,18 @@ export default function Toolbar({
 		// Enviar preferência de área salva ao main process
 		ipcRenderer.invoke('set-use-saved-area', useSavedArea);
 
-		// Restaurar atalhos salvos no main process
-		ipcRenderer.invoke('set-shortcut', shortcut);
-		ipcRenderer.invoke('set-area-shortcut', shortcutArea);
+		// Enviar display selecionado ao main process
 		ipcRenderer.invoke('set-display', selectedDisplay);
+
+		// Verificar se há área salva
+		ipcRenderer.invoke('get-saved-area').then((area: any) => {
+			setHasAreaDefined(area !== null);
+		});
 
 		// Listen for area selection events
 		ipcRenderer.on('area-saved-with-confirmation', (_: any, area: any) => {
 			setIsSelectingArea(false);
+			setHasAreaDefined(true);
 			// Mostra mensagem de confirmação
 			alert(`${t('areaSaved')}: ${area.width}x${area.height}px`);
 			// Marca o checkbox automaticamente
@@ -134,35 +125,6 @@ export default function Toolbar({
 		};
 	}, []);
 
-	const handleShortcutChange = async () => {
-		if (!tempShortcut) return;
-		await ipcRenderer.invoke('set-shortcut', tempShortcut);
-		localStorage.setItem('qabooster-shortcut', tempShortcut);
-		setShortcut(tempShortcut);
-		setIsEditingShortcut(false);
-		alert(t('fullscreenShortcutUpdated'));
-	};
-
-	const handleShortcutAreaChange = async () => {
-		if (!tempShortcutArea) return;
-		await ipcRenderer.invoke('set-area-shortcut', tempShortcutArea);
-		localStorage.setItem('qabooster-shortcut-area', tempShortcutArea);
-		setShortcutArea(tempShortcutArea);
-		setIsEditingShortcutArea(false);
-		alert(t('areaShortcutUpdated'));
-	};
-
-	// Funções para cancelar edição
-	const handleCancelShortcutEdit = () => {
-		setTempShortcut('');
-		setIsEditingShortcut(false);
-	};
-
-	const handleCancelShortcutAreaEdit = () => {
-		setTempShortcutArea('');
-		setIsEditingShortcutArea(false);
-	};
-
 	const handleDisplayChange = async (displayId: number) => {
 		setSelectedDisplay(displayId);
 		await ipcRenderer.invoke('set-display', displayId);
@@ -172,6 +134,20 @@ export default function Toolbar({
 	const handleSelectArea = async () => {
 		setIsSelectingArea(true);
 		await ipcRenderer.invoke('open-area-selector');
+	};
+
+	const handleAreaButtonClick = () => {
+		if (!hasAreaDefined || !useSavedArea) {
+			// Não tem área OU está desligado - abre seletor
+			handleSelectArea();
+		} else {
+			// Área está ativa - desliga E apaga
+			setUseSavedArea(false);
+			setHasAreaDefined(false);
+			localStorage.setItem('qabooster-use-saved-area', 'false');
+			ipcRenderer.invoke('set-use-saved-area', false);
+			ipcRenderer.invoke('save-selected-area', null);
+		}
 	};
 
 	const generatePDF = async () => {
@@ -445,59 +421,9 @@ export default function Toolbar({
 		<div className="bg-slate-800 border-b border-slate-700 p-3">
 			<div className="flex items-center justify-between mb-2">
 				<div className="flex items-center gap-2">
-					{/* Tela Cheia */}
-					<div className="flex items-center gap-1">
-						<label className="text-xs text-slate-300">{t('fullScreen')}:</label>
-						<input
-							type="text"
-							className="input-field text-xs w-32 py-1 px-2"
-							value={isEditingShortcut ? tempShortcut : shortcut}
-							readOnly
-							onFocus={() => {
-								setIsEditingShortcut(true);
-								setTempShortcut(shortcut);
-							}}
-							onBlur={() => {
-								// Delay para permitir clicar no botão ✓
-								setTimeout(() => {
-									if (isEditingShortcut) handleCancelShortcutEdit();
-								}, 150);
-							}}
-							onKeyDown={(e) => {
-								if (e.key === 'Escape') {
-									handleCancelShortcutEdit();
-									return;
-								}
-								if (e.key === 'Enter') {
-									handleShortcutChange();
-									return;
-								}
-								e.preventDefault();
-								const keys = [];
-								if (e.metaKey) keys.push('Cmd');
-								if (e.ctrlKey) keys.push('Ctrl');
-								if (e.altKey) keys.push('Alt');
-								if (e.shiftKey) keys.push('Shift');
-								if (
-									e.key &&
-									!['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)
-								) {
-									keys.push(e.key.toUpperCase());
-								}
-								if (keys.length > 0) {
-									setTempShortcut(keys.join('+'));
-								}
-							}}
-							placeholder={t('pressKeys')}
-						/>
-						<button
-							onClick={handleShortcutChange}
-							className="btn-secondary text-xs py-1 px-2"
-							disabled={!isEditingShortcut || !tempShortcut}
-						>
-							✓
-						</button>
-						{displays.length > 1 && (
+					{/* Monitor Selection */}
+					{displays.length > 1 && (
+						<>
 							<select
 								value={selectedDisplay}
 								onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
@@ -506,97 +432,35 @@ export default function Toolbar({
 							>
 								{displays.map((display) => (
 									<option key={display.id} value={display.id}>
-										{display.label}
+										🖥️ {display.label}
 									</option>
 								))}
 							</select>
+							<div className="w-px h-6 bg-slate-700" />
+						</>
+					)}
+
+					{/* Botão Único de Área Fixa - Ciclo: Definir → Ativo (verde) → Desligado (cinza) → Definir */}
+					<button
+						onClick={handleAreaButtonClick}
+						disabled={isSelectingArea}
+						className={`btn-secondary text-xs py-1 px-3 flex items-center gap-2 transition-colors ${
+							hasAreaDefined && useSavedArea
+								? 'bg-green-900 text-green-100 hover:bg-green-800'
+								: 'bg-slate-700 text-slate-300'
+						}`}
+						title={
+							hasAreaDefined && useSavedArea
+								? t('fixedAreaActive')
+								: t('defineFixedArea')
+						}
+					>
+						{hasAreaDefined && useSavedArea ? (
+							<>✓ {t('fixedAreaActive')} 🟢</>
+						) : (
+							<>📐 {t('defineFixedArea')}</>
 						)}
-					</div>
-
-					<div className="w-px h-6 bg-slate-700" />
-
-					{/* Área */}
-					<div className="flex items-center gap-1">
-						<label className="text-xs text-slate-300">{t('area')}:</label>
-						<input
-							type="text"
-							className="input-field text-xs w-32 py-1 px-2"
-							value={isEditingShortcutArea ? tempShortcutArea : shortcutArea}
-							readOnly
-							onFocus={() => {
-								setIsEditingShortcutArea(true);
-								setTempShortcutArea(shortcutArea);
-							}}
-							onBlur={() => {
-								// Delay para permitir clicar no botão ✓
-								setTimeout(() => {
-									if (isEditingShortcutArea) handleCancelShortcutAreaEdit();
-								}, 150);
-							}}
-							onKeyDown={(e) => {
-								if (e.key === 'Escape') {
-									handleCancelShortcutAreaEdit();
-									return;
-								}
-								if (e.key === 'Enter') {
-									handleShortcutAreaChange();
-									return;
-								}
-								e.preventDefault();
-								const keys = [];
-								if (e.metaKey) keys.push('Cmd');
-								if (e.ctrlKey) keys.push('Ctrl');
-								if (e.altKey) keys.push('Alt');
-								if (e.shiftKey) keys.push('Shift');
-								if (
-									e.key &&
-									!['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)
-								) {
-									keys.push(e.key.toUpperCase());
-								}
-								if (keys.length > 0) {
-									setTempShortcutArea(keys.join('+'));
-								}
-							}}
-							placeholder={t('pressKeys')}
-						/>
-						<button
-							onClick={handleShortcutAreaChange}
-							className="btn-secondary text-xs py-1 px-2"
-							disabled={!isEditingShortcutArea || !tempShortcutArea}
-						>
-							✓
-						</button>
-						<button
-							onClick={handleSelectArea}
-							disabled={isSelectingArea}
-							className="btn-secondary text-xs py-1 px-2"
-							title={t('selectAreaToCapture')}
-						>
-							📐
-						</button>
-					</div>
-
-					<div className="w-px h-6 bg-slate-700" />
-
-					{/* Checkbox usar área salva */}
-					<label className="flex items-center gap-1 text-xs text-slate-300 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={useSavedArea}
-							onChange={(e) => {
-								const enabled = e.target.checked;
-								setUseSavedArea(enabled);
-								localStorage.setItem(
-									'qabooster-use-saved-area',
-									enabled.toString(),
-								);
-								ipcRenderer.invoke('set-use-saved-area', enabled);
-							}}
-							className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
-						/>
-						<span>{t('useLastSavedArea')}</span>
-					</label>
+					</button>
 				</div>
 
 				<div className="flex items-center gap-2">

@@ -36,6 +36,10 @@ export const translations = {
 		areaShortcutUpdated: 'Atalho de área selecionada atualizado!',
 		areaSaved: 'Área salva',
 		selectAreaToCapture: 'Selecionar área de captura',
+		defineFixedArea: 'Definir Área Fixa',
+		fixedAreaActive: 'Área Fixa Ativa',
+		fixedAreaInactive: 'Área Fixa (desativada)',
+		redefineArea: 'Redefinir área',
 
 		// Folder Manager
 		continueTest: 'Continuar Teste',
@@ -99,6 +103,15 @@ export const translations = {
 		themeGreen: 'Verde',
 		copyToClipboard: 'Copiar prints para área de transferência',
 		copyToClipboardDesc: 'Permite colar com Ctrl+V em outros programas',
+		captureShortcuts: 'Atalhos de Captura',
+		quickPrint: 'Print Rápido',
+		quickPrintDesc: 'Sempre copia, não salva em pasta',
+		fullScreenDesc: 'Captura monitor selecionado e salva',
+		areaDesc: 'Captura área selecionada e salva',
+		shortcutRegistrationFailed: 'Falha ao Registrar Atalhos',
+		shortcutRegistrationFailedMessage:
+			'Os seguintes atalhos não puderam ser registrados:',
+		shortcutConflictHint: 'Outro aplicativo pode estar usando essas teclas.',
 
 		// Help
 		help: 'Ajuda',
@@ -186,6 +199,10 @@ export const translations = {
 		areaShortcutUpdated: 'Area shortcut updated!',
 		areaSaved: 'Area saved',
 		selectAreaToCapture: 'Select capture area',
+		defineFixedArea: 'Define Fixed Area',
+		fixedAreaActive: 'Fixed Area Active',
+		fixedAreaInactive: 'Fixed Area (disabled)',
+		redefineArea: 'Redefine area',
 
 		// Folder Manager
 		continueTest: 'Continue Test',
@@ -249,6 +266,15 @@ export const translations = {
 		themeGreen: 'Green',
 		copyToClipboard: 'Copy screenshots to clipboard',
 		copyToClipboardDesc: 'Allows pasting with Ctrl+V in other programs',
+		captureShortcuts: 'Capture Shortcuts',
+		quickPrint: 'Quick Print',
+		quickPrintDesc: 'Always copies, never saves to folder',
+		fullScreenDesc: 'Captures selected monitor and saves',
+		areaDesc: 'Captures selected area and saves',
+		shortcutRegistrationFailed: 'Failed to Register Shortcuts',
+		shortcutRegistrationFailedMessage:
+			'The following shortcuts could not be registered:',
+		shortcutConflictHint: 'Another application may be using these keys.',
 
 		// Help
 		help: 'Help',
