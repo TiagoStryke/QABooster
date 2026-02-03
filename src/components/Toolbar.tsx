@@ -88,6 +88,21 @@ export default function Toolbar({
 			setDisplays(displays);
 		});
 
+		// Listener para mudanças nos displays
+		const handleDisplaysUpdated = (_: any, updatedDisplays: Display[]) => {
+			console.log('Displays atualizados:', updatedDisplays);
+			setDisplays(updatedDisplays);
+		};
+
+		const handleDisplayChanged = (_: any, newDisplayId: number) => {
+			console.log('Display selecionado mudou para:', newDisplayId);
+			setSelectedDisplay(newDisplayId);
+			localStorage.setItem('qabooster-display', newDisplayId.toString());
+		};
+
+		ipcRenderer.on('displays-updated', handleDisplaysUpdated);
+		ipcRenderer.on('display-changed', handleDisplayChanged);
+
 		// Enviar preferência de área salva ao main process
 		ipcRenderer.invoke('set-use-saved-area', useSavedArea);
 
@@ -114,6 +129,8 @@ export default function Toolbar({
 		return () => {
 			ipcRenderer.removeAllListeners('area-saved-with-confirmation');
 			ipcRenderer.removeAllListeners('area-selection-cancelled');
+			ipcRenderer.removeAllListeners('displays-updated');
+			ipcRenderer.removeAllListeners('display-changed');
 		};
 	}, []);
 

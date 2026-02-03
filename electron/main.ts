@@ -1,15 +1,15 @@
 import {
-    app,
-    BrowserWindow,
-    clipboard,
-    desktopCapturer,
-    dialog,
-    globalShortcut,
-    ipcMain,
-    nativeImage,
-    screen,
-    shell,
-    Tray,
+	app,
+	BrowserWindow,
+	clipboard,
+	desktopCapturer,
+	dialog,
+	globalShortcut,
+	ipcMain,
+	nativeImage,
+	screen,
+	shell,
+	Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -353,10 +353,59 @@ function registerGlobalShortcut() {
 	}
 }
 
+// Configura listeners para detectar mudanças de displays
+function setupDisplayListeners() {
+	// Detecta quando um display é adicionado
+	screen.on('display-added', () => {
+		console.log('Display adicionado');
+		notifyDisplaysChanged();
+	});
+
+	// Detecta quando um display é removido
+	screen.on('display-removed', () => {
+		console.log('Display removido');
+		const displays = screen.getAllDisplays();
+
+		// Ajusta selectedDisplayId se estiver fora do range
+		if (selectedDisplayId >= displays.length) {
+			selectedDisplayId = 0;
+			if (mainWindow) {
+				mainWindow.webContents.send('display-changed', selectedDisplayId);
+			}
+		}
+
+		notifyDisplaysChanged();
+	});
+
+	// Detecta mudanças nas métricas do display
+	screen.on('display-metrics-changed', () => {
+		console.log('Display métricas alteradas');
+		notifyDisplaysChanged();
+	});
+}
+
+// Notifica o renderer sobre mudanças nos displays
+function notifyDisplaysChanged() {
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		const displays = screen.getAllDisplays();
+		const displaysData = displays.map((display, index) => ({
+			id: index,
+			label: `Monitor ${index + 1}${display.internal ? ' (Interno)' : ''}${
+				display.bounds.x === 0 && display.bounds.y === 0 ? ' [Principal]' : ''
+			}`,
+			bounds: display.bounds,
+			primary: display.bounds.x === 0 && display.bounds.y === 0,
+		}));
+
+		mainWindow.webContents.send('displays-updated', displaysData);
+	}
+}
+
 app.whenReady().then(() => {
 	createWindow();
 	createTray();
 	registerGlobalShortcut();
+	setupDisplayListeners();
 
 	app.on('activate', () => {
 		if (BrowserWindow.getAllWindows().length === 0) {
@@ -797,7 +846,9 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 		thumbnailSize: { width, height },
 	});
 
-	let screenshot = sources[selectedDisplayId].thumbnail;
+	// Garante que o índice do display é válido
+	const sourceIndex = Math.min(selectedDisplayId, sources.length - 1);
+	let screenshot = sources[sourceIndex].thumbnail;
 
 	// Adiciona cursor ao overlay APENAS se estiver dentro do monitor
 	const cursorPos = screen.getCursorScreenPoint();
