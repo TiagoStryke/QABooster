@@ -472,5 +472,33 @@ When making changes to this project:
 6. **Don't break IPC** - Frontend depends on exact handler signatures
 7. **Keep it clean** - Constants, services, utilities in right places
 8. **Document when needed** - Complex logic needs comments
+9. **Update these instructions** - When features change, update this file
 
 **This is a production app used by QA professionals. Stability and reliability are critical.**
+
+---
+
+## 📝 Maintaining This Documentation
+
+**CRITICAL**: These instructions must be kept up-to-date with the codebase.
+
+**When to update copilot-instructions.md:**
+
+- ✅ Adding new features or components
+- ✅ Changing architecture or folder structure
+- ✅ Modifying critical workflows (screenshot, PDF, etc.)
+- ✅ Adding/removing dependencies or tools
+- ✅ Changing IPC handler signatures
+- ✅ Updating coding standards or patterns
+- ✅ Discovering new bugs or edge cases
+- ✅ Refactoring major modules
+
+**How to update:**
+
+1. Edit `.github/copilot-instructions.md` in the same commit as code changes
+2. Keep descriptions concise but complete
+3. Remove outdated information
+4. Update examples if APIs changed
+5. Maintain the existing structure and sections
+
+**Golden Rule:** If you changed how something works, update the instructions. Future you (and Copilot) will thank you.
