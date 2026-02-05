@@ -1,23 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import MainLayout from './components/MainLayout';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { applyTheme, Theme } from './theme/themes';
+import { useShortcutSync } from './hooks/useShortcutSync';
+import { useThemeManager } from './hooks/useThemeManager';
+import { HeaderData, ImageData } from './interfaces';
 
 const { ipcRenderer } = window.require('electron');
-
-export interface HeaderData {
-	testName: string;
-	executor: string;
-	system: string;
-	testCycle: string;
-	testCase: string;
-}
-
-export interface ImageData {
-	name: string;
-	path: string;
-	timestamp?: number;
-}
 
 function App() {
 	const { t } = useLanguage();
@@ -38,50 +26,14 @@ function App() {
 	const isNewFolderRef = useRef(false); // Flag para indicar pasta NOVA (não deve carregar header)
 	const executorRef = useRef(localStorage.getItem('qabooster-executor') || ''); // Ref para evitar dependência de headerData
 
+	// Initialize theme and shortcuts
+	useThemeManager();
+	useShortcutSync();
+
 	// Mantém ref sincronizado com state
 	useEffect(() => {
 		currentFolderRef.current = currentFolder;
 	}, [currentFolder]);
-
-	// Aplicar tema inicial e escutar mudanças
-	useEffect(() => {
-		const savedTheme =
-			(localStorage.getItem('qabooster-theme') as Theme) || 'blue';
-		applyTheme(savedTheme);
-
-		const handleThemeChange = (e: CustomEvent) => {
-			applyTheme(e.detail);
-		};
-
-		window.addEventListener(
-			'theme-changed',
-			handleThemeChange as EventListener,
-		);
-
-		return () => {
-			window.removeEventListener(
-				'theme-changed',
-				handleThemeChange as EventListener,
-			);
-		};
-	}, []);
-
-	// Sincronizar shortcuts do localStorage com backend na inicialização
-	useEffect(() => {
-		const shortcutFull =
-			localStorage.getItem('qabooster-shortcut') || 'CommandOrControl+Shift+S';
-		const shortcutArea =
-			localStorage.getItem('qabooster-shortcut-area') ||
-			'CommandOrControl+Shift+A';
-		const shortcutQuick =
-			localStorage.getItem('qabooster-shortcut-quick') ||
-			'CommandOrControl+Shift+Q';
-
-		// Envia os shortcuts salvos para o backend
-		ipcRenderer.invoke('set-shortcut', shortcutFull);
-		ipcRenderer.invoke('set-area-shortcut', shortcutArea);
-		ipcRenderer.invoke('set-quick-shortcut', shortcutQuick);
-	}, []);
 
 	// Salvar executor no localStorage sempre que mudar
 	useEffect(() => {
