@@ -1,5 +1,5 @@
-import { HeaderData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { HeaderData } from '../interfaces';
 
 const { ipcRenderer } = window.require('electron');
 

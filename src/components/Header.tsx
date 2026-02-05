@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { HeaderData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { HeaderData } from '../interfaces';
 import HelpTips from './HelpTips';
 import Settings from './Settings';
 
