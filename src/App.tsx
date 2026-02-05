@@ -66,6 +66,23 @@ function App() {
 		};
 	}, []);
 
+	// Sincronizar shortcuts do localStorage com backend na inicialização
+	useEffect(() => {
+		const shortcutFull =
+			localStorage.getItem('qabooster-shortcut') || 'CommandOrControl+Shift+S';
+		const shortcutArea =
+			localStorage.getItem('qabooster-shortcut-area') ||
+			'CommandOrControl+Shift+A';
+		const shortcutQuick =
+			localStorage.getItem('qabooster-shortcut-quick') ||
+			'CommandOrControl+Shift+Q';
+
+		// Envia os shortcuts salvos para o backend
+		ipcRenderer.invoke('set-shortcut', shortcutFull);
+		ipcRenderer.invoke('set-area-shortcut', shortcutArea);
+		ipcRenderer.invoke('set-quick-shortcut', shortcutQuick);
+	}, []);
+
 	// Salvar executor no localStorage sempre que mudar
 	useEffect(() => {
 		if (headerData.executor) {
