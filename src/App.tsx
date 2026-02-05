@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import MainLayout from './components/MainLayout';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
+import { useShortcutSync } from './hooks/useShortcutSync';
+import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { HeaderData, ImageData } from './interfaces';
 
 const { ipcRenderer } = window.require('electron');
@@ -29,6 +30,9 @@ function App() {
 	// Initialize theme and shortcuts
 	useThemeManager();
 	useShortcutSync();
+
+	// Screenshot event listeners
+	useScreenshotListeners({ currentFolderRef, setImages, t });
 
 	// Mantém ref sincronizado com state
 	useEffect(() => {
@@ -124,84 +128,6 @@ function App() {
 
 		return () => clearTimeout(timeoutId);
 	}, [headerData.testCase, currentFolder]); // APENAS testCase e currentFolder, não todo headerData
-
-	// Event listeners do IPC - usa ref para acessar currentFolder atualizado sem recriar listeners
-	useEffect(() => {
-		const handleScreenshotCaptured = () => {
-			const folder = currentFolderRef.current;
-			if (folder) {
-				ipcRenderer.invoke('get-images', folder).then(setImages);
-			}
-		};
-
-		const handleScreenshotFlash = () => {
-			// Toca som se habilitado (padrão: true)
-			const soundEnabled = localStorage.getItem('qabooster-sound') !== 'false';
-			if (soundEnabled) {
-				// Som minimalista de câmera usando Web Audio API
-				const audioContext = new AudioContext();
-				const oscillator = audioContext.createOscillator();
-				const gainNode = audioContext.createGain();
-
-				oscillator.connect(gainNode);
-				gainNode.connect(audioContext.destination);
-
-				oscillator.frequency.value = 800;
-				oscillator.type = 'sine';
-
-				gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-				gainNode.gain.exponentialRampToValueAtTime(
-					0.01,
-					audioContext.currentTime + 0.1,
-				);
-
-				oscillator.start(audioContext.currentTime);
-				oscillator.stop(audioContext.currentTime + 0.1);
-			}
-
-			// Envia sinal para o main process animar o tray
-			ipcRenderer.send('screenshot-flash');
-		};
-
-		const handleScreenshotError = (_: any, message: string) => {
-			alert(t('errorGeneratingPDF'));
-		};
-
-		// Listen for screenshot captures
-		ipcRenderer.on('screenshot-captured', handleScreenshotCaptured);
-		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
-		ipcRenderer.on('screenshot-error', handleScreenshotError);
-
-		// Listen for shortcut registration failures
-		const handleShortcutRegistrationFailed = (
-			_: any,
-			data: { shortcuts: Array<{ type: string; key: string }> },
-		) => {
-			const shortcutNames = data.shortcuts.map((s) => {
-				const nameMap: Record<string, string> = {
-					fullscreen: t('fullScreen'),
-					area: t('area'),
-					quick: t('quickPrint'),
-				};
-				return `${nameMap[s.type] || s.type} (${s.key})`;
-			});
-
-			const message = `${t('shortcutRegistrationFailedMessage')}\n${shortcutNames.join('\n')}\n\n${t('shortcutConflictHint')}`;
-			alert(message);
-		};
-
-		ipcRenderer.on(
-			'shortcut-registration-failed',
-			handleShortcutRegistrationFailed,
-		);
-
-		return () => {
-			ipcRenderer.removeAllListeners('screenshot-captured');
-			ipcRenderer.removeAllListeners('screenshot-error');
-			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
-			ipcRenderer.removeAllListeners('shortcut-registration-failed');
-		};
-	}, []); // Sem dependencies - usa ref para acessar currentFolder sempre atualizado
 
 	const loadImages = async () => {
 		if (currentFolder) {
