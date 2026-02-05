@@ -2,18 +2,39 @@ import {
 	app,
 	BrowserWindow,
 	clipboard,
-	desktopCapturer,
-	dialog,
 	globalShortcut,
 	ipcMain,
-	nativeImage,
 	screen,
-	shell,
 	Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Window management
+import { createMainWindow } from './windows/main-window';
+import {
+	closeOverlayWindow,
+	createOverlayWindow,
+} from './windows/overlay-window';
+import { createTray, setupTrayFlashHandler } from './windows/tray';
+
+// IPC Handlers
+import { registerDisplayHandlers } from './handlers/display-handlers';
+import { registerFolderHandlers } from './handlers/folder-handlers';
+import { registerPdfHandlers } from './handlers/pdf-handlers';
+import { registerSettingsHandlers } from './handlers/settings-handlers';
+import { registerShortcutHandlers } from './handlers/shortcut-handlers';
+import { registerWindowHandlers } from './handlers/window-handlers';
+
+// Services
+import {
+	captureAreaScreenshot,
+	captureFullscreenScreenshot,
+	captureScreenshotForOverlay,
+} from './services/screenshot-service';
+import { getNextScreenshotFilename } from './utils/filename-generator';
+
+// Compatibility aliases for existing code
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -21,174 +42,18 @@ let currentFolder: string = '';
 let shortcutKey: string = 'CommandOrControl+Shift+S';
 let shortcutKeyArea: string = 'CommandOrControl+Shift+A';
 let shortcutKeyQuick: string = 'CommandOrControl+Shift+Q';
-let selectedDisplayId: number = 0; // ID do display selecionado
-let useSavedArea: boolean = false; // Se deve usar área salva ou sempre perguntar
-let copyToClipboard: boolean = false; // Se deve copiar para área de transferência
-let soundEnabled: boolean = true; // Se deve tocar som ao capturar
-let cursorInScreenshots: boolean = true; // Se deve desenhar cursor nas capturas
+let selectedDisplayId: number = 0;
+let useSavedArea: boolean = false;
+let copyToClipboard: boolean = false;
+let soundEnabled: boolean = true;
+let cursorInScreenshots: boolean = true;
 let savedArea: { x: number; y: number; width: number; height: number } | null =
 	null;
-let originalWindowWidth: number = 1400; // Largura original da janela
-let pendingScreenshot: Electron.NativeImage | null = null; // Screenshot pendente para salvar
-
-// Função para gerar nome de arquivo sequencial
-function getNextScreenshotFilename(folder: string): string {
-	// Lista todos os arquivos PNG da pasta
-	const files = fs.readdirSync(folder).filter((f) => f.endsWith('.png'));
-
-	// Extrai os números dos arquivos screenshot-XXX.png
-	const numbers = files
-		.map((f) => {
-			const match = f.match(/^screenshot-(\d+)\.png$/);
-			return match ? parseInt(match[1], 10) : 0;
-		})
-		.filter((n) => n > 0);
-
-	// Próximo número é o maior + 1 (ou 1 se não houver arquivos)
-	const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
-
-	// Formata com 3 dígitos: screenshot-001.png
-	return `screenshot-${String(nextNumber).padStart(3, '0')}.png`;
-}
-
-// Cursor SVG em base64
-const CURSOR_SVG = `data:image/svg+xml;base64,${Buffer.from(
-	`
-<svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-	<path d="M 5.5 3.5 L 5.5 28.5 L 12.5 21.5 L 16.5 32.5 L 20.5 31.5 L 16.5 20.5 L 24.5 20.5 Z" fill="rgba(0,0,0,0.5)"/>
-	<path d="M 4 2 L 4 27 L 11 20 L 15 31 L 19 30 L 15 19 L 23 19 Z" fill="white" stroke="black" stroke-width="1"/>
-</svg>
-`,
-).toString('base64')}`;
-
-// Função para adicionar cursor ao screenshot usando IPC
-async function addCursorToScreenshot(
-	screenshot: Electron.NativeImage,
-	cursorX: number,
-	cursorY: number,
-): Promise<Electron.NativeImage> {
-	if (!mainWindow) return screenshot;
-
-	const size = screenshot.getSize();
-	const dataURL = screenshot.toDataURL();
-
-	// Envia para o renderer fazer a composição
-	const result = await mainWindow.webContents.executeJavaScript(`
-		new Promise((resolve) => {
-			const canvas = document.createElement('canvas');
-			canvas.width = ${size.width};
-			canvas.height = ${size.height};
-			const ctx = canvas.getContext('2d');
-			
-			const img = new Image();
-			img.onload = () => {
-				ctx.drawImage(img, 0, 0);
-				
-				const cursor = new Image();
-				cursor.onload = () => {
-					ctx.drawImage(cursor, ${Math.round(cursorX)}, ${Math.round(cursorY)}, 24, 36);
-					resolve(canvas.toDataURL());
-				};
-				cursor.onerror = () => resolve('${dataURL}');
-				cursor.src = '${CURSOR_SVG}';
-			};
-			img.onerror = () => resolve('${dataURL}');
-			img.src = '${dataURL}';
-		});
-	`);
-
-	return nativeImage.createFromDataURL(result);
-}
+let originalWindowWidth: number = 1400;
+let pendingScreenshot: Electron.NativeImage | null = null;
 
 // Desabilitar verificação de certificado SSL para evitar erros no console
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
-
-function createWindow() {
-	mainWindow = new BrowserWindow({
-		width: 1400,
-		height: 900,
-		minWidth: 1000,
-		minHeight: 600,
-		webPreferences: {
-			nodeIntegration: true,
-			contextIsolation: false,
-			webSecurity: false,
-		},
-		titleBarStyle: 'hiddenInset',
-		backgroundColor: '#0f172a',
-	});
-
-	if (process.env.NODE_ENV === 'development') {
-		mainWindow.loadURL('http://localhost:3000');
-		// Apenas abre DevTools se a variável DEVTOOLS estiver definida
-		if (process.env.DEVTOOLS === 'true') {
-			mainWindow.webContents.openDevTools();
-		}
-	} else {
-		// Em produção, usa app.getAppPath() que funciona mesmo empacotado
-		const indexPath = path.join(
-			app.getAppPath(),
-			'dist',
-			'renderer',
-			'index.html',
-		);
-		mainWindow.loadFile(indexPath);
-	}
-
-	mainWindow.on('closed', () => {
-		mainWindow = null;
-	});
-}
-
-function createTray() {
-	// Cria ícone SVG de clipboard com checkmark
-	const createTrayIcon = (color: string = '#ffffff') => {
-		const svg = `
-			<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-				<!-- Clipboard -->
-				<path fill="${color}" d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/>
-				<!-- Checkmark -->
-				<path fill="${color}" stroke="#1e293b" stroke-width="0.5" d="M10 17l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/>
-			</svg>
-		`;
-		return nativeImage.createFromDataURL(
-			'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'),
-		);
-	};
-
-	tray = new Tray(createTrayIcon());
-	tray.setToolTip('QA Booster - Gerador de evidências');
-
-	tray.on('click', () => {
-		if (mainWindow) {
-			if (mainWindow.isVisible()) {
-				mainWindow.hide();
-			} else {
-				mainWindow.show();
-			}
-		}
-	});
-
-	// Função para animar o ícone (piscar em verde)
-	ipcMain.on('screenshot-flash', () => {
-		if (!tray) return;
-
-		// Verde
-		tray.setImage(createTrayIcon('#22c55e'));
-
-		setTimeout(() => {
-			if (tray) tray.setImage(createTrayIcon('#ffffff'));
-		}, 150);
-
-		setTimeout(() => {
-			if (tray) tray.setImage(createTrayIcon('#22c55e'));
-		}, 300);
-
-		setTimeout(() => {
-			if (tray) tray.setImage(createTrayIcon('#ffffff'));
-		}, 450);
-	});
-}
 
 function registerGlobalShortcut() {
 	globalShortcut.unregisterAll();
@@ -205,62 +70,22 @@ function registerGlobalShortcut() {
 		}
 
 		try {
-			const displays = screen.getAllDisplays();
-			const display = displays[selectedDisplayId] || displays[0];
-			const { width, height } = display.bounds;
-
-			const sources = await desktopCapturer.getSources({
-				types: ['screen'],
-				thumbnailSize: {
-					width: width,
-					height: height,
-				},
+			const result = await captureFullscreenScreenshot({
+				mainWindow,
+				currentFolder,
+				selectedDisplayId,
+				copyToClipboard,
+				cursorInScreenshots,
 			});
 
-			if (sources.length > selectedDisplayId) {
-				const filename = getNextScreenshotFilename(currentFolder);
-				const filepath = path.join(currentFolder, filename);
-
-				const image = sources[selectedDisplayId].thumbnail;
-
-				// Adiciona cursor APENAS se estiver dentro do monitor
-				const cursorPos = screen.getCursorScreenPoint();
-				const relativeCursorX = cursorPos.x - display.bounds.x;
-				const relativeCursorY = cursorPos.y - display.bounds.y;
-
-				// Verifica se cursor está dentro dos bounds do monitor
-				const isCursorInDisplay =
-					relativeCursorX >= 0 &&
-					relativeCursorX < display.bounds.width &&
-					relativeCursorY >= 0 &&
-					relativeCursorY < display.bounds.height;
-
-				const imageWithCursor =
-					cursorInScreenshots && isCursorInDisplay
-						? await addCursorToScreenshot(
-								image,
-								relativeCursorX,
-								relativeCursorY,
-							)
-						: image; // Se cursor fora ou desabilitado, não adiciona
-
-				const pngBuffer = imageWithCursor.toPNG();
-
-				fs.writeFileSync(filepath, pngBuffer);
-
-				// Copiar para clipboard se habilitado
-				if (copyToClipboard) {
-					clipboard.writeImage(imageWithCursor);
-				}
-
+			if (result) {
 				mainWindow?.webContents.send('screenshot-captured', {
-					filepath,
-					filename,
+					filepath: result.filepath,
+					filename: result.filename,
 				});
-
-				// Anima o tray icon
-				mainWindow?.webContents.send('trigger-screenshot-flash');
 			}
+
+			mainWindow?.webContents.send('trigger-screenshot-flash');
 		} catch (error) {
 			console.error('Screenshot error:', error);
 			mainWindow?.show();
@@ -285,57 +110,23 @@ function registerGlobalShortcut() {
 		// Se deve usar área salva E tem área salva = tira print direto
 		if (useSavedArea && savedArea) {
 			try {
-				const displays = screen.getAllDisplays();
-				const display = displays[selectedDisplayId] || displays[0];
-				const { width, height } = display.bounds;
-
-				const sources = await desktopCapturer.getSources({
-					types: ['screen'],
-					thumbnailSize: { width, height },
+				const result = await captureAreaScreenshot({
+					mainWindow,
+					currentFolder,
+					selectedDisplayId,
+					copyToClipboard,
+					cursorInScreenshots,
+					area: savedArea,
 				});
 
-				if (sources.length > selectedDisplayId) {
-					const filename = getNextScreenshotFilename(currentFolder);
-					const filepath = path.join(currentFolder, filename);
-
-					const image = sources[selectedDisplayId].thumbnail;
-
-					// Adiciona cursor APENAS se estiver dentro do monitor
-					const cursorPos = screen.getCursorScreenPoint();
-					const relativeCursorX = cursorPos.x - display.bounds.x;
-					const relativeCursorY = cursorPos.y - display.bounds.y;
-
-					// Verifica se cursor está dentro dos bounds do monitor
-					const isCursorInDisplay =
-						relativeCursorX >= 0 &&
-						relativeCursorX < display.bounds.width &&
-						relativeCursorY >= 0 &&
-						relativeCursorY < display.bounds.height;
-
-					const imageWithCursor =
-						cursorInScreenshots && isCursorInDisplay
-							? await addCursorToScreenshot(
-									image,
-									relativeCursorX,
-									relativeCursorY,
-								)
-							: image; // Se cursor fora ou desabilitado, não adiciona
-
-					const cropped = imageWithCursor.crop(savedArea);
-					fs.writeFileSync(filepath, cropped.toPNG());
-
-					// Copiar para clipboard se habilitado
-					if (copyToClipboard) {
-						clipboard.writeImage(cropped);
-					}
-
+				if (result) {
 					mainWindow?.webContents.send('screenshot-captured', {
-						filepath,
-						filename,
+						filepath: result.filepath,
+						filename: result.filename,
 					});
-
-					mainWindow?.webContents.send('trigger-screenshot-flash');
 				}
+
+				mainWindow?.webContents.send('trigger-screenshot-flash');
 			} catch (error) {
 				console.error('Screenshot error:', error);
 				mainWindow?.webContents.send(
@@ -375,13 +166,11 @@ function registerGlobalShortcut() {
 function setupDisplayListeners() {
 	// Detecta quando um display é adicionado
 	screen.on('display-added', () => {
-		console.log('Display adicionado');
 		notifyDisplaysChanged();
 	});
 
 	// Detecta quando um display é removido
 	screen.on('display-removed', () => {
-		console.log('Display removido');
 		const displays = screen.getAllDisplays();
 
 		// Ajusta selectedDisplayId se estiver fora do range
@@ -397,7 +186,6 @@ function setupDisplayListeners() {
 
 	// Detecta mudanças nas métricas do display
 	screen.on('display-metrics-changed', () => {
-		console.log('Display métricas alteradas');
 		notifyDisplaysChanged();
 	});
 }
@@ -420,14 +208,87 @@ function notifyDisplaysChanged() {
 }
 
 app.whenReady().then(() => {
-	createWindow();
-	createTray();
+	// Register all IPC handlers FIRST (before creating windows)
+	registerFolderHandlers(
+		() => currentFolder,
+		(folder) => {
+			currentFolder = folder;
+		},
+	);
+
+	registerDisplayHandlers(
+		() => selectedDisplayId,
+		(id) => {
+			selectedDisplayId = id;
+		},
+	);
+
+	registerSettingsHandlers(
+		() => useSavedArea,
+		(value) => {
+			useSavedArea = value;
+		},
+		() => copyToClipboard,
+		(value) => {
+			copyToClipboard = value;
+		},
+		() => soundEnabled,
+		(value) => {
+			soundEnabled = value;
+		},
+		() => cursorInScreenshots,
+		(value) => {
+			cursorInScreenshots = value;
+		},
+		() => savedArea,
+		(value) => {
+			savedArea = value;
+		},
+	);
+
+	registerPdfHandlers(() => currentFolder);
+
+	registerShortcutHandlers(
+		() => shortcutKey,
+		(value) => {
+			shortcutKey = value;
+			registerGlobalShortcut();
+		},
+		() => shortcutKeyArea,
+		(value) => {
+			shortcutKeyArea = value;
+			registerGlobalShortcut();
+		},
+		() => shortcutKeyQuick,
+		(value) => {
+			shortcutKeyQuick = value;
+			registerGlobalShortcut();
+		},
+		registerGlobalShortcut,
+	);
+
+	registerWindowHandlers(
+		() => mainWindow,
+		() => originalWindowWidth,
+		(width) => {
+			originalWindowWidth = width;
+		},
+	);
+
+	// NOW create windows (after handlers are registered)
+	mainWindow = createMainWindow();
+	tray = createTray(mainWindow);
+
+	// Setup tray flash animation handler
+	setupTrayFlashHandler(tray);
+
+	// Register global shortcuts
 	registerGlobalShortcut();
 	setupDisplayListeners();
 
 	app.on('activate', () => {
 		if (BrowserWindow.getAllWindows().length === 0) {
-			createWindow();
+			mainWindow = createMainWindow();
 		}
 	});
 });
@@ -443,503 +304,42 @@ app.on('will-quit', () => {
 	globalShortcut.unregisterAll();
 });
 
-// IPC Handlers
-ipcMain.handle('select-folder', async () => {
-	const result = await dialog.showOpenDialog({
-		properties: ['openDirectory', 'createDirectory'],
-	});
-
-	if (!result.canceled && result.filePaths.length > 0) {
-		currentFolder = result.filePaths[0];
-		return currentFolder;
-	}
-	return null;
-});
-
-ipcMain.handle('create-folder', async (_, folderName: string) => {
-	const result = await dialog.showOpenDialog({
-		properties: ['openDirectory', 'createDirectory'],
-		title: 'Selecione onde criar a pasta',
-	});
-
-	if (!result.canceled && result.filePaths.length > 0) {
-		const newFolderPath = path.join(result.filePaths[0], folderName);
-		if (!fs.existsSync(newFolderPath)) {
-			fs.mkdirSync(newFolderPath, { recursive: true });
-		}
-		currentFolder = newFolderPath;
-		return newFolderPath;
-	}
-	return null;
-});
-
-ipcMain.handle(
-	'create-subfolder',
-	async (_, parentPath: string, folderName: string) => {
-		let newFolderPath = path.join(parentPath, folderName);
-
-		// Se já existe, adiciona (2), (3), etc
-		if (fs.existsSync(newFolderPath)) {
-			let counter = 2;
-			while (
-				fs.existsSync(path.join(parentPath, `${folderName} (${counter})`))
-			) {
-				counter++;
-			}
-			newFolderPath = path.join(parentPath, `${folderName} (${counter})`);
-		}
-
-		if (!fs.existsSync(newFolderPath)) {
-			fs.mkdirSync(newFolderPath, { recursive: true });
-		}
-		currentFolder = newFolderPath;
-		return newFolderPath;
-	},
-);
-
-ipcMain.handle('rename-folder', async (_, oldPath: string, newName: string) => {
-	try {
-		const parentPath = path.dirname(oldPath);
-		let newPath = path.join(parentPath, newName);
-
-		// Se já existe pasta com esse nome, adiciona (2), (3), etc
-		if (fs.existsSync(newPath) && newPath !== oldPath) {
-			let counter = 2;
-			while (fs.existsSync(path.join(parentPath, `${newName} (${counter})`))) {
-				counter++;
-			}
-			newPath = path.join(parentPath, `${newName} (${counter})`);
-		}
-
-		// Se a pasta antiga existe e o caminho mudou, renomeia
-		if (fs.existsSync(oldPath) && oldPath !== newPath) {
-			fs.renameSync(oldPath, newPath);
-			currentFolder = newPath;
-			return newPath;
-		}
-
-		// Se o caminho não mudou, retorna o atual
-		return oldPath;
-	} catch (error) {
-		console.error('Error renaming folder:', error);
-		return null;
-	}
-});
-
-ipcMain.handle('get-images', async (_, folderPath: string) => {
-	if (!fs.existsSync(folderPath)) {
-		return [];
-	}
-
-	const files = fs.readdirSync(folderPath);
-	const imageFiles = files.filter((file) =>
-		/\.(png|jpg|jpeg|gif|webp)$/i.test(file),
-	);
-
-	return imageFiles.map((file) => ({
-		name: file,
-		path: path.join(folderPath, file),
-	}));
-});
-
-ipcMain.handle('save-image', async (_, { filepath, dataUrl }) => {
-	try {
-		const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-		fs.writeFileSync(filepath, base64Data, 'base64');
-		return true;
-	} catch (error) {
-		console.error('Error saving image:', error);
-		return false;
-	}
-});
-
-ipcMain.handle('delete-image', async (_, filepath: string) => {
-	try {
-		if (fs.existsSync(filepath)) {
-			fs.unlinkSync(filepath);
-			return true;
-		}
-		return false;
-	} catch (error) {
-		console.error('Error deleting image:', error);
-		return false;
-	}
-});
-
-// Get all displays
-ipcMain.handle('get-displays', async () => {
-	const displays = screen.getAllDisplays();
-	return displays.map((display, index) => ({
-		id: index,
-		label: `Monitor ${index + 1} (${display.bounds.width}x${display.bounds.height})`,
-		bounds: display.bounds,
-		primary: display.id === screen.getPrimaryDisplay().id,
-	}));
-});
-
-// Set selected display
-ipcMain.handle('set-display', async (_, displayId: number) => {
-	selectedDisplayId = displayId;
-	return true;
-});
-
-ipcMain.handle('set-use-saved-area', async (_, useArea: boolean) => {
-	useSavedArea = useArea;
-	return true;
-});
-
-ipcMain.handle('set-copy-to-clipboard', async (_, enabled: boolean) => {
-	copyToClipboard = enabled;
-	return true;
-});
-
-ipcMain.handle('set-sound-enabled', async (_, enabled: boolean) => {
-	soundEnabled = enabled;
-	return true;
-});
-
-ipcMain.handle('set-cursor-in-screenshots', async (_, enabled: boolean) => {
-	cursorInScreenshots = enabled;
-	return true;
-});
-
-ipcMain.handle('set-shortcut', async (_, newShortcut: string) => {
-	shortcutKey = newShortcut;
-	registerGlobalShortcut();
-	return true;
-});
-
-ipcMain.handle('get-current-folder', async () => {
-	return currentFolder;
-});
-
-ipcMain.handle('read-image-as-base64', async (_, filepath: string) => {
-	try {
-		const imageBuffer = fs.readFileSync(filepath);
-		const base64 = imageBuffer.toString('base64');
-		const ext = path.extname(filepath).toLowerCase();
-		let mimeType = 'image/png';
-		if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
-		else if (ext === '.gif') mimeType = 'image/gif';
-		else if (ext === '.webp') mimeType = 'image/webp';
-		return `data:${mimeType};base64,${base64}`;
-	} catch (error) {
-		console.error('Error reading image:', error);
-		return null;
-	}
-});
-
-ipcMain.handle('set-area-shortcut', async (_, newShortcut: string) => {
-	shortcutKeyArea = newShortcut;
-	registerGlobalShortcut();
-	return true;
-});
-
-ipcMain.handle('set-quick-shortcut', async (_, newShortcut: string) => {
-	shortcutKeyQuick = newShortcut;
-	registerGlobalShortcut();
-	return true;
-});
-
-ipcMain.handle(
-	'save-selected-area',
-	async (_, area: { x: number; y: number; width: number; height: number }) => {
-		savedArea = area;
-		return true;
-	},
-);
-
-ipcMain.handle('get-saved-area', async () => {
-	return savedArea;
-});
-
-ipcMain.handle('show-pdf-exists-dialog', async (_, { filename }) => {
-	try {
-		const result = await dialog.showMessageBox({
-			type: 'question',
-			title: 'Arquivo já existe',
-			message: `Um arquivo PDF com este nome já existe:\n${filename}`,
-			buttons: ['Substituir', 'Criar nova cópia', 'Cancelar'],
-			defaultId: 1,
-			cancelId: 2,
-		});
-
-		// result.response: 0 = Substituir, 1 = Criar nova cópia, 2 = Cancelar
-		return { success: true, action: result.response };
-	} catch (error) {
-		console.error('Error showing dialog:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('check-pdf-exists', async (_, { filename }) => {
-	try {
-		if (!currentFolder) {
-			return { success: false, error: 'Nenhuma pasta selecionada' };
-		}
-
-		const filepath = path.join(currentFolder, filename);
-		const exists = fs.existsSync(filepath);
-
-		return { success: true, exists };
-	} catch (error) {
-		console.error('Error checking PDF:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('find-next-filename', async (_, { baseFilename }) => {
-	try {
-		if (!currentFolder) {
-			return { success: false, error: 'Nenhuma pasta selecionada' };
-		}
-
-		// Extrair nome e extensão
-		const ext = path.extname(baseFilename);
-		const nameWithoutExt = path.basename(baseFilename, ext);
-
-		let counter = 2;
-		let newFilename = baseFilename;
-		let filepath = path.join(currentFolder, newFilename);
-
-		// Encontrar próximo número disponível
-		while (fs.existsSync(filepath)) {
-			newFilename = `${nameWithoutExt} (${counter})${ext}`;
-			filepath = path.join(currentFolder, newFilename);
-			counter++;
-		}
-
-		return { success: true, filename: newFilename };
-	} catch (error) {
-		console.error('Error finding next filename:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('save-pdf', async (_, { pdfData, filename }) => {
-	try {
-		if (!currentFolder) {
-			return { success: false, error: 'Nenhuma pasta selecionada' };
-		}
-
-		const filepath = path.join(currentFolder, filename);
-		const base64Data = pdfData.split(',')[1]; // Remove data:application/pdf;base64,
-		fs.writeFileSync(filepath, base64Data, 'base64');
-
-		return { success: true, filepath };
-	} catch (error) {
-		console.error('Error saving PDF:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('show-pdf-saved-dialog', async (_, { filename }) => {
-	try {
-		const result = await dialog.showMessageBox(mainWindow!, {
-			type: 'info',
-			title: 'PDF Salvo',
-			message: 'PDF salvo com sucesso!',
-			detail: filename,
-			buttons: ['OK', 'Visualizar PDF'],
-			defaultId: 1,
-			cancelId: 0,
-		});
-
-		return {
-			action: result.response === 1 ? 'view' : 'ok',
-		};
-	} catch (error) {
-		console.error('Error showing dialog:', error);
-		return { action: 'ok' };
-	}
-});
-
-ipcMain.handle('open-pdf', async (_, filepath) => {
-	try {
-		await shell.openPath(filepath);
-		return { success: true };
-	} catch (error) {
-		console.error('Error opening PDF:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('open-folder-in-finder', async (_, folderPath) => {
-	try {
-		await shell.openPath(folderPath);
-		return { success: true };
-	} catch (error) {
-		console.error('Error opening folder:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('save-header-data', async (_, folderPath, headerData) => {
-	try {
-		if (!folderPath) {
-			return { success: false, error: 'Nenhuma pasta especificada' };
-		}
-
-		const configPath = path.join(folderPath, '.qabooster-config.json');
-		fs.writeFileSync(configPath, JSON.stringify(headerData, null, 2), 'utf-8');
-
-		return { success: true };
-	} catch (error) {
-		console.error('Error saving header data:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('load-header-data', async (_, folderPath: string) => {
-	try {
-		const configPath = path.join(folderPath, '.qabooster-config.json');
-
-		if (fs.existsSync(configPath)) {
-			const data = fs.readFileSync(configPath, 'utf-8');
-			const parsedData = JSON.parse(data);
-
-			// Validação: se parsedData for string, arquivo está corrompido
-			if (typeof parsedData === 'string') {
-				fs.unlinkSync(configPath);
-				return { success: false, error: 'Arquivo corrompido e removido' };
-			}
-
-			return { success: true, data: parsedData };
-		}
-
-		return { success: false, error: 'Config file not found' };
-	} catch (error) {
-		console.error('Error loading header data:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-// Notes management
-ipcMain.handle('save-notes', async (_, folderPath: string, notesData: any) => {
-	try {
-		const notesPath = path.join(folderPath, '.qabooster-notes.json');
-		fs.writeFileSync(notesPath, JSON.stringify(notesData, null, 2), 'utf-8');
-		return { success: true };
-	} catch (error) {
-		console.error('Error saving notes:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('load-notes', async (_, folderPath: string) => {
-	try {
-		const notesPath = path.join(folderPath, '.qabooster-notes.json');
-
-		if (fs.existsSync(notesPath)) {
-			const data = fs.readFileSync(notesPath, 'utf-8');
-			return { success: true, data: JSON.parse(data) };
-		}
-
-		return { success: true, data: { text: '', images: [] } };
-	} catch (error) {
-		console.error('Error loading notes:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
-ipcMain.handle('open-image-preview', async (_, imagePath: string) => {
-	try {
-		// Abre a imagem no visualizador padrão do sistema (Preview no Mac)
-		await shell.openPath(imagePath);
-		return { success: true };
-	} catch (error) {
-		console.error('Error opening image preview:', error);
-		return { success: false, error: String(error) };
-	}
-});
-
 // Função base para overlay de seleção de área
 async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 	if (overlayWindow) {
-		overlayWindow.close();
+		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 
-	const displays = screen.getAllDisplays();
-	const display = displays[selectedDisplayId] || displays[0];
-	const { x, y, width, height } = display.bounds;
+	// Captura screenshot para o overlay
+	const screenshot = await captureScreenshotForOverlay(
+		mainWindow!,
+		selectedDisplayId,
+		cursorInScreenshots,
+	);
 
-	// Captura screenshot ANTES de criar a janela
-	const sources = await desktopCapturer.getSources({
-		types: ['screen'],
-		thumbnailSize: { width, height },
-	});
-
-	// Garante que o índice do display é válido
-	const sourceIndex = Math.min(selectedDisplayId, sources.length - 1);
-	let screenshot = sources[sourceIndex].thumbnail;
-
-	// Adiciona cursor ao overlay APENAS se estiver dentro do monitor
-	const cursorPos = screen.getCursorScreenPoint();
-	const relativeCursorX = cursorPos.x - x;
-	const relativeCursorY = cursorPos.y - y;
-
-	// Verifica se cursor está dentro dos bounds do monitor
-	const isCursorInDisplay =
-		relativeCursorX >= 0 &&
-		relativeCursorX < width &&
-		relativeCursorY >= 0 &&
-		relativeCursorY < height;
-
-	screenshot =
-		cursorInScreenshots && isCursorInDisplay
-			? await addCursorToScreenshot(
-					screenshot,
-					relativeCursorX,
-					relativeCursorY,
-				)
-			: screenshot; // Se cursor fora ou desabilitado, não adiciona
+	if (!screenshot) {
+		return;
+	}
 
 	if (saveScreenshot) {
 		pendingScreenshot = screenshot;
 	}
 
-	const screenshotDataURL = screenshot.toDataURL();
+	// Get display bounds
+	const displays = screen.getAllDisplays();
+	const display = displays[selectedDisplayId] || displays[0];
+	const { x, y, width, height } = display.bounds;
 
-	// Cria overlay transparente sem animação
-	overlayWindow = new BrowserWindow({
+	// Cria overlay window
+	overlayWindow = await createOverlayWindow(
 		x,
 		y,
 		width,
 		height,
-		frame: false,
-		transparent: true,
-		alwaysOnTop: true,
-		skipTaskbar: true,
-		resizable: false,
-		movable: false,
-		hasShadow: false,
-		focusable: true,
-		show: false,
-		webPreferences: {
-			nodeIntegration: true,
-			contextIsolation: false,
-		},
-	});
-
-	// Não esconde a janela principal - apenas mostra o overlay por cima
-	overlayWindow.setIgnoreMouseEvents(false);
-	overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-	overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-
-	const htmlPath = path.join(__dirname, 'area-selector', 'area-selector.html');
-
-	await overlayWindow.loadFile(htmlPath);
-
-	// Injeta o screenshot e eventName
-	await overlayWindow.webContents.executeJavaScript(`
-		document.getElementById('screenshot').src = '${screenshotDataURL}';
-		window.eventName = '${eventName}';
-	`);
-
-	// Mostra imediatamente sem ready-to-show para evitar animação
-	overlayWindow.show();
-	overlayWindow.focus();
+		screenshot.toDataURL(),
+		eventName,
+	);
 
 	overlayWindow.on('closed', () => {
 		overlayWindow = null;
@@ -979,7 +379,7 @@ ipcMain.on('area-selected-for-screenshot', (_, area) => {
 
 	// Fecha o overlay imediatamente
 	if (overlayWindow) {
-		overlayWindow.close();
+		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 
@@ -1017,7 +417,7 @@ ipcMain.on('area-selected-only', (_, area) => {
 
 	// Fecha o overlay
 	if (overlayWindow) {
-		overlayWindow.close();
+		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 
@@ -1028,7 +428,7 @@ ipcMain.on('area-selected-only', (_, area) => {
 ipcMain.on('area-selected-quick', (_, area) => {
 	// Fecha o overlay
 	if (overlayWindow) {
-		overlayWindow.close();
+		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 
@@ -1044,7 +444,7 @@ ipcMain.on('area-selected-quick', (_, area) => {
 
 ipcMain.on('area-selection-cancelled', () => {
 	if (overlayWindow) {
-		overlayWindow.close();
+		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 	pendingScreenshot = null;

@@ -1,21 +1,476 @@
-# QA Testing Screenshot Tool
+# QA Booster - Screenshot & Evidence Generator
 
-Electron + React + TypeScript application for QA testers to capture, organize, edit screenshots and generate PDF reports.
+Electron + React + TypeScript application for QA testers to capture, organize, edit screenshots and generate professional PDF reports with customizable headers.
 
-## Features
+## 📋 Project Overview
 
-- Global keyboard shortcuts for screenshot capture
-- Multi-monitor support
-- Image gallery with drag-and-drop reordering
-- Built-in image editor (arrows, circles, text)
-- PDF generation with custom headers
-- Automatic folder management with date-based naming
+**Purpose**: Streamline QA testing workflow by providing a comprehensive tool for:
 
-## Tech Stack
+- Capturing screenshots with global shortcuts (fullscreen, area, quick copy)
+- Organizing test evidence in folders with automatic naming
+- Editing screenshots with annotations (arrows, circles, text, highlights)
+- Generating branded PDF reports with test metadata
+- Supporting multi-monitor setups with cursor capture
 
-- Electron
-- React 18
-- TypeScript
-- Tailwind CSS
-- Fabric.js (image editing)
-- jsPDF (PDF generation)
+**Target Users**: QA Engineers, Test Analysts, Software Testers
+
+---
+
+## 🏗️ Architecture & Project Structure
+
+### **Main Process (Electron Backend)**
+
+Location: `/electron/main.ts` and related modules
+
+**CRITICAL**: The main.ts file is being refactored to follow clean architecture:
+
+```
+electron/
+├── main.ts                    # Entry point (orchestration only)
+├── config/
+│   ├── app-config.ts         # Global state & constants
+│   └── window-config.ts      # Window configurations
+├── windows/
+│   ├── main-window.ts        # Main window management
+│   ├── overlay-window.ts     # Area selector overlay
+│   └── tray.ts               # System tray
+├── handlers/
+│   ├── screenshot-handlers.ts
+│   ├── folder-handlers.ts
+│   ├── pdf-handlers.ts
+│   ├── display-handlers.ts
+│   └── settings-handlers.ts
+├── services/
+│   ├── screenshot-service.ts  # Screenshot capture logic
+│   ├── cursor-service.ts      # Cursor overlay
+│   ├── file-service.ts        # File operations
+│   └── display-service.ts     # Display management
+├── utils/
+│   ├── filename-generator.ts  # Sequential naming
+│   └── shortcut-manager.ts    # Global shortcuts
+└── assets/
+    ├── cursor.svg             # Cursor graphic
+    └── tray-icon.svg          # Tray icon
+```
+
+**IMPORTANT RULES FOR MAIN PROCESS:**
+
+- ✅ Always use modular structure - NO 1000+ line files
+- ✅ Separate concerns: handlers, services, windows, utils
+- ✅ Use AppState class for global state management
+- ✅ Use APP_CONSTANTS for all hardcoded values
+- ✅ IPC handlers must be organized by domain (screenshot, folder, pdf, etc.)
+- ❌ NEVER inline SVGs or large HTML - use asset files
+- ❌ NEVER duplicate screenshot logic - use services
+
+### **Renderer Process (React Frontend)**
+
+Location: `/src/`
+
+```
+src/
+├── App.tsx                    # Main app component
+├── components/
+│   ├── Header.tsx            # Test metadata form
+│   ├── Toolbar.tsx           # Screenshot controls & PDF generation
+│   ├── ImageGallery.tsx      # Drag-drop image organization
+│   ├── ImageEditor.tsx       # Fabric.js annotation editor
+│   ├── Settings.tsx          # App preferences modal
+│   └── FolderManager.tsx     # Folder selection/creation
+├── contexts/
+│   ├── LanguageContext.tsx   # i18n state management
+│   └── ThemeContext.tsx      # Theme state management
+├── i18n/
+│   └── translations.ts       # PT & EN translations
+├── assets/
+│   ├── icons/                # Status icons (approved, reproved, partial)
+│   └── logos/                # Company logos
+└── tests/                    # Jest + React Testing Library
+    └── components/
+```
+
+**IMPORTANT RULES FOR RENDERER:**
+
+- ✅ All user-facing text MUST use `t()` function from LanguageContext
+- ✅ Component files should be < 500 lines (split if larger)
+- ✅ Use TypeScript interfaces for all props and state
+- ✅ Follow React hooks best practices (useEffect dependencies)
+- ✅ Use Tailwind CSS for styling (NO inline styles except dynamic)
+- ❌ NEVER hardcode text strings - always add to translations.ts
+- ❌ NEVER bypass i18n - every label, button, message needs translation
+
+---
+
+## 🌍 Internationalization (i18n)
+
+**CRITICAL RULE**: This app supports PT (Portuguese) and EN (English). ALL user-facing text must be translatable.
+
+### How to Add New Text:
+
+1. **Add to `/src/i18n/translations.ts`:**
+
+```typescript
+export const translations = {
+	pt: {
+		yourNewKey: 'Texto em Português',
+		yourNewKeyDesc: 'Descrição opcional',
+	},
+	en: {
+		yourNewKey: 'Text in English',
+		yourNewKeyDesc: 'Optional description',
+	},
+};
+```
+
+2. **Use in components:**
+
+```typescript
+import { useLanguage } from '../contexts/LanguageContext';
+
+function YourComponent() {
+  const { t } = useLanguage();
+  return <button>{t('yourNewKey')}</button>;
+}
+```
+
+**FORBIDDEN**:
+
+- ❌ `<button>Save</button>` - hardcoded text
+- ❌ `alert('Error occurred')` - hardcoded messages
+- ❌ `console.log('Debug info')` - OK for debug, but user messages must be translated
+
+**REQUIRED**:
+
+- ✅ `<button>{t('save')}</button>`
+- ✅ `mainWindow?.webContents.send('error', { key: 'errorOccurred' })`
+- ✅ All labels, buttons, tooltips, error messages, descriptions
+
+---
+
+## 🎨 Styling & Design Standards
+
+### Theme System
+
+- Uses ThemeContext with multiple themes: `blue`, `dark`, `light`, `purple`, `green`
+- Tailwind CSS with custom color schemes
+- Dark mode optimized (primary theme)
+
+### Color Palette:
+
+- **Primary (GOL Orange)**: `#FF6B00` - Used for branding, highlights
+- **Background**: `#0f172a` (slate-900)
+- **Text**: `#e2e8f0` (slate-200)
+- **Success**: `#22c55e` (green-500)
+- **Error**: `#ef4444` (red-500)
+
+### Styling Rules:
+
+- ✅ Use Tailwind utility classes
+- ✅ Use theme colors: `bg-primary-500`, `text-primary-600`
+- ✅ Responsive design (though app is desktop-only)
+- ❌ NO inline styles except for dynamic values (coordinates, sizes)
+- ❌ NO custom CSS files (Tailwind only)
+
+---
+
+## 📸 Screenshot Feature Architecture
+
+### Capture Modes:
+
+1. **Fullscreen** (`Cmd+Shift+S`): Captures entire selected monitor
+2. **Area** (`Cmd+Shift+A`): Opens overlay to select region
+3. **Quick Copy** (`Cmd+Shift+Q`): Copies to clipboard without saving
+
+### Screenshot Flow:
+
+```
+User Presses Shortcut
+  ↓
+desktopCapturer.getSources()  # Electron API
+  ↓
+Check if cursor should be added (cursorInScreenshots setting)
+  ↓
+addCursorToScreenshot() via executeJavaScript (Canvas API)
+  ↓
+Save to folder (sequential naming: screenshot-001.png)
+  ↓
+Optional: Copy to clipboard (copyToClipboard setting)
+  ↓
+Notify renderer (screenshot-captured event)
+  ↓
+Update ImageGallery
+```
+
+### Multi-Monitor Support:
+
+- Uses `screen.getAllDisplays()` to detect monitors
+- Tracks cursor position with bounds checking
+- Only draws cursor if within selected display
+- Relative coordinates: `cursorX - display.bounds.x`
+
+**DO NOT** change this logic without understanding multi-monitor edge cases!
+
+---
+
+## 📄 PDF Generation
+
+Location: `/src/components/Toolbar.tsx` → `generatePDF()`
+
+### PDF Structure:
+
+1. **Header Page**:
+   - GOL Logo (centered)
+   - Title: "Evidência de Testes de QA"
+   - Test metadata with orange border box:
+     - Test Result (with status icon)
+     - System, Test Cycle, Test Case, Executor, Date/Time
+2. **Screenshot Pages**:
+   - One image per page
+   - Maintains aspect ratio
+   - Supports portrait/landscape orientation
+
+### Status Icons:
+
+- ✅ Approved: `/src/assets/icons/approved.png`
+- ❌ Reproved: `/src/assets/icons/reproved.png`
+- ⚠️ Partial: `/src/assets/icons/partial.png`
+
+**PDF Rules:**
+
+- ✅ Use jsPDF library
+- ✅ Load images via IPC (`read-image-as-base64`)
+- ✅ Include status icons next to result text
+- ✅ Orange border (#FF6B00) around header data
+- ❌ DO NOT hardcode paths - use currentFolder
+- ❌ DO NOT break existing PDF layout
+
+---
+
+## 🔧 Settings & Preferences
+
+Managed via Settings modal + localStorage + IPC communication
+
+### Available Settings:
+
+- **PDF Orientation**: Portrait / Landscape
+- **Language**: PT / EN
+- **Theme**: Blue / Dark / Light / Purple / Green
+- **Copy to Clipboard**: Auto-copy screenshots
+- **Sound Enabled**: Play sound on capture
+- **Cursor in Screenshots**: Draw cursor overlay
+
+### Settings Flow:
+
+```
+User toggles checkbox in Settings.tsx
+  ↓
+Update localStorage ('qabooster-{setting-name}')
+  ↓
+Send IPC message to main process
+  ↓
+Update global state in main.ts
+  ↓
+Apply setting to future operations
+```
+
+**Pattern to Follow:**
+
+```typescript
+// Settings.tsx
+const [setting, setSetting] = useState<boolean>(
+	localStorage.getItem('qabooster-setting') !== 'false', // default true
+);
+
+const handleSettingChange = (enabled: boolean) => {
+	setSetting(enabled);
+	localStorage.setItem('qabooster-setting', enabled.toString());
+	ipcRenderer.invoke('set-setting', enabled);
+};
+
+// main.ts
+ipcMain.handle('set-setting', async (_, enabled: boolean) => {
+	globalSettingVariable = enabled;
+	return true;
+});
+```
+
+---
+
+## 🧪 Testing
+
+Framework: **Jest + React Testing Library**
+
+Location: `/src/tests/`
+
+### Testing Rules:
+
+- ✅ Test user interactions (clicks, inputs, drag-drop)
+- ✅ Mock Electron IPC calls
+- ✅ Test component rendering with different props
+- ✅ Verify translation keys exist
+- ❌ DO NOT test implementation details
+- ❌ DO NOT skip accessibility tests
+
+### Running Tests:
+
+```bash
+npm test
+```
+
+---
+
+## 🚀 Development Workflow
+
+### Prerequisites:
+
+```bash
+npm install
+```
+
+### Development:
+
+```bash
+npm run dev  # Starts Vite + Electron in watch mode
+```
+
+### Build:
+
+```bash
+npm run build        # Compile TypeScript
+npm run package      # Create distributable
+```
+
+### File Watching:
+
+- TypeScript (main process): Auto-compiles to `/dist`
+- React (renderer): Vite hot-reload on http://localhost:3000
+- Assets: Copied to `/dist/area-selector`
+
+---
+
+## ✅ Code Quality Standards
+
+### TypeScript:
+
+- ✅ Strict mode enabled
+- ✅ No `any` types (use proper interfaces)
+- ✅ Explicit return types for functions
+- ✅ Use type imports: `import type { Type } from 'module'`
+
+### React:
+
+- ✅ Functional components with hooks
+- ✅ Proper dependency arrays in useEffect
+- ✅ Memoization for expensive operations (useMemo, useCallback)
+- ✅ Destructure props at function signature
+
+### Electron:
+
+- ✅ Separate main/renderer concerns
+- ✅ Use IPC for all cross-process communication
+- ✅ Handle errors gracefully (try-catch in handlers)
+- ✅ Clean up resources (close windows, unregister shortcuts)
+
+### File Organization:
+
+- ✅ One component per file
+- ✅ Co-locate tests with components
+- ✅ Group related utilities in `/utils`
+- ✅ Keep services stateless when possible
+
+### Naming Conventions:
+
+- **Components**: PascalCase (`ImageEditor.tsx`)
+- **Functions**: camelCase (`getNextFilename()`)
+- **Constants**: UPPER_SNAKE_CASE (`APP_CONSTANTS`)
+- **Interfaces**: PascalCase (`HeaderData`, `ImageData`)
+- **Files**: kebab-case for configs (`app-config.ts`)
+
+---
+
+## 🚨 Critical Don'ts
+
+### ❌ NEVER:
+
+1. **Break i18n**: All text must be translatable
+2. **Hardcode paths**: Use `__dirname`, `app.getAppPath()`
+3. **Ignore multi-monitor**: Test with 2+ displays
+4. **Create 1000+ line files**: Refactor into modules
+5. **Skip error handling**: Wrap IPC handlers in try-catch
+6. **Mutate state directly**: Use setState/useState properly
+7. **Inline large assets**: Use separate files
+8. **Commit without testing**: Run `npm test` before commits
+9. **Change IPC signatures**: Frontend depends on them
+10. **Remove TypeScript types**: Keep strict typing
+
+### ✅ ALWAYS:
+
+1. **Add translations**: PT and EN for every string
+2. **Test on multiple monitors**: Cursor and bounds
+3. **Use proper TypeScript types**: No `any`
+4. **Follow existing patterns**: Check similar components
+5. **Handle errors gracefully**: Show user-friendly messages
+6. **Clean up resources**: Remove listeners, close windows
+7. **Document complex logic**: Add comments for edge cases
+8. **Validate user input**: Check before file operations
+9. **Use constants**: Never magic numbers/strings
+10. **Respect architecture**: Follow folder structure
+
+---
+
+## 📚 Key Dependencies
+
+- **electron**: Desktop app framework
+- **react**: UI library
+- **typescript**: Type safety
+- **tailwindcss**: Utility-first CSS
+- **fabric**: Canvas-based image editor
+- **jspdf**: PDF generation
+- **jest**: Testing framework
+- **react-testing-library**: Component testing
+
+---
+
+## 🔗 IPC Communication Patterns
+
+### Main → Renderer:
+
+```typescript
+mainWindow?.webContents.send('event-name', data);
+```
+
+### Renderer → Main (async):
+
+```typescript
+const result = await ipcRenderer.invoke('handler-name', params);
+```
+
+### Renderer → Main (sync event):
+
+```typescript
+ipcRenderer.send('event-name', data);
+```
+
+**All IPC handlers must:**
+
+- Return success/error objects
+- Handle exceptions with try-catch
+- Validate input parameters
+- Use TypeScript types
+
+---
+
+## 🎯 Summary for GitHub Copilot
+
+When making changes to this project:
+
+1. **Respect i18n** - Add all text to translations.ts (PT + EN)
+2. **Follow architecture** - Use modular structure, no giant files
+3. **Maintain TypeScript** - Proper types, no `any`
+4. **Use existing patterns** - Check similar code before implementing
+5. **Test thoroughly** - Multi-monitor, all screenshot modes, PDF generation
+6. **Don't break IPC** - Frontend depends on exact handler signatures
+7. **Keep it clean** - Constants, services, utilities in right places
+8. **Document when needed** - Complex logic needs comments
+
+**This is a production app used by QA professionals. Stability and reliability are critical.**
