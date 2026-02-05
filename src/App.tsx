@@ -1,32 +1,43 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import MainLayout from './components/MainLayout';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useFolderManager } from './hooks/useFolderManager';
+import { useHeaderData } from './hooks/useHeaderData';
+import { useImageManager } from './hooks/useImageManager';
 import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
-import { HeaderData, ImageData } from './interfaces';
 
 const { ipcRenderer } = window.require('electron');
 
 function App() {
 	const { t } = useLanguage();
-	const [images, setImages] = useState<ImageData[]>([]);
-	const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
-	const [headerData, setHeaderData] = useState<HeaderData>({
-		testName: '',
-		executor: localStorage.getItem('qabooster-executor') || '',
-		system: '',
-		testCycle: '',
-		testCase: '',
-	});
-	const [showEditor, setShowEditor] = useState(false);
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
-	const executorRef = useRef(localStorage.getItem('qabooster-executor') || '');
 
 	// Initialize theme and shortcuts
 	useThemeManager();
 	useShortcutSync();
+
+	// Header data management (needs currentFolder, but we'll update it via effect)
+	const { headerData, setHeaderData, executorRef, resetHeaderData } =
+		useHeaderData({
+			currentFolder: '',
+		});
+
+	// Image management (needs loadImages, but we'll get it from folder manager)
+	const {
+		images,
+		setImages,
+		selectedImage,
+		showEditor,
+		handleImageSelect,
+		handleImageDelete,
+		handleImageReorder,
+		handleImagePreview,
+		handleCloseEditor,
+		handleSaveEdited,
+		resetImages,
+	} = useImageManager({ loadImages: async () => {} });
 
 	// Folder management
 	const {
@@ -42,30 +53,6 @@ function App() {
 	// Screenshot event listeners
 	useScreenshotListeners({ currentFolderRef, setImages, t });
 
-	// Save executor to localStorage when it changes
-	useEffect(() => {
-		if (headerData.executor) {
-			localStorage.setItem('qabooster-executor', headerData.executor);
-			executorRef.current = headerData.executor;
-		}
-	}, [headerData.executor]);
-
-	// Auto-save headerData when it changes (with debounce)
-	useEffect(() => {
-		if (!currentFolder) return;
-
-		const folderToSave = currentFolder;
-		const dataToSave = headerData;
-
-		const timeoutId = setTimeout(() => {
-			if (folderToSave && dataToSave.testCase) {
-				ipcRenderer.invoke('save-header-data', folderToSave, dataToSave);
-			}
-		}, 1000);
-
-		return () => clearTimeout(timeoutId);
-	}, [headerData, currentFolder]);
-
 	const handleNewTest = () => {
 		const hasData =
 			headerData.testName ||
@@ -80,68 +67,10 @@ function App() {
 			if (!confirm(t('confirmNewTestLoseData'))) return;
 		}
 
-		// Limpa TUDO
-		const savedExecutor = executorRef.current;
-		setHeaderData({
-			testName: '',
-			executor: savedExecutor,
-			system: '',
-			testCycle: '',
-			testCase: '',
-		});
-		setImages([]);
-		setSelectedImage(null);
-		setShowEditor(false);
+		// Reset everything
+		resetHeaderData();
+		resetImages();
 		setCurrentFolder('');
-	};
-
-	const handleImageSelect = (image: ImageData) => {
-		setSelectedImage(image);
-		setShowEditor(true);
-	};
-
-	const handleImageDelete = async (image: ImageData) => {
-		if (confirm(`${t('confirmDeleteImage')} ${image.name}?`)) {
-			await ipcRenderer.invoke('delete-image', image.path);
-			loadImages();
-			if (selectedImage?.path === image.path) {
-				setSelectedImage(null);
-				setShowEditor(false);
-			}
-		}
-	};
-
-	const handleImageReorder = (newOrder: ImageData[]) => {
-		setImages(newOrder);
-	};
-
-	const handleImagePreview = async (image: ImageData) => {
-		await ipcRenderer.invoke('open-image-preview', image.path);
-	};
-
-	const handleCloseEditor = () => {
-		setShowEditor(false);
-		setSelectedImage(null);
-	};
-
-	const handleSaveEdited = async (dataUrl: string) => {
-		if (selectedImage) {
-			await ipcRenderer.invoke('save-image', {
-				filepath: selectedImage.path,
-				dataUrl,
-			});
-
-			// Force thumbnail refresh by updating timestamp
-			setImages((prevImages) =>
-				prevImages.map((img) =>
-					img.path === selectedImage.path
-						? { ...img, timestamp: Date.now() }
-						: img,
-				),
-			);
-
-			loadImages();
-		}
 	};
 
 	return (
@@ -158,7 +87,9 @@ function App() {
 			isNotesPanelOpen={isNotesPanelOpen}
 			setIsNotesPanelOpen={setIsNotesPanelOpen}
 			handleImageSelect={handleImageSelect}
-			handleImageDelete={handleImageDelete}
+			handleImageDelete={(image) =>
+				handleImageDelete(image, t('confirmDeleteImage'))
+			}
 			handleImagePreview={handleImagePreview}
 			handleImageReorder={handleImageReorder}
 			handleCloseEditor={handleCloseEditor}
