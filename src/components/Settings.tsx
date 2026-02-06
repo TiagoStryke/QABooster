@@ -1,61 +1,55 @@
-import { useEffect, useState } from 'react';
+/**
+ * Settings Component
+ *
+ * Modal de configurações do aplicativo
+ * Refatorado para usar hooks customizados e componentes reutilizáveis
+ */
+
+import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ipcService } from '../services/ipc-service';
+import {
+    useSettingsState,
+    type Language,
+    type Theme,
+} from '../hooks/useSettingsState';
+import ShortcutEditor from './ShortcutEditor';
 
 interface SettingsProps {
 	isOpen: boolean;
 	onClose: () => void;
 }
 
-export type Theme = 'blue' | 'dark' | 'grey' | 'rose' | 'light' | 'green';
-export type Language = 'pt' | 'en';
-
 export default function Settings({ isOpen, onClose }: SettingsProps) {
 	const { t } = useLanguage();
-	const [pdfOrientation, setPdfOrientation] = useState<
-		'portrait' | 'landscape'
-	>(
-		(localStorage.getItem('qabooster-pdf-orientation') as
-			| 'portrait'
-			| 'landscape') || 'landscape',
-	);
-	const [theme, setTheme] = useState<Theme>(
-		(localStorage.getItem('qabooster-theme') as Theme) || 'blue',
-	);
-	const [language, setLanguage] = useState<Language>(
-		(localStorage.getItem('qabooster-language') as Language) || 'pt',
-	);
-	const [copyToClipboard, setCopyToClipboard] = useState<boolean>(
-		localStorage.getItem('qabooster-copy-to-clipboard') === 'true',
-	);
-	const [soundEnabled, setSoundEnabled] = useState<boolean>(
-		localStorage.getItem('qabooster-sound') !== 'false',
-	);
-	const [cursorInScreenshots, setCursorInScreenshots] = useState<boolean>(
-		localStorage.getItem('qabooster-cursor-in-screenshots') !== 'false',
-	);
 
-	// Keyboard shortcuts states
-	const [shortcutFull, setShortcutFull] = useState(
-		localStorage.getItem('qabooster-shortcut') || 'CommandOrControl+Shift+S',
-	);
-	const [shortcutArea, setShortcutArea] = useState(
-		localStorage.getItem('qabooster-shortcut-area') ||
-			'CommandOrControl+Shift+A',
-	);
-	const [shortcutQuick, setShortcutQuick] = useState(
-		localStorage.getItem('qabooster-shortcut-quick') ||
-			'CommandOrControl+Shift+Q',
-	);
-	const [editingShortcut, setEditingShortcut] = useState<
-		'full' | 'area' | 'quick' | null
-	>(null);
-	const [tempShortcut, setTempShortcut] = useState('');
+	const {
+		// Basic settings
+		pdfOrientation,
+		theme,
+		language,
+		copyToClipboard,
+		soundEnabled,
+		cursorInScreenshots,
+		handlePdfOrientationChange,
+		handleThemeChange,
+		handleLanguageChange,
+		handleCopyToClipboardChange,
+		handleSoundEnabledChange,
+		handleCursorInScreenshotsChange,
 
-	// Enviar preferência de clipboard para o main process ao montar
-	useEffect(() => {
-		ipcService.setCopyToClipboard(copyToClipboard);
-	}, []);
+		// Shortcuts
+		shortcutFull,
+		shortcutArea,
+		shortcutQuick,
+		editingShortcut,
+		tempShortcut,
+		handleShortcutEdit,
+		handleShortcutSave,
+		handleShortcutCancel,
+		handleShortcutKeyDown,
+	} = useSettingsState();
+
+	// ==================== CLICK OUTSIDE TO CLOSE ====================
 
 	useEffect(() => {
 		if (isOpen) {
@@ -65,6 +59,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 					onClose();
 				}
 			};
+
 			// Delay para não capturar o clique que abriu o modal
 			const timerId = setTimeout(() => {
 				document.addEventListener('click', handleClickOutside);
@@ -77,112 +72,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		}
 	}, [isOpen, onClose]);
 
-	const handlePdfOrientationChange = (
-		orientation: 'portrait' | 'landscape',
-	) => {
-		setPdfOrientation(orientation);
-		localStorage.setItem('qabooster-pdf-orientation', orientation);
-		window.dispatchEvent(
-			new CustomEvent('pdf-orientation-changed', { detail: orientation }),
-		);
-	};
-
-	const handleThemeChange = (newTheme: Theme) => {
-		setTheme(newTheme);
-		localStorage.setItem('qabooster-theme', newTheme);
-		window.dispatchEvent(
-			new CustomEvent('theme-changed', { detail: newTheme }),
-		);
-	};
-
-	const handleLanguageChange = (newLanguage: Language) => {
-		setLanguage(newLanguage);
-		localStorage.setItem('qabooster-language', newLanguage);
-		window.dispatchEvent(
-			new CustomEvent('language-changed', { detail: newLanguage }),
-		);
-	};
-
-	const handleCopyToClipboardChange = (enabled: boolean) => {
-		setCopyToClipboard(enabled);
-		localStorage.setItem('qabooster-copy-to-clipboard', enabled.toString());
-		ipcService.setCopyToClipboard(enabled);
-	};
-
-	const handleSoundEnabledChange = (enabled: boolean) => {
-		setSoundEnabled(enabled);
-		localStorage.setItem('qabooster-sound', enabled.toString());
-		ipcService.setSoundEnabled(enabled);
-	};
-
-	const handleCursorInScreenshotsChange = (enabled: boolean) => {
-		setCursorInScreenshots(enabled);
-		localStorage.setItem('qabooster-cursor-in-screenshots', enabled.toString());
-		ipcService.setCursorInScreenshots(enabled);
-	};
-
-	const handleShortcutEdit = (type: 'full' | 'area' | 'quick') => {
-		const current =
-			type === 'full'
-				? shortcutFull
-				: type === 'area'
-					? shortcutArea
-					: shortcutQuick;
-		setTempShortcut(current);
-		setEditingShortcut(type);
-	};
-
-	const handleShortcutSave = async () => {
-		if (!tempShortcut || !editingShortcut) return;
-
-		if (editingShortcut === 'full') {
-			setShortcutFull(tempShortcut);
-			localStorage.setItem('qabooster-shortcut', tempShortcut);
-			await ipcService.setShortcut(tempShortcut);
-		} else if (editingShortcut === 'area') {
-			setShortcutArea(tempShortcut);
-			localStorage.setItem('qabooster-shortcut-area', tempShortcut);
-			await ipcService.setAreaShortcut(tempShortcut);
-		} else if (editingShortcut === 'quick') {
-			setShortcutQuick(tempShortcut);
-			localStorage.setItem('qabooster-shortcut-quick', tempShortcut);
-			await ipcService.setQuickShortcut(tempShortcut);
-		}
-
-		setEditingShortcut(null);
-		setTempShortcut('');
-	};
-
-	const handleShortcutCancel = () => {
-		setEditingShortcut(null);
-		setTempShortcut('');
-	};
-
-	const handleShortcutKeyDown = (e: React.KeyboardEvent) => {
-		e.preventDefault();
-		if (e.key === 'Escape') {
-			handleShortcutCancel();
-			return;
-		}
-		if (e.key === 'Enter') {
-			handleShortcutSave();
-			return;
-		}
-
-		const keys = [];
-		if (e.metaKey) keys.push('Cmd');
-		if (e.ctrlKey) keys.push('Ctrl');
-		if (e.altKey) keys.push('Alt');
-		if (e.shiftKey) keys.push('Shift');
-		if (e.key && !['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) {
-			keys.push(e.key.toUpperCase());
-		}
-		if (keys.length > 0) {
-			setTempShortcut(keys.join('+'));
-		}
-	};
-
-	if (!isOpen) return null;
+	// ==================== THEMES DATA ====================
 
 	const themes = [
 		{ id: 'blue' as Theme, name: t('themeBlue') },
@@ -192,6 +82,10 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		{ id: 'light' as Theme, name: t('themeLight') },
 		{ id: 'green' as Theme, name: t('themeGreen') },
 	];
+
+	// ==================== RENDER ====================
+
+	if (!isOpen) return null;
 
 	return (
 		<div
@@ -228,7 +122,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</button>
 					</div>
 
-					{/* Orientação do PDF */}
+					{/* PDF Orientation */}
 					<div className="mb-4">
 						<label className="block text-sm font-semibold text-slate-300 mb-2">
 							{t('pdfOrientation')}
@@ -247,7 +141,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</select>
 					</div>
 
-					{/* Idioma */}
+					{/* Language */}
 					<div className="mb-4">
 						<label className="block text-sm font-semibold text-slate-300 mb-2">
 							{t('language')}
@@ -262,8 +156,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</select>
 					</div>
 
-					{/* Tema */}
-					{/* Tema */}
+					{/* Theme */}
 					<div className="mb-4">
 						<label className="block text-sm font-semibold text-slate-300 mb-2">
 							{t('theme')}
@@ -281,7 +174,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</select>
 					</div>
 
-					{/* Copiar para área de transferência */}
+					{/* Copy to Clipboard */}
 					<div className="mb-4">
 						<label className="flex items-start gap-3 cursor-pointer">
 							<input
@@ -301,7 +194,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</label>
 					</div>
 
-					{/* Som de captura */}
+					{/* Sound Enabled */}
 					<div className="mb-4">
 						<label className="flex items-start gap-3 cursor-pointer">
 							<input
@@ -321,7 +214,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 						</label>
 					</div>
 
-					{/* Cursor nos screenshots */}
+					{/* Cursor in Screenshots */}
 					<div className="mb-4">
 						<label className="flex items-start gap-3 cursor-pointer">
 							<input
@@ -346,167 +239,53 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 					{/* Separator */}
 					<div className="border-t border-slate-700 my-6"></div>
 
-					{/* Capture Shortcuts Section */}
+					{/* Keyboard Shortcuts Section */}
 					<div className="mb-4">
 						<h3 className="text-sm font-bold text-slate-300 mb-3">
 							⌨️ {t('captureShortcuts')}
 						</h3>
 
-						{/* Quick Print Shortcut */}
-						<div className="mb-3 bg-slate-900 p-3 rounded">
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex-1">
-									<div className="text-sm font-semibold text-slate-300">
-										⚡ {t('quickPrint')}
-									</div>
-									<div className="text-xs text-slate-400 mt-0.5">
-										{t('quickPrintDesc')}
-									</div>
-								</div>
-							</div>
-							{editingShortcut === 'quick' ? (
-								<div className="flex gap-2 mt-2">
-									<input
-										type="text"
-										className="input-field text-xs flex-1 py-1 px-2"
-										value={tempShortcut}
-										readOnly
-										onKeyDown={handleShortcutKeyDown}
-										placeholder={t('pressKeys')}
-										autoFocus
-									/>
-									<button
-										onClick={handleShortcutSave}
-										className="btn-secondary text-xs py-1 px-2"
-										disabled={!tempShortcut}
-									>
-										✓
-									</button>
-									<button
-										onClick={handleShortcutCancel}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✕
-									</button>
-								</div>
-							) : (
-								<div className="flex items-center gap-2 mt-2">
-									<code className="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400">
-										{shortcutQuick}
-									</code>
-									<button
-										onClick={() => handleShortcutEdit('quick')}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✏️ {t('edit')}
-									</button>
-								</div>
-							)}
-						</div>
+						<ShortcutEditor
+							type="quick"
+							icon="⚡"
+							titleKey="quickPrint"
+							descKey="quickPrintDesc"
+							currentShortcut={shortcutQuick}
+							isEditing={editingShortcut === 'quick'}
+							tempShortcut={tempShortcut}
+							onEdit={handleShortcutEdit}
+							onSave={handleShortcutSave}
+							onCancel={handleShortcutCancel}
+							onKeyDown={handleShortcutKeyDown}
+						/>
 
-						{/* Fullscreen Shortcut */}
-						<div className="mb-3 bg-slate-900 p-3 rounded">
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex-1">
-									<div className="text-sm font-semibold text-slate-300">
-										🖼️ {t('fullScreen')}
-									</div>
-									<div className="text-xs text-slate-400 mt-0.5">
-										{t('fullScreenDesc')}
-									</div>
-								</div>
-							</div>
-							{editingShortcut === 'full' ? (
-								<div className="flex gap-2 mt-2">
-									<input
-										type="text"
-										className="input-field text-xs flex-1 py-1 px-2"
-										value={tempShortcut}
-										readOnly
-										onKeyDown={handleShortcutKeyDown}
-										placeholder={t('pressKeys')}
-										autoFocus
-									/>
-									<button
-										onClick={handleShortcutSave}
-										className="btn-secondary text-xs py-1 px-2"
-										disabled={!tempShortcut}
-									>
-										✓
-									</button>
-									<button
-										onClick={handleShortcutCancel}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✕
-									</button>
-								</div>
-							) : (
-								<div className="flex items-center gap-2 mt-2">
-									<code className="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400">
-										{shortcutFull}
-									</code>
-									<button
-										onClick={() => handleShortcutEdit('full')}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✏️ {t('edit')}
-									</button>
-								</div>
-							)}
-						</div>
+						<ShortcutEditor
+							type="full"
+							icon="🖼️"
+							titleKey="fullScreen"
+							descKey="fullScreenDesc"
+							currentShortcut={shortcutFull}
+							isEditing={editingShortcut === 'full'}
+							tempShortcut={tempShortcut}
+							onEdit={handleShortcutEdit}
+							onSave={handleShortcutSave}
+							onCancel={handleShortcutCancel}
+							onKeyDown={handleShortcutKeyDown}
+						/>
 
-						{/* Area Shortcut */}
-						<div className="mb-3 bg-slate-900 p-3 rounded">
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex-1">
-									<div className="text-sm font-semibold text-slate-300">
-										📐 {t('area')}
-									</div>
-									<div className="text-xs text-slate-400 mt-0.5">
-										{t('areaDesc')}
-									</div>
-								</div>
-							</div>
-							{editingShortcut === 'area' ? (
-								<div className="flex gap-2 mt-2">
-									<input
-										type="text"
-										className="input-field text-xs flex-1 py-1 px-2"
-										value={tempShortcut}
-										readOnly
-										onKeyDown={handleShortcutKeyDown}
-										placeholder={t('pressKeys')}
-										autoFocus
-									/>
-									<button
-										onClick={handleShortcutSave}
-										className="btn-secondary text-xs py-1 px-2"
-										disabled={!tempShortcut}
-									>
-										✓
-									</button>
-									<button
-										onClick={handleShortcutCancel}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✕
-									</button>
-								</div>
-							) : (
-								<div className="flex items-center gap-2 mt-2">
-									<code className="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400">
-										{shortcutArea}
-									</code>
-									<button
-										onClick={() => handleShortcutEdit('area')}
-										className="btn-secondary text-xs py-1 px-2"
-									>
-										✏️ {t('edit')}
-									</button>
-								</div>
-							)}
-						</div>
+						<ShortcutEditor
+							type="area"
+							icon="📐"
+							titleKey="area"
+							descKey="areaDesc"
+							currentShortcut={shortcutArea}
+							isEditing={editingShortcut === 'area'}
+							tempShortcut={tempShortcut}
+							onEdit={handleShortcutEdit}
+							onSave={handleShortcutSave}
+							onCancel={handleShortcutCancel}
+							onKeyDown={handleShortcutKeyDown}
+						/>
 					</div>
 				</div>
 			</div>
