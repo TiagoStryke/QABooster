@@ -16,6 +16,54 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 
 ---
 
+## ✅ Refactoring Status (UPDATED 2026-02-06)
+
+### **FASE 1: Custom Hooks Extraction** ✅ COMPLETE
+- **App.tsx**: 418 → 108 linhas (74% redução)
+- **Hooks criados:**
+  - `useFolderManager.ts` - Gerenciamento de pastas
+  - `useHeaderData.ts` - Dados do header de teste
+  - `useImageManager.ts` - Gerenciamento de imagens
+  - `useScreenshotListeners.ts` - Listeners de screenshot
+  - `useShortcutSync.ts` - Sincronização de atalhos
+  - `useThemeManager.ts` - Gerenciamento de temas
+
+### **FASE 2: IPC Service Centralization** ✅ COMPLETE
+- **ipc-service.ts criado**: 373 linhas, 35+ métodos tipados
+- **14 arquivos atualizados** para usar serviço centralizado
+- Remove chamadas diretas `ipcRenderer.invoke()` dos componentes
+- Tipagem TypeScript completa para todas operações IPC
+
+### **FASE 3: Component Refactoring** ✅ COMPLETE
+
+#### Etapa 1: ImageEditor (Commit 1c0e51d)
+- **ImageEditor.tsx**: 941 → 127 linhas (86.5% redução)
+- **Hooks criados:**
+  - `useEditorState.ts` (60 linhas) - Estado do editor
+  - `useEditorCanvas.ts` (580 linhas) - Fabric.js + 8 ferramentas desenho
+- **Componentes:**
+  - `EditorToolbar.tsx` (320 linhas) - UI da toolbar extraída
+
+#### Etapa 2: Settings + Toolbar (Commit 65d86e3)
+- **Settings.tsx**: 516 → 284 linhas (45% redução)
+  - `useSettingsState.ts` (200 linhas) - Gerencia 6 configs + 3 shortcuts
+  - `ShortcutEditor.tsx` (90 linhas) - Componente reutilizável shortcuts
+- **Toolbar.tsx**: 493 → 167 linhas (66% redução)
+  - `useToolbarState.ts` (140 linhas) - Displays + área fixa
+  - `pdf-generator-service.ts` (240 linhas) - Lógica de PDF extraída
+
+**TOTAIS FASE 3:**
+- 3 componentes refatorados: 1950 → 578 linhas (70% redução)
+- 4 hooks criados
+- 2 componentes novos
+- 1 serviço novo
+
+### **FASE 4: Context API** 🔄 PENDING
+- Status: Avaliação necessária (prop drilling moderado detectado)
+- Next steps: Avaliar necessidade de FolderContext/TestDataContext
+
+---
+
 ## 🏗️ Architecture & Project Structure
 
 ### **Main Process (Electron Backend)**
@@ -69,14 +117,31 @@ Location: `/src/`
 
 ```
 src/
-├── App.tsx                    # Main app component
+├── App.tsx                    # Main app (108 linhas após FASE 1)
 ├── components/
 │   ├── Header.tsx            # Test metadata form
-│   ├── Toolbar.tsx           # Screenshot controls & PDF generation
+│   ├── Toolbar.tsx           # Screenshot controls (167 linhas - REFATORADO)
 │   ├── ImageGallery.tsx      # Drag-drop image organization
-│   ├── ImageEditor.tsx       # Fabric.js annotation editor
-│   ├── Settings.tsx          # App preferences modal
-│   └── FolderManager.tsx     # Folder selection/creation
+│   ├── ImageEditor.tsx       # Fabric.js editor (127 linhas - REFATORADO)
+│   ├── EditorToolbar.tsx     # Editor toolbar UI (NOVO - FASE 3)
+│   ├── Settings.tsx          # App preferences (284 linhas - REFATORADO)
+│   ├── ShortcutEditor.tsx    # Reutilizável shortcuts UI (NOVO - FASE 3)
+│   ├── FolderManager.tsx     # Folder selection/creation
+│   └── MainLayout.tsx        # Layout principal
+├── hooks/                     # Custom Hooks (FASE 1 + FASE 3)
+│   ├── useFolderManager.ts   # Gerenciamento de pastas
+│   ├── useHeaderData.ts      # Dados do header
+│   ├── useImageManager.ts    # Gerenciamento de imagens
+│   ├── useScreenshotListeners.ts  # Listeners de screenshot
+│   ├── useShortcutSync.ts    # Sincronização de atalhos
+│   ├── useThemeManager.ts    # Gerenciamento de temas
+│   ├── useEditorState.ts     # Estado do editor de imagens (FASE 3)
+│   ├── useEditorCanvas.ts    # Canvas Fabric.js (FASE 3)
+│   ├── useSettingsState.ts   # Estado de configurações (FASE 3)
+│   └── useToolbarState.ts    # Estado da toolbar (FASE 3)
+├── services/                  # Service Layer (FASE 2 + FASE 3)
+│   ├── ipc-service.ts        # IPC centralizado (373 linhas)
+│   └── pdf-generator-service.ts  # Geração de PDFs (240 linhas - FASE 3)
 ├── contexts/
 │   ├── LanguageContext.tsx   # i18n state management
 │   └── ThemeContext.tsx      # Theme state management
@@ -92,16 +157,89 @@ src/
 **IMPORTANT RULES FOR RENDERER:**
 
 - ✅ All user-facing text MUST use `t()` function from LanguageContext
-- ✅ Component files should be < 500 lines (split if larger)
+- ✅ Use custom hooks for business logic (FASE 1 pattern)
+- ✅ Use ipcService for ALL Electron communication (FASE 2 pattern)
+- ✅ Extract complex components into hooks + sub-components (FASE 3 pattern)
+- ✅ Component files should be < 300 lines (split if larger)
 - ✅ Use TypeScript interfaces for all props and state
 - ✅ Follow React hooks best practices (useEffect dependencies)
 - ✅ Use Tailwind CSS for styling (NO inline styles except dynamic)
 - ❌ NEVER hardcode text strings - always add to translations.ts
 - ❌ NEVER bypass i18n - every label, button, message needs translation
+- ❌ NEVER call ipcRenderer directly - use ipcService
+- ❌ NEVER create monolithic components > 500 lines
 
 ---
 
-## 🌍 Internationalization (i18n)
+## � Refactoring Patterns (FASES 1-3)
+
+### **Pattern 1: Extract Business Logic to Hooks**
+**When:** Component has > 150 lines of useState/useEffect/handlers
+**How:**
+1. Create `use[ComponentName]State.ts` hook
+2. Move all state declarations and handlers
+3. Return object with state + handlers
+4. Component becomes thin "presentation layer"
+
+**Example:** `ImageEditor.tsx` (941 → 127 lines)
+- Created `useEditorState.ts` + `useEditorCanvas.ts`
+- Component only handles UI and event wiring
+
+### **Pattern 2: Extract Complex UI to Sub-Components**
+**When:** Component has > 100 lines of JSX or repetitive UI blocks
+**How:**
+1. Identify repetitive/complex UI sections
+2. Create new component with clear props interface
+3. Extract to separate file (e.g., `EditorToolbar.tsx`)
+4. Parent passes state via props
+
+**Example:** `Settings.tsx` → `ShortcutEditor.tsx`
+- 3 duplicate shortcut blocks → 1 reusable component
+- Reduced repetition by 200+ lines
+
+### **Pattern 3: Extract Business Logic to Services**
+**When:** Component has complex algorithms/calculations (not UI-related)
+**How:**
+1. Create `[domain]-service.ts` in `/services`
+2. Export pure functions (input → output, no React hooks)
+3. Component imports and calls service functions
+4. Service can be easily tested in isolation
+
+**Example:** `Toolbar.tsx` → `pdf-generator-service.ts`
+- 250 lines of PDF generation logic → separate service
+- Component reduced to 167 lines (UI + orchestration)
+
+### **Pattern 4: Centralize External Communication**
+**When:** Multiple components call same external APIs (IPC, HTTP, etc.)
+**How:**
+1. Create centralized service (e.g., `ipc-service.ts`)
+2. All methods typed with TypeScript interfaces
+3. Single source of truth for API calls
+4. Easy to mock for testing
+
+**Example:** FASE 2 - `ipc-service.ts`
+- 35+ IPC methods centralized
+- No more scattered `ipcRenderer.invoke()` calls
+
+### **Refactoring Checklist (Before/After)**
+Before refactoring a component, check:
+- [ ] Component > 300 lines?
+- [ ] Multiple responsibilities (UI + logic + state)?
+- [ ] Repetitive code blocks?
+- [ ] Hard to test/understand?
+- [ ] Complex algorithms mixed with JSX?
+
+After refactoring, verify:
+- [ ] Zero TypeScript errors
+- [ ] All functionality preserved
+- [ ] Component < 300 lines
+- [ ] Clear separation of concerns
+- [ ] Reusable hooks/components/services created
+- [ ] Updated copilot-instructions.md
+
+---
+
+## �🌍 Internationalization (i18n)
 
 **CRITICAL RULE**: This app supports PT (Portuguese) and EN (English). ALL user-facing text must be translatable.
 
