@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ImageData } from '../interfaces';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface UseImageManagerParams {
 	loadImages?: () => Promise<void>;
@@ -45,7 +44,7 @@ export function useImageManager({
 		confirmMessage: string,
 	) => {
 		if (confirm(`${confirmMessage} ${image.name}?`)) {
-			await ipcRenderer.invoke('delete-image', image.path);
+			await ipcService.deleteImage(image.path);
 			if (loadImages) await loadImages();
 			if (selectedImage?.path === image.path) {
 				setSelectedImage(null);
@@ -59,7 +58,7 @@ export function useImageManager({
 	};
 
 	const handleImagePreview = async (image: ImageData) => {
-		await ipcRenderer.invoke('open-image-preview', image.path);
+		await ipcService.openImagePreview(image.path);
 	};
 
 	const handleCloseEditor = () => {
@@ -69,9 +68,10 @@ export function useImageManager({
 
 	const handleSaveEdited = async (dataUrl: string) => {
 		if (selectedImage) {
-			await ipcRenderer.invoke('save-image', {
-				filepath: selectedImage.path,
-				dataUrl,
+			await ipcService.saveImage({
+				dataURL: dataUrl,
+				originalPath: selectedImage.path,
+				folder: '', // folder will be extracted from path in backend
 			});
 
 			// Force thumbnail refresh by updating timestamp

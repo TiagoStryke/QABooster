@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface NotesPanelProps {
 	currentFolder: string;
@@ -35,7 +34,7 @@ export default function NotesPanel({
 
 	const loadNotes = async () => {
 		if (currentFolder) {
-			const result = await ipcRenderer.invoke('load-notes', currentFolder);
+			const result = await ipcService.loadNotes(currentFolder);
 			if (result.success && result.data) {
 				setContent(result.data.text || '');
 				setImages(result.data.images || []);
@@ -48,7 +47,7 @@ export default function NotesPanel({
 
 	const saveNotes = async () => {
 		if (currentFolder) {
-			await ipcRenderer.invoke('save-notes', currentFolder, {
+			await ipcService.saveNotes(currentFolder, {
 				text: content,
 				images,
 			});

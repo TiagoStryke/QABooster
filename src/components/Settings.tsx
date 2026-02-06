@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface SettingsProps {
 	isOpen: boolean;
@@ -55,7 +54,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 
 	// Enviar preferência de clipboard para o main process ao montar
 	useEffect(() => {
-		ipcRenderer.invoke('set-copy-to-clipboard', copyToClipboard);
+		ipcService.setCopyToClipboard(copyToClipboard);
 	}, []);
 
 	useEffect(() => {
@@ -107,19 +106,19 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 	const handleCopyToClipboardChange = (enabled: boolean) => {
 		setCopyToClipboard(enabled);
 		localStorage.setItem('qabooster-copy-to-clipboard', enabled.toString());
-		ipcRenderer.invoke('set-copy-to-clipboard', enabled);
+		ipcService.setCopyToClipboard(enabled);
 	};
 
 	const handleSoundEnabledChange = (enabled: boolean) => {
 		setSoundEnabled(enabled);
 		localStorage.setItem('qabooster-sound', enabled.toString());
-		ipcRenderer.invoke('set-sound-enabled', enabled);
+		ipcService.setSoundEnabled(enabled);
 	};
 
 	const handleCursorInScreenshotsChange = (enabled: boolean) => {
 		setCursorInScreenshots(enabled);
 		localStorage.setItem('qabooster-cursor-in-screenshots', enabled.toString());
-		ipcRenderer.invoke('set-cursor-in-screenshots', enabled);
+		ipcService.setCursorInScreenshots(enabled);
 	};
 
 	const handleShortcutEdit = (type: 'full' | 'area' | 'quick') => {
@@ -139,15 +138,15 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		if (editingShortcut === 'full') {
 			setShortcutFull(tempShortcut);
 			localStorage.setItem('qabooster-shortcut', tempShortcut);
-			await ipcRenderer.invoke('set-shortcut', tempShortcut);
+			await ipcService.setShortcut(tempShortcut);
 		} else if (editingShortcut === 'area') {
 			setShortcutArea(tempShortcut);
 			localStorage.setItem('qabooster-shortcut-area', tempShortcut);
-			await ipcRenderer.invoke('set-area-shortcut', tempShortcut);
+			await ipcService.setAreaShortcut(tempShortcut);
 		} else if (editingShortcut === 'quick') {
 			setShortcutQuick(tempShortcut);
 			localStorage.setItem('qabooster-shortcut-quick', tempShortcut);
-			await ipcRenderer.invoke('set-quick-shortcut', tempShortcut);
+			await ipcService.setQuickShortcut(tempShortcut);
 		}
 
 		setEditingShortcut(null);

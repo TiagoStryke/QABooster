@@ -1,5 +1,5 @@
-import { HeaderData, ImageData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { HeaderData, ImageData } from '../interfaces';
 import FolderManager from './FolderManager';
 import Header from './Header';
 import ImageEditor from './ImageEditor';

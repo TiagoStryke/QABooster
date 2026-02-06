@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ImageData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const { ipcRenderer } = window.require('electron');
+import { ImageData } from '../interfaces';
+import { ipcService } from '../services/ipc-service';
 
 interface ImageGalleryProps {
 	images: ImageData[];
@@ -41,10 +40,7 @@ function DraggableImage({
 
 	useEffect(() => {
 		const loadImage = async () => {
-			const base64 = await ipcRenderer.invoke(
-				'read-image-as-base64',
-				image.path,
-			);
+			const base64 = await ipcService.readImageAsBase64(image.path);
 			if (base64) setImageData(base64);
 		};
 		loadImage();

@@ -1,5 +1,6 @@
 import { RefObject, useEffect } from 'react';
 import { ImageData } from '../interfaces';
+import { ipcService } from '../services/ipc-service';
 import { playScreenshotSound } from './useAudioFeedback';
 
 const { ipcRenderer } = window.require('electron');
@@ -23,7 +24,7 @@ export function useScreenshotListeners({
 		const handleScreenshotCaptured = () => {
 			const folder = currentFolderRef.current;
 			if (folder) {
-				ipcRenderer.invoke('get-images', folder).then(setImages);
+				ipcService.getImages(folder).then(setImages);
 			}
 		};
 
@@ -32,7 +33,7 @@ export function useScreenshotListeners({
 			playScreenshotSound();
 
 			// Animate tray icon
-			ipcRenderer.send('screenshot-flash');
+			ipcService.sendScreenshotFlash();
 		};
 
 		const handleScreenshotError = (_: any, message: string) => {

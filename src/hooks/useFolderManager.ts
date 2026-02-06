@@ -1,7 +1,6 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { HeaderData } from '../interfaces';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface UseFolderManagerParams {
 	setImages: (images: any[]) => void;
@@ -80,14 +79,13 @@ export function useFolderManager({
 				isRenamingRef.current = true;
 
 				// Save header data BEFORE renaming
-				await ipcRenderer.invoke('save-header-data', currentFolder, headerData);
+				await ipcService.saveHeaderData(currentFolder, headerData);
 
 				// Create new name: Date_test-case
 				const newFolderName = `${dateStr}_${headerData.testCase}`;
 
 				// Rename folder via IPC
-				const newPath = await ipcRenderer.invoke(
-					'rename-folder',
+				const newPath = await ipcService.renameFolder(
 					currentFolder,
 					newFolderName,
 				);
@@ -148,7 +146,7 @@ export function useFolderManager({
 
 	const loadImages = useCallback(async () => {
 		if (currentFolder) {
-			const imgs = await ipcRenderer.invoke('get-images', currentFolder);
+			const imgs = await ipcService.getImages(currentFolder);
 			setImages(imgs);
 		}
 	}, [currentFolder, setImages]);
@@ -156,9 +154,9 @@ export function useFolderManager({
 	const loadHeaderData = useCallback(
 		async (folder: string) => {
 			if (folder) {
-				const result = await ipcRenderer.invoke('load-header-data', folder);
-				if (result.success && result.data) {
-					setHeaderData(result.data);
+				const result = await ipcService.loadHeaderData(folder);
+				if (result) {
+					setHeaderData(result);
 				}
 			}
 		},
@@ -168,7 +166,7 @@ export function useFolderManager({
 	const saveHeaderData = useCallback(
 		async (folder: string, data: HeaderData) => {
 			if (folder && data.testCase) {
-				await ipcRenderer.invoke('save-header-data', folder, data);
+				await ipcService.saveHeaderData(folder, data);
 			}
 		},
 		[],

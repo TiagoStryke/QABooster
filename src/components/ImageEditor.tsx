@@ -1,14 +1,13 @@
 import { fabric } from 'fabric';
 import { useEffect, useRef, useState } from 'react';
-import { ImageData } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ImageData } from '../interfaces';
+import { ipcService } from '../services/ipc-service';
 import ConfirmationDialog from './ConfirmationDialog';
 
 // Import stickers
 import clickSticker from '../assets/stickers/click.png';
 import thumbsDownSticker from '../assets/stickers/thumbs-down.png';
-
-const { ipcRenderer } = window.require('electron');
 
 interface ImageEditorProps {
 	image: ImageData;
@@ -61,10 +60,7 @@ export default function ImageEditor({
 
 		// Load image via base64
 		const loadImage = async () => {
-			const base64 = await ipcRenderer.invoke(
-				'read-image-as-base64',
-				image.path,
-			);
+			const base64 = await ipcService.readImageAsBase64(image.path);
 			if (!base64) return;
 
 			fabric.Image.fromURL(base64, (img: fabric.Image) => {

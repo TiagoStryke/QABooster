@@ -1,7 +1,6 @@
 import { useLanguage } from '../contexts/LanguageContext';
 import { HeaderData } from '../interfaces';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface FolderManagerProps {
 	currentFolder: string;
@@ -23,11 +22,11 @@ export default function FolderManager({
 			alert(t('closeEditorFirst'));
 			return;
 		}
-		const folder = await ipcRenderer.invoke('select-folder');
+		const folder = await ipcService.selectFolder();
 		if (folder) {
 			// Verifica se existe JSON na pasta
-			const result = await ipcRenderer.invoke('load-header-data', folder);
-			if (result.success && result.data) {
+			const result = await ipcService.loadHeaderData(folder);
+			if (result) {
 				onFolderChange(folder, false);
 			} else {
 				alert(t('noTestFoundInFolder'));
@@ -40,18 +39,14 @@ export default function FolderManager({
 			alert(t('closeEditorFirst'));
 			return;
 		}
-		const baseFolder = await ipcRenderer.invoke('select-folder');
+		const baseFolder = await ipcService.selectFolder();
 		if (!baseFolder) return;
 
 		// Cria pasta com data
 		const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
 		const folderName = date;
 
-		const folder = await ipcRenderer.invoke(
-			'create-subfolder',
-			baseFolder,
-			folderName,
-		);
+		const folder = await ipcService.createSubfolder(baseFolder, folderName);
 
 		if (folder) {
 			onFolderChange(folder, true);
@@ -60,7 +55,7 @@ export default function FolderManager({
 
 	const handleOpenFolder = async () => {
 		if (currentFolder) {
-			await ipcRenderer.invoke('open-folder-in-finder', currentFolder);
+			await ipcService.openFolderInFinder(currentFolder);
 		}
 	};
 

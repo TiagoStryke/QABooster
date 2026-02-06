@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 /**
  * Synchronizes custom shortcuts from localStorage with backend on app initialization
@@ -19,8 +18,8 @@ export function useShortcutSync() {
 			'CommandOrControl+Shift+Q';
 
 		// Send to backend to register global shortcuts
-		ipcRenderer.invoke('set-shortcut', shortcutFull);
-		ipcRenderer.invoke('set-area-shortcut', shortcutArea);
-		ipcRenderer.invoke('set-quick-shortcut', shortcutQuick);
+		ipcService.setShortcut(shortcutFull);
+		ipcService.setAreaShortcut(shortcutArea);
+		ipcService.setQuickShortcut(shortcutQuick);
 	}, []);
 }

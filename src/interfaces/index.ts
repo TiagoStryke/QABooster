@@ -21,3 +21,48 @@ export interface ImageData {
 	path: string;
 	timestamp?: number;
 }
+
+/**
+ * Display information for multi-monitor setup
+ */
+export interface Display {
+	id: number;
+	label: string;
+	bounds: { x: number; y: number; width: number; height: number };
+	primary: boolean;
+}
+
+/**
+ * Screenshot area coordinates
+ */
+export interface ScreenshotArea {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+/**
+ * Notes data structure
+ */
+export interface NotesData {
+	text: string;
+	images: string[];
+}
+
+/**
+ * PDF generation parameters
+ */
+export interface PdfParams {
+	folder: string;
+	filename: string;
+}
+
+/**
+ * Save image parameters
+ */
+export interface SaveImageParams {
+	dataURL: string;
+	originalPath: string;
+	folder: string;
+}

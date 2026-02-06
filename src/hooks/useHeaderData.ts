@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { HeaderData } from '../interfaces';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from '../services/ipc-service';
 
 interface UseHeaderDataParams {
 	currentFolder: string;
@@ -48,7 +47,7 @@ export function useHeaderData({
 
 		const timeoutId = setTimeout(() => {
 			if (folderToSave && dataToSave.testCase) {
-				ipcRenderer.invoke('save-header-data', folderToSave, dataToSave);
+				ipcService.saveHeaderData(folderToSave, dataToSave);
 			}
 		}, 1000);
 

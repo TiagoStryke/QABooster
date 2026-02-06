@@ -1,11 +1,12 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, useState } from 'react';
-import { HeaderData, ImageData } from '../App';
 import approvedIcon from '../assets/icons/approved.png';
 import partialIcon from '../assets/icons/partial.png';
 import reprovedIcon from '../assets/icons/reproved.png';
 import golLogo from '../assets/logos/logo-gol-1024.png';
 import { useLanguage } from '../contexts/LanguageContext';
+import { HeaderData, ImageData } from '../interfaces';
+import { ipcService } from '../services/ipc-service';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -73,7 +74,7 @@ export default function Toolbar({
 
 	useEffect(() => {
 		// Carregar displays disponíveis
-		ipcRenderer.invoke('get-displays').then((displays: Display[]) => {
+		ipcService.getDisplays().then((displays: Display[]) => {
 			setDisplays(displays);
 		});
 
@@ -91,13 +92,13 @@ export default function Toolbar({
 		ipcRenderer.on('display-changed', handleDisplayChanged);
 
 		// Enviar preferência de área salva ao main process
-		ipcRenderer.invoke('set-use-saved-area', useSavedArea);
+		ipcService.setUseSavedArea(useSavedArea);
 
 		// Enviar display selecionado ao main process
-		ipcRenderer.invoke('set-display', selectedDisplay);
+		ipcService.setDisplay(selectedDisplay);
 
 		// Verificar se há área salva
-		ipcRenderer.invoke('get-saved-area').then((area: any) => {
+		ipcService.getSavedArea().then((area: any) => {
 			setHasAreaDefined(area !== null);
 		});
 
@@ -110,7 +111,7 @@ export default function Toolbar({
 			// Marca o checkbox automaticamente
 			setUseSavedArea(true);
 			localStorage.setItem('useSavedArea', 'true');
-			ipcRenderer.invoke('set-use-saved-area', true);
+			ipcService.setUseSavedArea(true);
 		});
 
 		ipcRenderer.on('area-selection-cancelled', () => {
@@ -127,13 +128,13 @@ export default function Toolbar({
 
 	const handleDisplayChange = async (displayId: number) => {
 		setSelectedDisplay(displayId);
-		await ipcRenderer.invoke('set-display', displayId);
+		await ipcService.setDisplay(displayId);
 		localStorage.setItem('qabooster-display', displayId.toString());
 	};
 
 	const handleSelectArea = async () => {
 		setIsSelectingArea(true);
-		await ipcRenderer.invoke('open-area-selector');
+		await ipcService.openAreaSelector();
 	};
 
 	const handleAreaButtonClick = () => {
@@ -145,8 +146,8 @@ export default function Toolbar({
 			setUseSavedArea(false);
 			setHasAreaDefined(false);
 			localStorage.setItem('qabooster-use-saved-area', 'false');
-			ipcRenderer.invoke('set-use-saved-area', false);
-			ipcRenderer.invoke('save-selected-area', null);
+			ipcService.setUseSavedArea(false);
+			ipcService.saveSelectedArea(null);
 		}
 	};
 
@@ -303,10 +304,7 @@ export default function Toolbar({
 
 				try {
 					// Ler imagem como base64 via IPC
-					const base64 = await ipcRenderer.invoke(
-						'read-image-as-base64',
-						images[i].path,
-					);
+					const base64 = await ipcService.readImageAsBase64(images[i].path);
 
 					if (!base64) {
 						console.error('Failed to load image:', images[i].path);
@@ -349,18 +347,11 @@ export default function Toolbar({
 			let fileName = `${t('pdfFilename')}${headerData.testCase || 'teste'}_${date}.pdf`;
 
 			// Verificar se o arquivo já existe
-			const checkResult = await ipcRenderer.invoke('check-pdf-exists', {
-				filename: fileName,
-			});
+			const checkResult = await ipcService.checkPdfExists(fileName);
 
 			if (checkResult.success && checkResult.exists) {
 				// Mostrar diálogo de confirmação com botões claros
-				const dialogResult = await ipcRenderer.invoke(
-					'show-pdf-exists-dialog',
-					{
-						filename: fileName,
-					},
-				);
+				const dialogResult = await ipcService.showPdfExistsDialog(fileName);
 
 				if (!dialogResult.success) {
 					alert(`${t('errorShowingDialog')}: ${dialogResult.error}`);
@@ -373,10 +364,7 @@ export default function Toolbar({
 					return;
 				} else if (dialogResult.action === 1) {
 					// Criar nova cópia - buscar próximo nome disponível
-					const nextFileResult = await ipcRenderer.invoke(
-						'find-next-filename',
-						{ baseFilename: fileName },
-					);
+					const nextFileResult = await ipcService.findNextFilename(fileName);
 
 					if (nextFileResult.success) {
 						fileName = nextFileResult.filename;
@@ -390,21 +378,21 @@ export default function Toolbar({
 
 			// Salvar PDF diretamente na pasta selecionada via IPC
 			const pdfData = pdf.output('datauristring');
-			const result = await ipcRenderer.invoke('save-pdf', {
+			const result = await ipcService.savePdf({
 				pdfData,
 				filename: fileName,
 			});
 
 			if (result.success) {
 				// Mostrar dialog com opção de visualizar
-				const response = await ipcRenderer.invoke('show-pdf-saved-dialog', {
-					filename: fileName,
-					filepath: result.filepath,
-				});
+				const response = await ipcService.showPdfSavedDialog(
+					fileName,
+					result.filepath,
+				);
 
 				if (response.action === 'view') {
 					// Abrir PDF no visualizador
-					await ipcRenderer.invoke('open-pdf', result.filepath);
+					await ipcService.openPdf(result.filepath);
 				}
 			} else {
 				alert(`${t('errorSavingPDF')}: ${result.error}`);
