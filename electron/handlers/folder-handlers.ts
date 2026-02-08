@@ -111,8 +111,9 @@ export function registerFolderHandlers(
 	});
 
 	// Save image from base64
-	ipcMain.handle('save-image', async (_, { filepath, dataUrl }) => {
-		return saveBase64Image(filepath, dataUrl);
+	ipcMain.handle('save-image', async (_, { dataURL, originalPath, folder }) => {
+		// Use originalPath as filepath (already contains full path)
+		return saveBase64Image(originalPath, dataURL);
 	});
 
 	// Delete image

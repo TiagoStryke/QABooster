@@ -27,6 +27,7 @@ interface UseEditorCanvasProps {
 	setZoom: (zoom: number) => void;
 	markAsChanged: () => void;
 	containerRef: React.RefObject<HTMLDivElement>;
+	setCurrentTool: (tool: Tool) => void; // Para voltar ao select após desenhar
 }
 
 export function useEditorCanvas({
@@ -37,6 +38,7 @@ export function useEditorCanvas({
 	setZoom,
 	markAsChanged,
 	containerRef,
+	setCurrentTool,
 }: UseEditorCanvasProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -46,8 +48,9 @@ export function useEditorCanvas({
 	useEffect(() => {
 		if (!canvasRef.current) return;
 
+		// Cria canvas SEM fundo (transparente)
 		const canvas = new fabric.Canvas(canvasRef.current, {
-			backgroundColor: '#1e293b',
+			backgroundColor: null, // SEM fundo - totalmente transparente
 		});
 
 		fabricCanvasRef.current = canvas;
@@ -58,7 +61,7 @@ export function useEditorCanvas({
 			if (!base64) return;
 
 			fabric.Image.fromURL(base64, (img: fabric.Image) => {
-				if (!img) return;
+				if (!img || !canvas || !canvas.getElement()) return;
 
 				// Usa tamanho ORIGINAL da imagem sem redimensionar
 				const imgWidth = img.width!;
@@ -164,7 +167,23 @@ export function useEditorCanvas({
 	const getDataURL = (): string | null => {
 		const canvas = fabricCanvasRef.current;
 		if (!canvas) return null;
-		return canvas.toDataURL({ format: 'png', quality: 1 });
+
+		// Salva zoom atual e reseta para 1 (tamanho original)
+		const currentZoom = canvas.getZoom();
+		canvas.setZoom(1);
+
+		// Exporta com fundo transparente no tamanho original
+		const dataUrl = canvas.toDataURL({
+			format: 'png',
+			quality: 1,
+			multiplier: 1, // Tamanho 1:1 (original)
+		});
+
+		// Restaura zoom
+		canvas.setZoom(currentZoom);
+		canvas.renderAll();
+
+		return dataUrl;
 	};
 
 	// ==================== DRAWING TOOLS ====================
@@ -254,6 +273,9 @@ export function useEditorCanvas({
 			canvas.off('mouse:up', onMouseUp);
 
 			canvas.renderAll();
+
+			// BUG FIX: Volta para ferramenta Select
+			setCurrentTool('select');
 		};
 
 		canvas.on('mouse:down', onMouseDown);
@@ -318,6 +340,9 @@ export function useEditorCanvas({
 			canvas.off('mouse:up', onMouseUp);
 
 			canvas.renderAll();
+
+			// BUG FIX: Volta para ferramenta Select
+			setCurrentTool('select');
 		};
 
 		canvas.on('mouse:down', onMouseDown);
@@ -378,6 +403,9 @@ export function useEditorCanvas({
 			canvas.off('mouse:up', onMouseUp);
 
 			canvas.renderAll();
+
+			// BUG FIX: Volta para ferramenta Select
+			setCurrentTool('select');
 		};
 
 		canvas.on('mouse:down', onMouseDown);
@@ -433,6 +461,9 @@ export function useEditorCanvas({
 			canvas.off('mouse:up', onMouseUp);
 
 			canvas.renderAll();
+
+			// BUG FIX: Volta para ferramenta Select
+			setCurrentTool('select');
 		};
 
 		canvas.on('mouse:down', onMouseDown);
@@ -456,6 +487,9 @@ export function useEditorCanvas({
 		canvas.setActiveObject(text);
 		text.enterEditing();
 		canvas.renderAll();
+
+		// BUG FIX: Volta para ferramenta Select após adicionar texto
+		setCurrentTool('select');
 	};
 
 	const enableFreeDrawing = () => {
@@ -465,6 +499,14 @@ export function useEditorCanvas({
 		canvas.isDrawingMode = true;
 		canvas.freeDrawingBrush.color = color;
 		canvas.freeDrawingBrush.width = 4;
+
+		// BUG FIX: Detecta quando termina de desenhar e volta para Select
+		const onPathCreated = () => {
+			setTimeout(() => setCurrentTool('select'), 100);
+		};
+
+		canvas.off('path:created'); // Remove listener anterior
+		canvas.on('path:created', onPathCreated);
 	};
 
 	const disableFreeDrawing = () => {
@@ -481,7 +523,11 @@ export function useEditorCanvas({
 		const stickerUrl = type === 'click' ? clickSticker : thumbsDownSticker;
 
 		fabric.Image.fromURL(stickerUrl, (img: fabric.Image) => {
-			img.scale(0.3);
+			// BUG FIX: Define tamanho FIXO em pixels para padronizar ambos stickers
+			const targetWidth = 100; // 100px de largura para ambos
+			const scale = targetWidth / (img.width || 1);
+
+			img.scale(scale);
 			img.set({
 				left: 100,
 				top: 100,
@@ -489,6 +535,9 @@ export function useEditorCanvas({
 			canvas.add(img);
 			canvas.setActiveObject(img);
 			canvas.renderAll();
+
+			// BUG FIX: Volta para ferramenta Select após adicionar sticker
+			setCurrentTool('select');
 		});
 	};
 

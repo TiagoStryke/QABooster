@@ -156,7 +156,14 @@ export function useFolderManager({
 			if (folder) {
 				const result = await ipcService.loadHeaderData(folder);
 				if (result) {
-					setHeaderData(result);
+					// BUG FIX: Garante que todos os campos sejam strings (nunca undefined)
+					setHeaderData({
+						testName: result.testName || '',
+						executor: result.executor || '',
+						system: result.system || '',
+						testCycle: result.testCycle || '',
+						testCase: result.testCase || '',
+					});
 				}
 			}
 		},

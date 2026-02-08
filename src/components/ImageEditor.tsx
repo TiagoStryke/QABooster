@@ -57,6 +57,7 @@ export default function ImageEditor({
 		setZoom,
 		markAsChanged,
 		containerRef,
+		setCurrentTool, // BUG FIX: Permite voltar ao select após desenhar
 	});
 
 	// ==================== EVENT HANDLERS ====================
@@ -66,6 +67,7 @@ export default function ImageEditor({
 		if (dataUrl) {
 			onSave(dataUrl);
 			resetChanges();
+			onClose(); // BUG FIX: Fecha editor após salvar
 		}
 	};
 
@@ -111,11 +113,7 @@ export default function ImageEditor({
 			/>
 
 			{/* Canvas Container */}
-			<div
-				ref={containerRef}
-				className="flex-1 p-4 overflow-auto"
-				style={{ backgroundColor: '#1e293b' }}
-			>
+			<div ref={containerRef} className="flex-1 p-4 overflow-auto">
 				<canvas ref={canvasRef} />
 			</div>
 

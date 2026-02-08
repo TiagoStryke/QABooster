@@ -51,7 +51,7 @@ export default function ShortcutEditor({
 					<input
 						type="text"
 						className="input-field text-xs flex-1 py-1 px-2"
-						value={tempShortcut}
+						value={tempShortcut || ''} // BUG FIX: Garante que nunca seja undefined
 						readOnly
 						onKeyDown={onKeyDown}
 						placeholder={t('pressKeys')}

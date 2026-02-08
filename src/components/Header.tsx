@@ -71,7 +71,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 					</label>
 					<select
 						className="input-field w-full text-xs py-1.5"
-						value={headerData.testName}
+						value={headerData.testName || ''}
 						onChange={(e) => handleChange('testName', e.target.value)}
 					>
 						<option value="">{t('selectOption')}</option>
@@ -89,7 +89,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						type="text"
 						className="input-field w-full text-xs py-1.5"
 						placeholder="Ex: hom-regressivo-b2c.voegol.com.br"
-						value={headerData.system}
+						value={headerData.system || ''}
 						onChange={(e) => handleChange('system', e.target.value)}
 					/>
 				</div>
@@ -102,7 +102,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						type="text"
 						className="input-field w-full text-xs py-1.5"
 						placeholder="Ex: TSTGOL-R2960"
-						value={headerData.testCycle}
+						value={headerData.testCycle || ''}
 						onChange={(e) => handleChange('testCycle', e.target.value)}
 					/>
 				</div>
@@ -115,7 +115,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						type="text"
 						className="input-field w-full text-xs py-1.5"
 						placeholder="Ex: TSTGOL-T13231 (1.0)"
-						value={headerData.testCase}
+						value={headerData.testCase || ''}
 						onChange={(e) => handleChange('testCase', e.target.value)}
 					/>
 				</div>
@@ -128,7 +128,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						type="text"
 						className="input-field w-full text-xs py-1.5"
 						placeholder="Seu nome"
-						value={headerData.executor}
+						value={headerData.executor || ''}
 						onChange={(e) => handleChange('executor', e.target.value)}
 					/>
 				</div>
