@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSystemHistory } from '../hooks/useSystemHistory';
-import { HeaderData } from '../interfaces';
+import { useTestTypeHistory } from '../hooks/useTestTypeHistory';
+import { HeaderData, TestType } from '../interfaces';
 import HelpTips from './HelpTips';
 import Settings from './Settings';
 
@@ -13,11 +14,33 @@ interface HeaderProps {
 export default function Header({ headerData, setHeaderData }: HeaderProps) {
 	const [showSettings, setShowSettings] = useState(false);
 	const { t } = useLanguage();
-	const { history } = useSystemHistory();
+	const { history: systemHistory } = useSystemHistory();
+	const { getHistoryForType } = useTestTypeHistory();
 
 	const handleChange = (field: keyof HeaderData, value: string) => {
 		setHeaderData({ ...headerData, [field]: value });
 	};
+
+	// Placeholder dinâmico baseado no tipo selecionado
+	const testTypePlaceholder = useMemo(() => {
+		switch (headerData.testType) {
+			case 'card':
+				return t('testTypeCardPlaceholder');
+			case 'regressivo':
+				return t('testTypeRegressivoPlaceholder');
+			case 'gmud':
+				return t('testTypeGmudPlaceholder');
+			case 'outro':
+				return t('testTypeOutroPlaceholder');
+			default:
+				return t('selectOption');
+		}
+	}, [headerData.testType, t]);
+
+	// Histórico para o tipo selecionado (apenas regressivo/gmud têm autocomplete)
+	const currentTypeHistory = useMemo(() => {
+		return getHistoryForType(headerData.testType);
+	}, [headerData.testType, getHistoryForType]);
 
 	return (
 		<div
@@ -97,7 +120,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						autoComplete="off"
 					/>
 					<datalist id="system-history">
-						{history.map((system, index) => (
+						{systemHistory.map((system, index) => (
 							<option key={index} value={system} />
 						))}
 					</datalist>
@@ -131,15 +154,41 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 
 				<div>
 					<label className="block text-xs font-medium text-slate-300 mb-1">
-						{t('executor')}
+						{t('testType')}
 					</label>
-					<input
-						type="text"
-						className="input-field w-full text-xs py-1.5"
-						placeholder="Seu nome"
-						value={headerData.executor || ''}
-						onChange={(e) => handleChange('executor', e.target.value)}
-					/>
+					<div className="flex items-center gap-0">
+						{/* Dropdown Tipo */}
+						<select
+							className="input-field text-xs py-1.5 rounded-r-none border-r-0 w-32"
+							value={headerData.testType || ''}
+							onChange={(e) =>
+								handleChange('testType', e.target.value as TestType)
+							}
+						>
+							<option value="">{t('selectOption')}</option>
+							<option value="card">{t('card')}</option>
+							<option value="regressivo">{t('regressivo')}</option>
+							<option value="gmud">{t('gmud')}</option>
+							<option value="outro">{t('outro')}</option>
+						</select>
+
+						{/* Input Valor (colado) */}
+						<input
+							type="text"
+							className="input-field flex-1 text-xs py-1.5 rounded-l-none"
+							placeholder={testTypePlaceholder}
+							value={headerData.testTypeValue || ''}
+							onChange={(e) => handleChange('testTypeValue', e.target.value)}
+							list="testtype-history"
+							autoComplete="off"
+							disabled={!headerData.testType}
+						/>
+						<datalist id="testtype-history">
+							{currentTypeHistory.map((value, index) => (
+								<option key={index} value={value} />
+							))}
+						</datalist>
+					</div>
 				</div>
 
 				<div>
