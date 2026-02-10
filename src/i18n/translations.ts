@@ -161,7 +161,7 @@ export const translations = {
 		errorFindingFilename: 'Erro ao buscar nome disponível',
 		errorGeneratingPDF: 'Erro ao gerar PDF',
 		noFolderSelectedForScreenshot:
-			'Preencha todos os campos do cabeçalho antes de capturar screenshots',
+			'Preencha Sistema, Tipo de Teste, Ciclo e Caso de Teste antes de capturar screenshots',
 		fillAllFieldsToStartTest:
 			'Por favor preencha todas as informações do cabeçalho para continuar o teste',
 		noRootFolderConfigured:
@@ -349,7 +349,7 @@ export const translations = {
 		errorFindingFilename: 'Error finding available name',
 		errorGeneratingPDF: 'Error generating PDF',
 		noFolderSelectedForScreenshot:
-			'Fill in all header fields before capturing screenshots',
+			'Fill in System, Test Type, Test Cycle, and Test Case before capturing screenshots',
 		fillAllFieldsToStartTest:
 			'Please fill in all header information to continue the test',
 		noRootFolderConfigured:

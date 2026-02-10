@@ -19,14 +19,7 @@ import {
     isValidTestFolder,
     rebuildPathAfterRename,
     validateHeaderComplete,
-    type HeaderData,
-} from '../services/folder-structure-service';
-
-/**
- * Registers folder and file management IPC handlers
- */
-export function registerFolderHandlers(
-	getCurrentFolder: () => string,
+	validateHeaderForScreenshot,
 	setCurrentFolder: (folder: string) => void,
 ): void {
 	// Select folder dialog
@@ -214,7 +207,21 @@ export function registerFolderHandlers(
 
 	// ==================== NEW FOLDER STRUCTURE HANDLERS ====================
 
-	// Validate if header is complete
+	// Validate if header is complete for screenshot (testName not required)
+	ipcMain.handle(
+		'validate-header-for-screenshot',
+		async (_, headerData: HeaderData) => {
+			try {
+				const isComplete = validateHeaderForScreenshot(headerData);
+				return { success: true, isComplete };
+			} catch (error) {
+				console.error('Error validating header for screenshot:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	// Validate if header is complete for PDF (testName required)
 	ipcMain.handle(
 		'validate-header-complete',
 		async (_, headerData: HeaderData) => {

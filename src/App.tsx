@@ -59,12 +59,13 @@ function App() {
 			// Only create if:
 			// 1. No current folder
 			// 2. Root folder is configured
-			// 3. Header is complete
+			// 3. Header is complete (testName NOT required for screenshot)
 			if (currentFolder) return;
 			if (!settings.rootFolder) return;
 
-			// Validate header is complete
-			const validation = await ipcService.validateHeaderComplete(headerData);
+			// Validate header is complete for screenshot (testName optional)
+			const validation =
+				await ipcService.validateHeaderForScreenshot(headerData);
 			if (!validation.success || !validation.isComplete) return;
 
 			// Create folder structure

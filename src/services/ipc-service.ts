@@ -348,9 +348,22 @@ class IpcService {
 	// ==================== FOLDER STRUCTURE (NEW) ====================
 
 	/**
-	 * Validate if header data is complete for folder creation
+	 * Validate if header data is complete for SCREENSHOT
+	 * testName (result) is NOT required for screenshots
 	 * @param headerData - Header data to validate
-	 * @returns Whether header is complete
+	 * @returns Whether header is complete for screenshot
+	 */
+	async validateHeaderForScreenshot(
+		headerData: HeaderData,
+	): Promise<{ success: boolean; isComplete: boolean }> {
+		return ipcRenderer.invoke('validate-header-for-screenshot', headerData);
+	}
+
+	/**
+	 * Validate if header data is complete for PDF
+	 * testName (result) IS required for PDF generation
+	 * @param headerData - Header data to validate
+	 * @returns Whether header is complete for PDF
 	 */
 	async validateHeaderComplete(
 		headerData: HeaderData,

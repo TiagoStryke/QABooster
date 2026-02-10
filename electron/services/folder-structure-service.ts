@@ -30,8 +30,22 @@ export function getMonthFolderName(): string {
 }
 
 /**
- * Valida se todos os campos necessários estão preenchidos
- * Retorna true se header está completo para criar estrutura
+ * Valida se todos os campos necessários estão preenchidos para SCREENSHOT
+ * Resultado do teste (testName) NÃO é obrigatório para screenshot, apenas para PDF
+ */
+export function validateHeaderForScreenshot(headerData: HeaderData): boolean {
+	return !!(
+		headerData.system &&
+		headerData.testCycle &&
+		headerData.testCase &&
+		headerData.testType &&
+		headerData.testTypeValue
+	);
+}
+
+/**
+ * Valida se todos os campos necessários estão preenchidos para PDF
+ * Resultado do teste (testName) É obrigatório para gerar PDF
  */
 export function validateHeaderComplete(headerData: HeaderData): boolean {
 	return !!(
@@ -56,15 +70,22 @@ export function buildFolderPath(
 	rootFolder: string,
 	headerData: HeaderData,
 ): string | null {
-	if (!rootFolder || !validateHeaderComplete(headerData)) {
+	if (!rootFolder || !validateHeaderForScreenshot(headerData)) {
 		return null;
 	}
 
 	// 1. Pasta do mês
 	const monthFolder = getMonthFolderName();
 
-	// 2. Pasta do tipo de teste (usa o valor digitado pelo usuário)
-	const typeFolder = headerData.testTypeValue.trim();
+	// 2. Pasta do tipo de teste com prefixo
+	// Se for regressivo ou gmud, adiciona prefixo: "regressivo-B2B" ou "gmud-B2B"
+	// Se for card ou outro, usa apenas o valor: "CDSUST-1234"
+	let typeFolder = headerData.testTypeValue.trim();
+	if (headerData.testType === 'regressivo') {
+		typeFolder = `regressivo-${typeFolder}`;
+	} else if (headerData.testType === 'gmud') {
+		typeFolder = `gmud-${typeFolder}`;
+	}
 
 	// 3. Pasta do ciclo de teste
 	const cycleFolder = headerData.testCycle.trim();
@@ -143,11 +164,30 @@ export function detectChangedLevel(
 		};
 	}
 
-	if (oldHeader.testTypeValue !== newHeader.testTypeValue) {
+	// Verifica mudança no tipo OU no valor do tipo
+	if (
+		oldHeader.testType !== newHeader.testType ||
+		oldHeader.testTypeValue !== newHeader.testTypeValue
+	) {
+		// Reconstroi nome da pasta com prefixo correto
+		let oldTypeFolderName = oldHeader.testTypeValue;
+		if (oldHeader.testType === 'regressivo') {
+			oldTypeFolderName = `regressivo-${oldHeader.testTypeValue}`;
+		} else if (oldHeader.testType === 'gmud') {
+			oldTypeFolderName = `gmud-${oldHeader.testTypeValue}`;
+		}
+
+		let newTypeFolderName = newHeader.testTypeValue;
+		if (newHeader.testType === 'regressivo') {
+			newTypeFolderName = `regressivo-${newHeader.testTypeValue}`;
+		} else if (newHeader.testType === 'gmud') {
+			newTypeFolderName = `gmud-${newHeader.testTypeValue}`;
+		}
+
 		return {
 			level: 'type',
-			oldName: oldHeader.testTypeValue,
-			newName: newHeader.testTypeValue,
+			oldName: oldTypeFolderName,
+			newName: newTypeFolderName,
 		};
 	}
 
