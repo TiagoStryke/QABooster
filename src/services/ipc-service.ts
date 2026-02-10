@@ -16,8 +16,9 @@ import type {
     Display,
     HeaderData,
     ImageData,
-    NotesData, SaveImageParams,
-    ScreenshotArea
+    NotesData,
+    SaveImageParams,
+    ScreenshotArea,
 } from '../interfaces';
 
 const { ipcRenderer } = window.require('electron');

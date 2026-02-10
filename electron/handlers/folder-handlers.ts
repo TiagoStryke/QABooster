@@ -2,24 +2,24 @@ import { dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import { APP_CONSTANTS } from '../config/app-config';
 import {
-	deleteFile,
-	ensureFolder,
-	fileExists,
-	listImages,
-	loadJSON,
-	renameFolder as renameFolderService,
-	saveBase64Image,
-	saveJSON,
+    deleteFile,
+    ensureFolder,
+    fileExists,
+    listImages,
+    loadJSON,
+    renameFolder as renameFolderService,
+    saveBase64Image,
+    saveJSON,
 } from '../services/file-service';
 import {
-	buildFolderPath,
-	detectChangedLevel,
-	ensureFolderStructure,
-	getMonthFolderName,
-	isValidTestFolder,
-	rebuildPathAfterRename,
-	validateHeaderComplete,
-	type HeaderData,
+    buildFolderPath,
+    detectChangedLevel,
+    ensureFolderStructure,
+    getMonthFolderName,
+    isValidTestFolder,
+    rebuildPathAfterRename,
+    validateHeaderComplete,
+    type HeaderData,
 } from '../services/folder-structure-service';
 
 /**
@@ -215,15 +215,18 @@ export function registerFolderHandlers(
 	// ==================== NEW FOLDER STRUCTURE HANDLERS ====================
 
 	// Validate if header is complete
-	ipcMain.handle('validate-header-complete', async (_, headerData: HeaderData) => {
-		try {
-			const isComplete = validateHeaderComplete(headerData);
-			return { success: true, isComplete };
-		} catch (error) {
-			console.error('Error validating header:', error);
-			return { success: false, error: String(error) };
-		}
-	});
+	ipcMain.handle(
+		'validate-header-complete',
+		async (_, headerData: HeaderData) => {
+			try {
+				const isComplete = validateHeaderComplete(headerData);
+				return { success: true, isComplete };
+			} catch (error) {
+				console.error('Error validating header:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
 
 	// Build folder path from header data
 	ipcMain.handle(
@@ -245,12 +248,12 @@ export function registerFolderHandlers(
 		async (_, rootFolder: string, headerData: HeaderData) => {
 			try {
 				const folderPath = ensureFolderStructure(rootFolder, headerData);
-				
+
 				if (folderPath) {
 					setCurrentFolder(folderPath);
 					return { success: true, path: folderPath };
 				}
-				
+
 				return {
 					success: false,
 					error: 'Invalid header data or root folder not configured',
@@ -265,7 +268,12 @@ export function registerFolderHandlers(
 	// Detect which folder level changed
 	ipcMain.handle(
 		'detect-changed-level',
-		async (_, oldHeader: HeaderData, newHeader: HeaderData, oldPath: string) => {
+		async (
+			_,
+			oldHeader: HeaderData,
+			newHeader: HeaderData,
+			oldPath: string,
+		) => {
 			try {
 				const change = detectChangedLevel(oldHeader, newHeader, oldPath);
 				return { success: true, change };
@@ -296,7 +304,7 @@ export function registerFolderHandlers(
 
 				// Renomeia a pasta
 				const renamedPath = renameFolderService(oldPath, newPath);
-				
+
 				if (renamedPath) {
 					setCurrentFolder(renamedPath);
 					return { success: true, path: renamedPath };

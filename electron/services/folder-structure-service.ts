@@ -1,6 +1,6 @@
 /**
  * Folder Structure Service
- * 
+ *
  * Gerencia a estrutura organizacional de pastas para testes
  * Estrutura: rootFolder/mês-ano/tipo-teste/ciclo/caso/
  * Exemplo: evidencias/01-2026/CDSUST-4535/TSTGOL-R20938/TSTGOL-T20938 (1.0)/
@@ -47,7 +47,7 @@ export function validateHeaderComplete(headerData: HeaderData): boolean {
 /**
  * Constrói o caminho completo da estrutura de pastas
  * Baseado no headerData fornecido
- * 
+ *
  * @param rootFolder - Pasta raiz configurada nas settings
  * @param headerData - Dados do header com informações do teste
  * @returns Caminho completo: rootFolder/mês/tipo/ciclo/caso
@@ -87,7 +87,7 @@ export function buildFolderPath(
 /**
  * Cria toda a estrutura de pastas necessária
  * Verifica cada nível e cria apenas o que não existe
- * 
+ *
  * @param rootFolder - Pasta raiz configurada nas settings
  * @param headerData - Dados do header com informações do teste
  * @returns Caminho completo criado ou null se inválido
@@ -111,7 +111,7 @@ export function ensureFolderStructure(
 /**
  * Detecta qual parte da estrutura mudou comparando dois headers
  * Retorna o nível que precisa ser renomeado
- * 
+ *
  * @returns 'month' | 'type' | 'cycle' | 'case' | null
  */
 export function detectChangedLevel(
@@ -167,7 +167,7 @@ export function detectChangedLevel(
 
 /**
  * Reconstrói o caminho após renomeação de um nível específico
- * 
+ *
  * @param oldPath - Caminho antigo completo
  * @param level - Nível que foi renomeado
  * @param newName - Novo nome para o nível
@@ -210,7 +210,7 @@ export function isValidTestFolder(folderPath: string): boolean {
 	}
 
 	const parts = folderPath.split(path.sep);
-	
+
 	// Deve ter pelo menos 5 níveis: root/mês/tipo/ciclo/caso
 	if (parts.length < 5) {
 		return false;
@@ -219,6 +219,6 @@ export function isValidTestFolder(folderPath: string): boolean {
 	// Valida formato do mês (MM-YYYY)
 	const monthPart = parts[parts.length - 4];
 	const monthRegex = /^\d{2}-\d{4}$/;
-	
+
 	return monthRegex.test(monthPart);
 }

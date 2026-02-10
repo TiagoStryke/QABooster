@@ -94,23 +94,26 @@ export async function generateTestPDF({
 
 		// Header data com ícone de status
 		const testResultInfo = getTestResultInfo(headerData.testName);
-		
+
 		// Construir valor do testType (incluir link se for Card)
 		let testTypeDisplay = '-';
 		if (headerData.testType && headerData.testTypeValue) {
-			const typeLabel = 
-				headerData.testType === 'card' ? 'Card' :
-				headerData.testType === 'regressivo' ? 'Regressivo' :
-				headerData.testType === 'gmud' ? 'GMUD' :
-				'Outro';
+			const typeLabel =
+				headerData.testType === 'card'
+					? 'Card'
+					: headerData.testType === 'regressivo'
+						? 'Regressivo'
+						: headerData.testType === 'gmud'
+							? 'GMUD'
+							: 'Outro';
 			testTypeDisplay = `${typeLabel}: ${headerData.testTypeValue}`;
-			
+
 			// Se for Card, adicionar link do Atlassian
 			if (headerData.testType === 'card') {
 				testTypeDisplay += ` (https://smiles.atlassian.net/browse/${headerData.testTypeValue})`;
 			}
 		}
-		
+
 		const headerItems = [
 			{
 				label: `${t('testResult')}:`,

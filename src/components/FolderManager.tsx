@@ -28,7 +28,7 @@ export default function FolderManager({
 		if (folder) {
 			// Valida se é uma pasta de teste válida
 			const validationResult = await ipcService.isValidTestFolder(folder);
-			
+
 			if (validationResult.success && validationResult.isValid) {
 				// Verifica se existe headerData.json na pasta
 				const result = await ipcService.loadHeaderData(folder);

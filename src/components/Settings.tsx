@@ -9,9 +9,9 @@ import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import {
-	useSettingsState,
-	type Language,
-	type Theme,
+    useSettingsState,
+    type Language,
+    type Theme,
 } from '../hooks/useSettingsState';
 import ShortcutEditor from './ShortcutEditor';
 

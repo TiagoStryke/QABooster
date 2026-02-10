@@ -47,39 +47,36 @@ export function useTestTypeHistory() {
 	}, []);
 
 	// Adiciona novo valor ao histórico de um tipo específico
-	const addToHistory = useCallback(
-		(testType: TestType, value: string) => {
-			if (!value || !value.trim()) return;
-			if (testType !== 'regressivo' && testType !== 'gmud') return;
+	const addToHistory = useCallback((testType: TestType, value: string) => {
+		if (!value || !value.trim()) return;
+		if (testType !== 'regressivo' && testType !== 'gmud') return;
 
-			const normalizedValue = value.trim();
-			const storageKey = `${STORAGE_KEY_PREFIX}-${testType}`;
+		const normalizedValue = value.trim();
+		const storageKey = `${STORAGE_KEY_PREFIX}-${testType}`;
 
-			setHistory((prev) => {
-				const currentList = prev[testType];
+		setHistory((prev) => {
+			const currentList = prev[testType];
 
-				// Remove duplicatas (case-insensitive)
-				const filtered = currentList.filter(
-					(item) => item.toLowerCase() !== normalizedValue.toLowerCase(),
-				);
+			// Remove duplicatas (case-insensitive)
+			const filtered = currentList.filter(
+				(item) => item.toLowerCase() !== normalizedValue.toLowerCase(),
+			);
 
-				// Adiciona no início (mais recente primeiro)
-				const updated = [normalizedValue, ...filtered];
+			// Adiciona no início (mais recente primeiro)
+			const updated = [normalizedValue, ...filtered];
 
-				// Limita tamanho mantendo apenas os mais recentes
-				const limited = updated.slice(0, MAX_HISTORY_ITEMS);
+			// Limita tamanho mantendo apenas os mais recentes
+			const limited = updated.slice(0, MAX_HISTORY_ITEMS);
 
-				// Salva no localStorage
-				localStorage.setItem(storageKey, JSON.stringify(limited));
+			// Salva no localStorage
+			localStorage.setItem(storageKey, JSON.stringify(limited));
 
-				return {
-					...prev,
-					[testType]: limited,
-				};
-			});
-		},
-		[],
-	);
+			return {
+				...prev,
+				[testType]: limited,
+			};
+		});
+	}, []);
 
 	// Retorna histórico para um tipo específico
 	const getHistoryForType = useCallback(

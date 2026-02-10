@@ -73,12 +73,14 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 **Key Changes (9 commits total)**:
 
 #### STEP 1-3: Interface & Frontend Updates
+
 - **Interfaces**: Added `TestType`, `AppSettings`, updated `HeaderData`
 - **Settings**: Added rootFolder selector + executorName field
 - **Header**: Replaced executor input with testType dropdown + value input
 - **Translation Keys**: 57 new keys (PT + EN)
 
 #### STEP 4-5: Backend Infrastructure
+
 - **folder-structure-service.ts** (210 lines): Core folder logic
   - `getMonthFolderName()`: Returns "MM-YYYY" format
   - `validateHeaderComplete()`: Checks all 6 fields filled
@@ -90,6 +92,7 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 - **7 new IPC handlers**: All typed and registered
 
 #### STEP 6-8: Hook Refactoring & Auto-Creation
+
 - **useFolderManager**: Complete rewrite with selective renaming
   - Tracks previousHeader to detect changes
   - Renames only the changed folder level (no more (2), (3) suffixes)
@@ -101,23 +104,27 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
   - Eliminates "select folder" errors
 
 #### STEP 9: PDF Generation Updates
+
 - **Toolbar**: Updated validation to check testType + testTypeValue
-- **PDF Generator**: 
+- **PDF Generator**:
   - Executor from appSettings instead of headerData
   - Added testType field to PDF header
   - Card link support: `https://smiles.atlassian.net/browse/{value}`
   - Saves testTypeValue to history (separate for Regressivo/GMUD)
 
 #### STEP 10-11: Cleanup & Testing
+
 - **FolderManager**: "Continuar Teste" validates folder structure
 - **Removed**: Obsolete `create-subfolder` handler and IPC method
 - **Testing**: All features validated with zero compilation errors
 
 **New Hooks Created**:
+
 - `useAppSettings.ts` (91 lines): rootFolder + executorName persistence
 - `useTestTypeHistory.ts` (112 lines): Separate autocomplete for Regressivo/GMUD
 
 **Benefits**:
+
 - ✅ Hierarchical organization (month/type/cycle/case)
 - ✅ One-time rootFolder configuration (no more repeated dialogs)
 - ✅ Selective folder renaming (only changed levels)

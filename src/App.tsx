@@ -74,7 +74,7 @@ function App() {
 			);
 
 			if (result.success && result.path) {
-				// Set the new folder 
+				// Set the new folder
 				setCurrentFolder(result.path);
 			}
 		};
@@ -85,12 +85,7 @@ function App() {
 		}, 1000);
 
 		return () => clearTimeout(timeoutId);
-	}, [
-		headerData,
-		currentFolder,
-		settings.rootFolder,
-		setCurrentFolder,
-	]);
+	}, [headerData, currentFolder, settings.rootFolder, setCurrentFolder]);
 
 	const handleNewTest = () => {
 		const hasData =
