@@ -1,4 +1,5 @@
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAppSettings } from '../hooks/useAppSettings';
 import { HeaderData } from '../interfaces';
 import { ipcService } from '../services/ipc-service';
 
@@ -16,6 +17,7 @@ export default function FolderManager({
 	showEditor,
 }: FolderManagerProps) {
 	const { t } = useLanguage();
+	const { settings } = useAppSettings();
 
 	const handleContinueTest = async () => {
 		if (showEditor) {
@@ -24,12 +26,25 @@ export default function FolderManager({
 		}
 		const folder = await ipcService.selectFolder();
 		if (folder) {
-			// Verifica se existe JSON na pasta
-			const result = await ipcService.loadHeaderData(folder);
-			if (result) {
-				onFolderChange(folder, false);
+			// Valida se é uma pasta de teste válida
+			const validationResult = await ipcService.isValidTestFolder(folder);
+			
+			if (validationResult.success && validationResult.isValid) {
+				// Verifica se existe headerData.json na pasta
+				const result = await ipcService.loadHeaderData(folder);
+				if (result) {
+					onFolderChange(folder, false);
+				} else {
+					alert(t('noTestFoundInFolder'));
+				}
 			} else {
-				alert(t('noTestFoundInFolder'));
+				// Pasta não segue a estrutura esperada, mas pode conter headerData
+				const result = await ipcService.loadHeaderData(folder);
+				if (result) {
+					onFolderChange(folder, false);
+				} else {
+					alert(t('noTestFoundInFolder'));
+				}
 			}
 		}
 	};
@@ -39,18 +54,17 @@ export default function FolderManager({
 			alert(t('closeEditorFirst'));
 			return;
 		}
-		const baseFolder = await ipcService.selectFolder();
-		if (!baseFolder) return;
 
-		// Cria pasta com data
-		const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-		const folderName = date;
-
-		const folder = await ipcService.createSubfolder(baseFolder, folderName);
-
-		if (folder) {
-			onFolderChange(folder, true);
+		// Valida se rootFolder está configurada
+		if (!settings.rootFolder) {
+			alert(t('noRootFolderConfigured'));
+			return;
 		}
+
+		// NÃO cria estrutura ainda - apenas marca como "novo teste pendente"
+		// A estrutura será criada quando o usuário preencher o header completo
+		// Por enquanto, sinaliza para App que é um novo teste
+		onFolderChange('', true);
 	};
 
 	const handleOpenFolder = async () => {
