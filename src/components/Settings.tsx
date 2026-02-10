@@ -7,10 +7,11 @@
 
 import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAppSettings } from '../hooks/useAppSettings';
 import {
-    useSettingsState,
-    type Language,
-    type Theme,
+	useSettingsState,
+	type Language,
+	type Theme,
 } from '../hooks/useSettingsState';
 import ShortcutEditor from './ShortcutEditor';
 
@@ -21,6 +22,9 @@ interface SettingsProps {
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
 	const { t } = useLanguage();
+
+	// App settings (pasta raiz, executor)
+	const { settings, setRootFolder, setExecutorName } = useAppSettings();
 
 	const {
 		// Basic settings
@@ -121,6 +125,51 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 							</svg>
 						</button>
 					</div>
+
+					{/* ROOT FOLDER */}
+					<div className="mb-4">
+						<label className="block text-sm font-semibold text-slate-300 mb-2">
+							📁 {t('rootFolder')}
+						</label>
+						<div className="text-xs text-slate-400 mb-2">
+							{t('rootFolderDesc')}
+						</div>
+						<div className="flex items-center gap-2">
+							<input
+								type="text"
+								value={settings.rootFolder || ''}
+								placeholder={t('noRootFolderSelected')}
+								readOnly
+								className="flex-1 bg-slate-700 text-slate-300 text-sm px-3 py-2 rounded border border-slate-600 focus:outline-none"
+							/>
+							<button
+								onClick={() => setRootFolder(true)}
+								className="btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+							>
+								{t('selectRootFolder')}
+							</button>
+						</div>
+					</div>
+
+					{/* EXECUTOR NAME */}
+					<div className="mb-4">
+						<label className="block text-sm font-semibold text-slate-300 mb-2">
+							👤 {t('executorName')}
+						</label>
+						<div className="text-xs text-slate-400 mb-2">
+							{t('executorNameDesc')}
+						</div>
+						<input
+							type="text"
+							value={settings.executorName || ''}
+							onChange={(e) => setExecutorName(e.target.value)}
+							placeholder={t('executorNamePlaceholder')}
+							className="w-full bg-slate-700 text-slate-300 text-sm px-3 py-2 rounded border border-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+						/>
+					</div>
+
+					{/* Separator */}
+					<div className="border-t border-slate-700 my-6"></div>
 
 					{/* PDF Orientation */}
 					<div className="mb-4">
