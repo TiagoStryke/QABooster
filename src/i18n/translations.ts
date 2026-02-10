@@ -10,6 +10,16 @@ export const translations = {
 		system: 'Sistema',
 		testCycle: 'Ciclo de Teste',
 		testCase: 'Caso de Teste',
+		testType: 'Tipo de Teste',
+		testTypeValue: 'Valor',
+		card: 'Card',
+		regressivo: 'Regressivo',
+		gmud: 'GMUD',
+		outro: 'Outro',
+		testTypeCardPlaceholder: 'Ex: CDSUST-4535',
+		testTypeRegressivoPlaceholder: 'Ex: Regressivo B2B - R1.2',
+		testTypeGmudPlaceholder: 'Ex: GMUD NBV',
+		testTypeOutroPlaceholder: 'Descreva o tipo de teste',
 		executor: 'Executor',
 		executionDateTime: 'Data e Hora da Execução',
 
@@ -101,6 +111,13 @@ export const translations = {
 		themeRose: 'Rosa',
 		themeLight: 'Claro',
 		themeGreen: 'Verde',
+		rootFolder: 'Pasta Raiz',
+		rootFolderDesc: 'Pasta onde todos os testes serão organizados',
+		selectRootFolder: 'Selecionar Pasta Raiz',
+		noRootFolderSelected: 'Nenhuma pasta selecionada',
+		executorName: 'Nome do Executor',
+		executorNameDesc: 'Seu nome (aparece em todos os PDFs)',
+		executorNamePlaceholder: 'Digite seu nome',
 		copyToClipboard: 'Copiar prints para área de transferência',
 		copyToClipboardDesc: 'Permite colar com Ctrl+V em outros programas',
 		captureShortcuts: 'Atalhos de Captura',
@@ -145,6 +162,10 @@ export const translations = {
 		errorGeneratingPDF: 'Erro ao gerar PDF',
 		noFolderSelectedForScreenshot:
 			'Clique em "Novo Teste" ou "Continuar Teste" para iniciar antes de capturar screenshots',
+		fillAllFieldsToStartTest:
+			'Por favor preencha todas as informações do cabeçalho para continuar o teste',
+		noRootFolderConfigured:
+			'Configure a Pasta Raiz nas Configurações antes de iniciar um novo teste',
 		confirmNewTest:
 			'Deseja iniciar um novo teste? Os dados do teste atual serão salvos.',
 		confirmNewTestLoseData:
@@ -177,6 +198,16 @@ export const translations = {
 		system: 'System',
 		testCycle: 'Test Cycle',
 		testCase: 'Test Case',
+		testType: 'Test Type',
+		testTypeValue: 'Value',
+		card: 'Card',
+		regressivo: 'Regressive',
+		gmud: 'GMUD',
+		outro: 'Other',
+		testTypeCardPlaceholder: 'Ex: CDSUST-4535',
+		testTypeRegressivoPlaceholder: 'Ex: Regressive B2B - R1.2',
+		testTypeGmudPlaceholder: 'Ex: GMUD NBV',
+		testTypeOutroPlaceholder: 'Describe the test type',
 		executor: 'Executor',
 		executionDateTime: 'Execution Date and Time',
 
@@ -268,6 +299,13 @@ export const translations = {
 		themeRose: 'Rose',
 		themeLight: 'Light',
 		themeGreen: 'Green',
+		rootFolder: 'Root Folder',
+		rootFolderDesc: 'Folder where all tests will be organized',
+		selectRootFolder: 'Select Root Folder',
+		noRootFolderSelected: 'No folder selected',
+		executorName: 'Executor Name',
+		executorNameDesc: 'Your name (appears in all PDFs)',
+		executorNamePlaceholder: 'Enter your name',
 		copyToClipboard: 'Copy screenshots to clipboard',
 		copyToClipboardDesc: 'Allows pasting with Ctrl+V in other programs',
 		captureShortcuts: 'Capture Shortcuts',
@@ -312,6 +350,10 @@ export const translations = {
 		errorGeneratingPDF: 'Error generating PDF',
 		noFolderSelectedForScreenshot:
 			'Click "New Test" or "Continue Test" to start before capturing screenshots',
+		fillAllFieldsToStartTest:
+			'Please fill in all header information to continue the test',
+		noRootFolderConfigured:
+			'Configure the Root Folder in Settings before starting a new test',
 		confirmNewTest: 'Start a new test? Current test data will be saved.',
 		confirmNewTestLoseData: 'Start a new test? Current data will be lost.',
 		confirmDeleteImage: 'Delete',

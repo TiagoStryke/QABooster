@@ -3,14 +3,28 @@
  */
 
 /**
+ * Test type options
+ */
+export type TestType = 'card' | 'regressivo' | 'gmud' | 'outro' | '';
+
+/**
+ * Application settings (persisted)
+ */
+export interface AppSettings {
+	rootFolder: string;
+	executorName: string;
+}
+
+/**
  * Test header metadata
  */
 export interface HeaderData {
 	testName: string;
-	executor: string;
 	system: string;
 	testCycle: string;
 	testCase: string;
+	testType: TestType;
+	testTypeValue: string;
 }
 
 /**
