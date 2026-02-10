@@ -55,15 +55,9 @@ export default function FolderManager({
 			return;
 		}
 
-		// Valida se rootFolder está configurada
-		if (!settings.rootFolder) {
-			alert(t('noRootFolderConfigured'));
-			return;
-		}
-
-		// NÃO cria estrutura ainda - apenas marca como "novo teste pendente"
-		// A estrutura será criada quando o usuário preencher o header completo
-		// Por enquanto, sinaliza para App que é um novo teste
+		// Sinaliza para App que é um novo teste (limpa tudo)
+		// A estrutura de pastas será criada automaticamente quando
+		// o usuário preencher o cabeçalho completo
 		onFolderChange('', true);
 	};
 

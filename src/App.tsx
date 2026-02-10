@@ -88,7 +88,7 @@ function App() {
 	}, [headerData, currentFolder, settings.rootFolder, setCurrentFolder]);
 
 	const handleNewTest = () => {
-		const hasData =
+		const hasHeaderData =
 			headerData.testName ||
 			headerData.system ||
 			headerData.testCycle ||
@@ -96,12 +96,18 @@ function App() {
 			headerData.testType ||
 			headerData.testTypeValue;
 
-		if (currentFolder && hasData) {
+		const hasImages = images.length > 0;
+
+		// Se tem pasta (teste em andamento), salva antes de limpar
+		if (currentFolder && hasHeaderData) {
 			if (!confirm(t('confirmNewTest'))) return;
 			saveHeaderData(currentFolder, headerData);
-		} else if (hasData || images.length > 0) {
+		}
+		// Se não tem pasta mas tem dados, pergunta se quer perder
+		else if (hasHeaderData || hasImages) {
 			if (!confirm(t('confirmNewTestLoseData'))) return;
 		}
+		// Se está tudo vazio, apenas limpa (sem confirmação)
 
 		// Reset everything
 		resetHeaderData();
