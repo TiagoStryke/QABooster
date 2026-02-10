@@ -46,11 +46,25 @@ export default function Toolbar({
 	// ==================== PDF GENERATION ====================
 
 	const handleGeneratePDF = async () => {
+		// Validação 1: Verificar se todos os campos do header estão preenchidos
+		if (
+			!headerData.testName ||
+			!headerData.system ||
+			!headerData.testCycle ||
+			!headerData.testCase ||
+			!headerData.executor
+		) {
+			alert(t('incompleteHeaderData'));
+			return;
+		}
+
+		// Validação 2: Verificar se há editor aberto
 		if (showEditor) {
 			alert(t('saveEditsBeforePDF'));
 			return;
 		}
 
+		// Validação 3: Verificar se há imagens
 		if (images.length === 0) {
 			alert(t('noImagesToGeneratePDF'));
 			return;

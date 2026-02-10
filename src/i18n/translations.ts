@@ -130,6 +130,8 @@ export const translations = {
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'Nenhuma imagem para gerar PDF',
+		incompleteHeaderData:
+			'Preencha todos os campos do cabeçalho antes de gerar o PDF',
 		pdfSavedSuccessfully: 'PDF salvo com sucesso na pasta!',
 		viewPDF: 'Visualizar PDF',
 		ok: 'OK',
@@ -293,6 +295,8 @@ export const translations = {
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'No images to generate PDF',
+		incompleteHeaderData:
+			'Please fill in all header fields before generating the PDF',
 		pdfSavedSuccessfully: 'PDF saved successfully in the folder!',
 		viewPDF: 'View PDF',
 		ok: 'OK',
