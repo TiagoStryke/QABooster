@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSystemHistory } from '../hooks/useSystemHistory';
 import { useToolbarState } from '../hooks/useToolbarState';
 import { HeaderData, ImageData } from '../interfaces';
 import { generateTestPDF } from '../services/pdf-generator-service';
@@ -30,6 +31,7 @@ export default function Toolbar({
 }: ToolbarProps) {
 	const { t } = useLanguage();
 	const [isGenerating, setIsGenerating] = useState(false);
+	const { addToHistory } = useSystemHistory();
 
 	// Estados do toolbar (displays, área fixa, orientação PDF)
 	const {
@@ -85,7 +87,12 @@ export default function Toolbar({
 
 		setIsGenerating(false);
 
-		if (!result.success && result.error !== 'cancelled') {
+		if (result.success) {
+			// PDF gerado com sucesso - salvar sistema no histórico
+			if (headerData.system) {
+				addToHistory(headerData.system);
+			}
+		} else if (result.error !== 'cancelled') {
 			alert(`${t('errorGeneratingPDF')}: ${result.error}`);
 		}
 	};

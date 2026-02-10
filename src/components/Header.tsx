@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSystemHistory } from '../hooks/useSystemHistory';
 import { HeaderData } from '../interfaces';
 import HelpTips from './HelpTips';
 import Settings from './Settings';
@@ -12,6 +13,7 @@ interface HeaderProps {
 export default function Header({ headerData, setHeaderData }: HeaderProps) {
 	const [showSettings, setShowSettings] = useState(false);
 	const { t } = useLanguage();
+	const { history } = useSystemHistory();
 
 	const handleChange = (field: keyof HeaderData, value: string) => {
 		setHeaderData({ ...headerData, [field]: value });
@@ -91,7 +93,14 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						placeholder="Ex: hom-regressivo-b2c.voegol.com.br"
 						value={headerData.system || ''}
 						onChange={(e) => handleChange('system', e.target.value)}
+						list="system-history"
+						autoComplete="off"
 					/>
+					<datalist id="system-history">
+						{history.map((system, index) => (
+							<option key={index} value={system} />
+						))}
+					</datalist>
 				</div>
 
 				<div>
