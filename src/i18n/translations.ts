@@ -143,6 +143,8 @@ export const translations = {
 		errorShowingDialog: 'Erro ao mostrar diálogo',
 		errorFindingFilename: 'Erro ao buscar nome disponível',
 		errorGeneratingPDF: 'Erro ao gerar PDF',
+		noFolderSelectedForScreenshot:
+			'Clique em "Novo Teste" ou "Continuar Teste" para iniciar antes de capturar screenshots',
 		confirmNewTest:
 			'Deseja iniciar um novo teste? Os dados do teste atual serão salvos.',
 		confirmNewTestLoseData:
@@ -308,6 +310,8 @@ export const translations = {
 		errorShowingDialog: 'Error showing dialog',
 		errorFindingFilename: 'Error finding available name',
 		errorGeneratingPDF: 'Error generating PDF',
+		noFolderSelectedForScreenshot:
+			'Click "New Test" or "Continue Test" to start before capturing screenshots',
 		confirmNewTest: 'Start a new test? Current test data will be saved.',
 		confirmNewTestLoseData: 'Start a new test? Current data will be lost.',
 		confirmDeleteImage: 'Delete',

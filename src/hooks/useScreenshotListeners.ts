@@ -37,7 +37,7 @@ export function useScreenshotListeners({
 		};
 
 		const handleScreenshotError = (_: any, message: string) => {
-			alert(t('errorGeneratingPDF'));
+			alert(t('noFolderSelectedForScreenshot'));
 		};
 
 		const handleShortcutRegistrationFailed = (
