@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HeaderData } from '../interfaces';
 import { ipcService } from '../services/ipc-service';
 
@@ -9,34 +9,25 @@ interface UseHeaderDataParams {
 interface UseHeaderDataReturn {
 	headerData: HeaderData;
 	setHeaderData: (data: HeaderData) => void;
-	executorRef: React.RefObject<string>;
 	resetHeaderData: () => void;
 }
 
 /**
- * Manages header data state, executor persistence, and auto-save
- * Handles localStorage sync for executor and debounced auto-save to IPC
+ * Manages header data state and auto-save
+ * Handles debounced auto-save to IPC
+ * NEW: No longer manages executor (moved to AppSettings)
  */
 export function useHeaderData({
 	currentFolder,
 }: UseHeaderDataParams): UseHeaderDataReturn {
 	const [headerData, setHeaderData] = useState<HeaderData>({
 		testName: '',
-		executor: localStorage.getItem('qabooster-executor') || '',
 		system: '',
 		testCycle: '',
 		testCase: '',
+		testType: '',
+		testTypeValue: '',
 	});
-
-	const executorRef = useRef(localStorage.getItem('qabooster-executor') || '');
-
-	// Save executor to localStorage when it changes
-	useEffect(() => {
-		if (headerData.executor) {
-			localStorage.setItem('qabooster-executor', headerData.executor);
-			executorRef.current = headerData.executor;
-		}
-	}, [headerData.executor]);
 
 	// Auto-save headerData when it changes (with debounce)
 	useEffect(() => {
@@ -55,20 +46,19 @@ export function useHeaderData({
 	}, [headerData, currentFolder]);
 
 	const resetHeaderData = () => {
-		const savedExecutor = executorRef.current;
 		setHeaderData({
 			testName: '',
-			executor: savedExecutor,
 			system: '',
 			testCycle: '',
 			testCase: '',
+			testType: '',
+			testTypeValue: '',
 		});
 	};
 
 	return {
 		headerData,
 		setHeaderData,
-		executorRef,
 		resetHeaderData,
 	};
 }

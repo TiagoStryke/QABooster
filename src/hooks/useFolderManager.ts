@@ -6,7 +6,6 @@ interface UseFolderManagerParams {
 	setImages: (images: any[]) => void;
 	headerData: HeaderData;
 	setHeaderData: (data: HeaderData) => void;
-	executorRef: RefObject<string>;
 }
 
 interface UseFolderManagerReturn {
@@ -15,6 +14,7 @@ interface UseFolderManagerReturn {
 	currentFolderRef: RefObject<string>;
 	isRenamingRef: RefObject<boolean>;
 	isNewFolderRef: RefObject<boolean>;
+	previousHeaderRef: RefObject<HeaderData | null>;
 	loadImages: () => Promise<void>;
 	loadHeaderData: (folder: string) => Promise<void>;
 	saveHeaderData: (folder: string, data: HeaderData) => Promise<void>;
@@ -22,88 +22,85 @@ interface UseFolderManagerReturn {
 }
 
 /**
- * Manages folder operations, auto-rename, and folder state
- * Handles currentFolder, automatic folder renaming based on test case,
- * and synchronization between folder state and header data
+ * Manages folder operations with new organizational structure
+ * Handles currentFolder, selective folder renaming, and folder state
+ * NEW: Supports rootFolder/month/testType/cycle/case structure
  */
 export function useFolderManager({
 	setImages,
 	headerData,
 	setHeaderData,
-	executorRef,
 }: UseFolderManagerParams): UseFolderManagerReturn {
 	const [currentFolder, setCurrentFolder] = useState<string>('');
 	const currentFolderRef = useRef<string>('');
 	const isRenamingRef = useRef(false);
 	const isNewFolderRef = useRef(false);
+	const previousHeaderRef = useRef<HeaderData | null>(null);
 
 	// Keep ref synced with state
 	useEffect(() => {
 		currentFolderRef.current = currentFolder;
 	}, [currentFolder]);
 
-	// Auto-rename folder when test case is filled
+	// Selective folder renaming when specific fields change
 	useEffect(() => {
-		const renameFolderIfNeeded = async () => {
-			// Don't rename if no data
-			if (!currentFolder || !headerData.testCase) return;
+		const handleSelectiveRename = async () => {
+			// Don't rename if no folder or no previous header
+			if (!currentFolder || !previousHeaderRef.current) return;
 
-			// Extract current folder name
-			const folderName = currentFolder.split('/').pop() || '';
+			// Skip if we're currently renaming (avoid loops)
+			if (isRenamingRef.current) return;
 
-			// Check if current folder is date only (DD-MM-YYYY format)
-			// or already has date_case pattern but with different case
-			const dateOnlyPattern = /^\d{2}-\d{2}-\d{4}$/;
-			const dateWithCasePattern = /^(\d{2}-\d{2}-\d{4})_(.+)$/;
+			// Detect which level changed
+			const result = await ipcService.detectChangedLevel(
+				previousHeaderRef.current,
+				headerData,
+				currentFolder,
+			);
 
-			let shouldRename = false;
-			let dateStr = '';
+			if (!result.success || !result.change) return;
 
-			if (dateOnlyPattern.test(folderName)) {
-				// Folder with date only (newly created)
-				dateStr = folderName;
-				shouldRename = true;
-			} else if (dateWithCasePattern.test(folderName)) {
-				// Folder already has date_case format, check if case changed
-				const match = folderName.match(dateWithCasePattern);
-				if (match) {
-					dateStr = match[1];
-					const currentCase = match[2];
-					// Only rename if test case changed AND not loading
-					shouldRename = currentCase !== headerData.testCase;
-				}
+			const { level, newName } = result.change;
+			if (!level || !newName) return;
+
+			// Mark that we're renaming
+			isRenamingRef.current = true;
+
+			// Save header data BEFORE renaming
+			await ipcService.saveHeaderData(currentFolder, headerData);
+
+			// Rename the specific folder level
+			const renameResult = await ipcService.renameFolderLevel(
+				currentFolder,
+				level,
+				newName.trim(),
+			);
+
+			if (renameResult.success && renameResult.path) {
+				// Update currentFolder with new path
+				setCurrentFolder(renameResult.path);
+				// Update previousHeader to current
+				previousHeaderRef.current = { ...headerData };
 			}
 
-			if (shouldRename && dateStr) {
-				// Mark that we're renaming
-				isRenamingRef.current = true;
-
-				// Save header data BEFORE renaming
-				await ipcService.saveHeaderData(currentFolder, headerData);
-
-				// Create new name: Date_test-case
-				const newFolderName = `${dateStr}_${headerData.testCase}`;
-
-				// Rename folder via IPC
-				const newPath = await ipcService.renameFolder(
-					currentFolder,
-					newFolderName,
-				);
-				if (newPath) {
-					// Update currentFolder without triggering loadHeaderData
-					setCurrentFolder(newPath);
-					// DON'T reset isRenamingRef here - let useEffect do it
-				}
-			}
+			// Reset renaming flag
+			isRenamingRef.current = false;
 		};
 
 		// Debounce 500ms to avoid multiple renames while typing
 		const timeoutId = setTimeout(() => {
-			renameFolderIfNeeded();
+			handleSelectiveRename();
 		}, 500);
 
 		return () => clearTimeout(timeoutId);
-	}, [headerData.testCase, currentFolder, headerData]);
+	}, [
+		headerData.testType,
+		headerData.testTypeValue,
+		headerData.testCycle,
+		headerData.testCase,
+		currentFolder,
+		headerData,
+	]);
 
 	// Load images and header when folder changes
 	useEffect(() => {
@@ -121,19 +118,21 @@ export function useFolderManager({
 			return;
 		}
 
-		// Clear header first (keep only executor)
-		const savedExecutor = executorRef.current;
+		// Clear header first
 		setHeaderData({
 			testName: '',
-			executor: savedExecutor || '',
 			system: '',
 			testCycle: '',
 			testCase: '',
+			testType: '',
+			testTypeValue: '',
 		});
 
-		// If it's a NEW folder, DON'T load header
+		// If it's a NEW folder, DON'T load header (wait for user input)
 		if (isNewFolderRef.current) {
 			isNewFolderRef.current = false;
+			// Reset previousHeader
+			previousHeaderRef.current = null;
 			return;
 		}
 
@@ -157,13 +156,17 @@ export function useFolderManager({
 				const result = await ipcService.loadHeaderData(folder);
 				if (result) {
 					// BUG FIX: Garante que todos os campos sejam strings (nunca undefined)
-					setHeaderData({
+					const loadedData: HeaderData = {
 						testName: result.testName || '',
-						executor: result.executor || '',
 						system: result.system || '',
 						testCycle: result.testCycle || '',
 						testCase: result.testCase || '',
-					});
+						testType: result.testType || '',
+						testTypeValue: result.testTypeValue || '',
+					};
+					setHeaderData(loadedData);
+					// Update previousHeader to track changes
+					previousHeaderRef.current = { ...loadedData };
 				}
 			}
 		},
@@ -201,6 +204,7 @@ export function useFolderManager({
 		currentFolderRef,
 		isRenamingRef,
 		isNewFolderRef,
+		previousHeaderRef,
 		loadImages,
 		loadHeaderData,
 		saveHeaderData,

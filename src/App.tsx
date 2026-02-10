@@ -19,10 +19,9 @@ function App() {
 	useShortcutSync();
 
 	// Header data management (needs currentFolder, but we'll update it via effect)
-	const { headerData, setHeaderData, executorRef, resetHeaderData } =
-		useHeaderData({
-			currentFolder: '',
-		});
+	const { headerData, setHeaderData, resetHeaderData } = useHeaderData({
+		currentFolder: '',
+	});
 
 	// Image management (needs loadImages, but we'll get it from folder manager)
 	const {
@@ -48,7 +47,7 @@ function App() {
 		loadHeaderData,
 		saveHeaderData,
 		handleFolderChange,
-	} = useFolderManager({ setImages, headerData, setHeaderData, executorRef });
+	} = useFolderManager({ setImages, headerData, setHeaderData });
 
 	// Screenshot event listeners
 	useScreenshotListeners({ currentFolderRef, setImages, t });
@@ -58,7 +57,9 @@ function App() {
 			headerData.testName ||
 			headerData.system ||
 			headerData.testCycle ||
-			headerData.testCase;
+			headerData.testCase ||
+			headerData.testType ||
+			headerData.testTypeValue;
 
 		if (currentFolder && hasData) {
 			if (!confirm(t('confirmNewTest'))) return;
