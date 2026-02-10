@@ -45,32 +45,39 @@ export function useAppSettings() {
 	// Atualiza pasta raiz
 	const setRootFolder = useCallback(
 		async (selectNew = false) => {
+			// Sempre carrega settings mais recentes do localStorage para evitar sobrescrever
+			const stored = localStorage.getItem(STORAGE_KEY);
+			const currentSettings = stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+
 			if (selectNew) {
 				// Abre dialog para selecionar pasta
 				const folder = await ipcService.selectFolder();
 				if (folder) {
-					const newSettings = { ...settings, rootFolder: folder };
+					const newSettings = { ...currentSettings, rootFolder: folder };
 					saveSettings(newSettings);
 					return folder;
 				}
 				return null;
 			} else {
-				// Apenas atualiza estado
-				const newSettings = { ...settings, rootFolder: '' };
+				// Limpa rootFolder
+				const newSettings = { ...currentSettings, rootFolder: '' };
 				saveSettings(newSettings);
 				return null;
 			}
 		},
-		[settings, saveSettings],
+		[saveSettings],
 	);
 
 	// Atualiza nome do executor
 	const setExecutorName = useCallback(
 		(name: string) => {
-			const newSettings = { ...settings, executorName: name };
+			// Sempre carrega settings mais recentes do localStorage para evitar sobrescrever
+			const stored = localStorage.getItem(STORAGE_KEY);
+			const currentSettings = stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+			const newSettings = { ...currentSettings, executorName: name };
 			saveSettings(newSettings);
 		},
-		[settings, saveSettings],
+		[saveSettings],
 	);
 
 	// Verifica se settings estão completas
