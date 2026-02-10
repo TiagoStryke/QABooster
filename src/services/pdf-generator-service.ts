@@ -15,6 +15,7 @@ import { ipcService } from './ipc-service';
 interface GeneratePDFParams {
 	images: ImageData[];
 	headerData: HeaderData;
+	executorName: string;
 	pdfOrientation: 'portrait' | 'landscape';
 	t: (key: string) => string;
 }
@@ -40,6 +41,7 @@ function getTestResultInfo(value: string): TestResultInfo {
 export async function generateTestPDF({
 	images,
 	headerData,
+	executorName,
 	pdfOrientation,
 	t,
 }: GeneratePDFParams): Promise<{ success: boolean; error?: string }> {
@@ -92,6 +94,23 @@ export async function generateTestPDF({
 
 		// Header data com ícone de status
 		const testResultInfo = getTestResultInfo(headerData.testName);
+		
+		// Construir valor do testType (incluir link se for Card)
+		let testTypeDisplay = '-';
+		if (headerData.testType && headerData.testTypeValue) {
+			const typeLabel = 
+				headerData.testType === 'card' ? 'Card' :
+				headerData.testType === 'regressivo' ? 'Regressivo' :
+				headerData.testType === 'gmud' ? 'GMUD' :
+				'Outro';
+			testTypeDisplay = `${typeLabel}: ${headerData.testTypeValue}`;
+			
+			// Se for Card, adicionar link do Atlassian
+			if (headerData.testType === 'card') {
+				testTypeDisplay += ` (https://smiles.atlassian.net/browse/${headerData.testTypeValue})`;
+			}
+		}
+		
 		const headerItems = [
 			{
 				label: `${t('testResult')}:`,
@@ -99,9 +118,10 @@ export async function generateTestPDF({
 				icon: testResultInfo.icon,
 			},
 			{ label: `${t('system')}:`, value: headerData.system || '-' },
+			{ label: `${t('testType')}:`, value: testTypeDisplay },
 			{ label: `${t('testCycle')}:`, value: headerData.testCycle || '-' },
 			{ label: `${t('testCase')}:`, value: headerData.testCase || '-' },
-			{ label: `${t('executor')}:`, value: headerData.executor || '-' },
+			{ label: `${t('executor')}:`, value: executorName || '-' },
 			{
 				label: `${t('executionDateTime')}:`,
 				value: new Date().toLocaleString('pt-BR'),

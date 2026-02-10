@@ -7,7 +7,9 @@
 
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAppSettings } from '../hooks/useAppSettings';
 import { useSystemHistory } from '../hooks/useSystemHistory';
+import { useTestTypeHistory } from '../hooks/useTestTypeHistory';
 import { useToolbarState } from '../hooks/useToolbarState';
 import { HeaderData, ImageData } from '../interfaces';
 import { generateTestPDF } from '../services/pdf-generator-service';
@@ -31,7 +33,9 @@ export default function Toolbar({
 }: ToolbarProps) {
 	const { t } = useLanguage();
 	const [isGenerating, setIsGenerating] = useState(false);
-	const { addToHistory } = useSystemHistory();
+	const { settings } = useAppSettings();
+	const { addToHistory: addSystemToHistory } = useSystemHistory();
+	const { addToHistory: addTestTypeToHistory } = useTestTypeHistory();
 
 	// Estados do toolbar (displays, área fixa, orientação PDF)
 	const {
@@ -48,25 +52,32 @@ export default function Toolbar({
 	// ==================== PDF GENERATION ====================
 
 	const handleGeneratePDF = async () => {
-		// Validação 1: Verificar se todos os campos do header estão preenchidos
+		// Validação 1: Verificar se executorName está configurado
+		if (!settings.executorName) {
+			alert(t('incompleteHeaderData'));
+			return;
+		}
+
+		// Validação 2: Verificar se todos os campos do header estão preenchidos
 		if (
 			!headerData.testName ||
 			!headerData.system ||
 			!headerData.testCycle ||
 			!headerData.testCase ||
-			!headerData.executor
+			!headerData.testType ||
+			!headerData.testTypeValue
 		) {
 			alert(t('incompleteHeaderData'));
 			return;
 		}
 
-		// Validação 2: Verificar se há editor aberto
+		// Validação 3: Verificar se há editor aberto
 		if (showEditor) {
 			alert(t('saveEditsBeforePDF'));
 			return;
 		}
 
-		// Validação 3: Verificar se há imagens
+		// Validação 4: Verificar se há imagens
 		if (images.length === 0) {
 			alert(t('noImagesToGeneratePDF'));
 			return;
@@ -81,6 +92,7 @@ export default function Toolbar({
 		const result = await generateTestPDF({
 			images,
 			headerData,
+			executorName: settings.executorName,
 			pdfOrientation,
 			t,
 		});
@@ -88,9 +100,12 @@ export default function Toolbar({
 		setIsGenerating(false);
 
 		if (result.success) {
-			// PDF gerado com sucesso - salvar sistema no histórico
+			// PDF gerado com sucesso - salvar no histórico
 			if (headerData.system) {
-				addToHistory(headerData.system);
+				addSystemToHistory(headerData.system);
+			}
+			if (headerData.testType && headerData.testTypeValue) {
+				addTestTypeToHistory(headerData.testType, headerData.testTypeValue);
 			}
 		} else if (result.error !== 'cancelled') {
 			alert(`${t('errorGeneratingPDF')}: ${result.error}`);
