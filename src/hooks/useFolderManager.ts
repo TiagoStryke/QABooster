@@ -15,6 +15,8 @@ interface UseFolderManagerReturn {
 	isRenamingRef: RefObject<boolean>;
 	isNewFolderRef: RefObject<boolean>;
 	previousHeaderRef: RefObject<HeaderData | null>;
+	hasPendingChanges: () => boolean;
+	executePendingRename: () => Promise<boolean>;
 	loadImages: () => Promise<void>;
 	loadHeaderData: (folder: string) => Promise<void>;
 	saveHeaderData: (folder: string, data: HeaderData) => Promise<void>;
@@ -42,34 +44,67 @@ export function useFolderManager({
 		currentFolderRef.current = currentFolder;
 	}, [currentFolder]);
 
-	// Selective folder renaming when specific fields change
-	useEffect(() => {
-		const handleSelectiveRename = async () => {
-			// Don't rename if no folder or no previous header
-			if (!currentFolder || !previousHeaderRef.current) return;
+	/**
+	 * Verifica se há mudanças pendentes no header que afetariam a estrutura de pastas
+	 */
+	const hasPendingChanges = useCallback((): boolean => {
+		if (!currentFolder || !previousHeaderRef.current) return false;
 
-			// Skip if we're currently renaming (avoid loops)
-			if (isRenamingRef.current) return;
+		const prev = previousHeaderRef.current;
+		const curr = headerData;
 
-			// Detect which level changed
+		return (
+			prev.testType !== curr.testType ||
+			prev.testTypeValue !== curr.testTypeValue ||
+			prev.testCycle !== curr.testCycle ||
+			prev.testCase !== curr.testCase
+		);
+	}, [currentFolder, headerData]);
+
+	/**
+	 * Executa rename pendente se houver mudanças
+	 * Retorna true se sucesso ou se não havia mudanças, false se erro
+	 */
+	const executePendingRename = useCallback(async (): Promise<boolean> => {
+		// Se não tem pasta ou mudanças, apenas retorna sucesso
+		if (!currentFolder || !hasPendingChanges()) {
+			// Atualiza previousHeader even if no changes
+			if (currentFolder) {
+				previousHeaderRef.current = { ...headerData };
+			}
+			return true;
+		}
+
+		// Skip if currently renaming
+		if (isRenamingRef.current) return false;
+
+		try {
+			// Detecta qual nível mudou
 			const result = await ipcService.detectChangedLevel(
-				previousHeaderRef.current,
+				previousHeaderRef.current!,
 				headerData,
 				currentFolder,
 			);
 
-			if (!result.success || !result.change) return;
+			if (!result.success || !result.change) {
+				// Nenhuma mudança detectada, considera sucesso
+				previousHeaderRef.current = { ...headerData };
+				return true;
+			}
 
 			const { level, newName } = result.change;
-			if (!level || !newName) return;
+			if (!level || !newName) {
+				previousHeaderRef.current = { ...headerData };
+				return true;
+			}
 
-			// Mark that we're renaming
+			// Marca que está renomeando
 			isRenamingRef.current = true;
 
-			// Save header data BEFORE renaming
+			// Salva header ANTES de renomear
 			await ipcService.saveHeaderData(currentFolder, headerData);
 
-			// Rename the specific folder level
+			// Renomeia o nível específico
 			const renameResult = await ipcService.renameFolderLevel(
 				currentFolder,
 				level,
@@ -77,30 +112,22 @@ export function useFolderManager({
 			);
 
 			if (renameResult.success && renameResult.path) {
-				// Update currentFolder with new path
+				// Atualiza currentFolder com novo caminho
 				setCurrentFolder(renameResult.path);
-				// Update previousHeader to current
+				// Atualiza previousHeader
 				previousHeaderRef.current = { ...headerData };
+				isRenamingRef.current = false;
+				return true;
 			}
 
-			// Reset renaming flag
 			isRenamingRef.current = false;
-		};
-
-		// Debounce 500ms to avoid multiple renames while typing
-		const timeoutId = setTimeout(() => {
-			handleSelectiveRename();
-		}, 500);
-
-		return () => clearTimeout(timeoutId);
-	}, [
-		headerData.testType,
-		headerData.testTypeValue,
-		headerData.testCycle,
-		headerData.testCase,
-		currentFolder,
-		headerData,
-	]);
+			return false;
+		} catch (error) {
+			console.error('Error executing pending rename:', error);
+			isRenamingRef.current = false;
+			return false;
+		}
+	}, [currentFolder, headerData, hasPendingChanges]);
 
 	// Load images and header when folder changes
 	useEffect(() => {
@@ -209,5 +236,7 @@ export function useFolderManager({
 		loadHeaderData,
 		saveHeaderData,
 		handleFolderChange,
+		hasPendingChanges,
+		executePendingRename,
 	};
 }

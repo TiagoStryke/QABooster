@@ -6,6 +6,7 @@ import { ipcService } from '../services/ipc-service';
 interface FolderManagerProps {
 	currentFolder: string;
 	onFolderChange: (folder: string, isNewFolder?: boolean) => void;
+	executePendingRename: () => Promise<boolean>;
 	headerData: HeaderData;
 	showEditor: boolean;
 }
@@ -13,6 +14,7 @@ interface FolderManagerProps {
 export default function FolderManager({
 	currentFolder,
 	onFolderChange,
+	executePendingRename,
 	headerData,
 	showEditor,
 }: FolderManagerProps) {
@@ -24,6 +26,10 @@ export default function FolderManager({
 			alert(t('closeEditorFirst'));
 			return;
 		}
+
+		// Execute pending rename BEFORE continuing test
+		await executePendingRename();
+
 		const folder = await ipcService.selectFolder();
 		if (folder) {
 			// Valida se é uma pasta de teste válida

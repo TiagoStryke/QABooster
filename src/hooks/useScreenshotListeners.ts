@@ -7,6 +7,7 @@ const { ipcRenderer } = window.require('electron');
 
 interface UseScreenshotListenersParams {
 	currentFolderRef: RefObject<string>;
+	setCurrentFolder: (folder: string) => void;
 	setImages: (images: ImageData[]) => void;
 	t: (key: string) => string;
 }
@@ -17,6 +18,7 @@ interface UseScreenshotListenersParams {
  */
 export function useScreenshotListeners({
 	currentFolderRef,
+	setCurrentFolder,
 	setImages,
 	t,
 }: UseScreenshotListenersParams) {
@@ -26,6 +28,11 @@ export function useScreenshotListeners({
 			if (folder) {
 				ipcService.getImages(folder).then(setImages);
 			}
+		};
+
+		const handleFolderCreated = (_: any, data: { path: string }) => {
+			// Backend criou a pasta, atualiza o frontend
+			setCurrentFolder(data.path);
 		};
 
 		const handleScreenshotFlash = () => {
@@ -59,6 +66,7 @@ export function useScreenshotListeners({
 
 		// Register listeners
 		ipcRenderer.on('screenshot-captured', handleScreenshotCaptured);
+		ipcRenderer.on('folder-created', handleFolderCreated);
 		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
 		ipcRenderer.on('screenshot-error', handleScreenshotError);
 		ipcRenderer.on(
@@ -69,9 +77,10 @@ export function useScreenshotListeners({
 		// Cleanup
 		return () => {
 			ipcRenderer.removeAllListeners('screenshot-captured');
+			ipcRenderer.removeAllListeners('folder-created');
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');
 			ipcRenderer.removeAllListeners('shortcut-registration-failed');
 		};
-	}, [currentFolderRef, setImages, t]);
+	}, [currentFolderRef, setCurrentFolder, setImages, t]);
 }

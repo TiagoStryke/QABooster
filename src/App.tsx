@@ -8,7 +8,6 @@ import { useImageManager } from './hooks/useImageManager';
 import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
-import { ipcService } from './services/ipc-service';
 
 function App() {
 	const { t } = useLanguage();
@@ -24,7 +23,7 @@ function App() {
 		currentFolder: '',
 	});
 
-	// Image management (needs loadImages, but we'll get it from folder manager)
+	// Image management (temporary setImages, will be replaced)
 	const {
 		images,
 		setImages,
@@ -37,7 +36,9 @@ function App() {
 		handleCloseEditor,
 		handleSaveEdited,
 		resetImages,
-	} = useImageManager({ loadImages: async () => {} });
+	} = useImageManager({
+		loadImages: async () => {},
+	});
 
 	// Folder management
 	const {
@@ -48,47 +49,73 @@ function App() {
 		loadHeaderData,
 		saveHeaderData,
 		handleFolderChange,
+		hasPendingChanges,
+		executePendingRename,
 	} = useFolderManager({ setImages, headerData, setHeaderData });
 
 	// Screenshot event listeners
-	useScreenshotListeners({ currentFolderRef, setImages, t });
+	useScreenshotListeners({
+		currentFolderRef,
+		setCurrentFolder,
+		setImages,
+		t,
+	});
 
-	// Auto-create folder structure when header is complete
+	// Execute pending rename before window closes
 	useEffect(() => {
-		const createStructureIfNeeded = async () => {
-			// Only create if:
-			// 1. No current folder
-			// 2. Root folder is configured
-			// 3. Header is complete (testName NOT required for screenshot)
-			if (currentFolder) return;
-			if (!settings.rootFolder) return;
+		const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+			if (hasPendingChanges()) {
+				// Execute pending rename
+				await executePendingRename();
 
-			// Validate header is complete for screenshot (testName optional)
-			const validation =
-				await ipcService.validateHeaderForScreenshot(headerData);
-			if (!validation.success || !validation.isComplete) return;
-
-			// Create folder structure
-			const result = await ipcService.createTestStructure(
-				settings.rootFolder,
-				headerData,
-			);
-
-			if (result.success && result.path) {
-				// Set the new folder
-				setCurrentFolder(result.path);
+				// Save header data if there's a current folder
+				if (currentFolder) {
+					await saveHeaderData(currentFolder, headerData);
+				}
 			}
 		};
 
-		// Debounce to avoid creating while user is still typing
-		const timeoutId = setTimeout(() => {
-			createStructureIfNeeded();
-		}, 1000);
+		window.addEventListener('beforeunload', handleBeforeUnload);
 
-		return () => clearTimeout(timeoutId);
-	}, [headerData, currentFolder, settings.rootFolder, setCurrentFolder]);
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	}, [
+		hasPendingChanges,
+		executePendingRename,
+		currentFolder,
+		headerData,
+		saveHeaderData,
+	]);
 
-	const handleNewTest = () => {
+	// Execute pending rename before window closes
+	useEffect(() => {
+		const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+			if (hasPendingChanges()) {
+				// Execute pending rename
+				await executePendingRename();
+
+				// Save header data if there's a current folder
+				if (currentFolder) {
+					await saveHeaderData(currentFolder, headerData);
+				}
+			}
+		};
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	}, [
+		hasPendingChanges,
+		executePendingRename,
+		currentFolder,
+		headerData,
+		saveHeaderData,
+	]);
+
+	const handleNewTest = async () => {
 		const hasHeaderData =
 			headerData.testName ||
 			headerData.system ||
@@ -102,6 +129,10 @@ function App() {
 		// Se tem pasta (teste em andamento), salva antes de limpar
 		if (currentFolder && hasHeaderData) {
 			if (!confirm(t('confirmNewTest'))) return;
+
+			// Execute pending rename BEFORE saving
+			await executePendingRename();
+
 			saveHeaderData(currentFolder, headerData);
 		}
 		// Se não tem pasta mas tem dados, pergunta se quer perder
@@ -116,6 +147,15 @@ function App() {
 		setCurrentFolder('');
 	};
 
+	// Wrapper for handleSaveEdited to execute pending rename before saving
+	const handleSaveEditedWithRename = async (dataUrl: string) => {
+		// Execute pending rename BEFORE saving edited image
+		await executePendingRename();
+
+		// Call original handleSaveEdited
+		await handleSaveEdited(dataUrl);
+	};
+
 	return (
 		<MainLayout
 			headerData={headerData}
@@ -124,6 +164,7 @@ function App() {
 			images={images}
 			onSaveHeaderData={() => saveHeaderData(currentFolder, headerData)}
 			onNewTest={handleNewTest}
+			executePendingRename={executePendingRename}
 			onFolderChange={handleFolderChange}
 			selectedImage={selectedImage}
 			showEditor={showEditor}
@@ -136,7 +177,7 @@ function App() {
 			handleImagePreview={handleImagePreview}
 			handleImageReorder={handleImageReorder}
 			handleCloseEditor={handleCloseEditor}
-			handleSaveEdited={handleSaveEdited}
+			handleSaveEdited={handleSaveEditedWithRename}
 		/>
 	);
 }

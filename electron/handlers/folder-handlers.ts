@@ -2,24 +2,32 @@ import { dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import { APP_CONSTANTS } from '../config/app-config';
 import {
-    deleteFile,
-    ensureFolder,
-    fileExists,
-    listImages,
-    loadJSON,
-    renameFolder as renameFolderService,
-    saveBase64Image,
-    saveJSON,
+	deleteFile,
+	ensureFolder,
+	fileExists,
+	listImages,
+	loadJSON,
+	renameFolder as renameFolderService,
+	saveBase64Image,
+	saveJSON,
 } from '../services/file-service';
 import {
-    buildFolderPath,
-    detectChangedLevel,
-    ensureFolderStructure,
-    getMonthFolderName,
-    isValidTestFolder,
-    rebuildPathAfterRename,
-    validateHeaderComplete,
+	buildFolderPath,
+	detectChangedLevel,
+	ensureFolderStructure,
+	getMonthFolderName,
+	HeaderData,
+	isValidTestFolder,
+	rebuildPathAfterRename,
+	validateHeaderComplete,
 	validateHeaderForScreenshot,
+} from '../services/folder-structure-service';
+
+/**
+ * Registers folder and file management IPC handlers
+ */
+export function registerFolderHandlers(
+	getCurrentFolder: () => string,
 	setCurrentFolder: (folder: string) => void,
 ): void {
 	// Select folder dialog

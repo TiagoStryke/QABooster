@@ -14,6 +14,7 @@ interface MainLayoutProps {
 	images: ImageData[];
 	onSaveHeaderData: () => void;
 	onNewTest: () => void;
+	executePendingRename: () => Promise<boolean>;
 	onFolderChange: (folder: string, isNewFolder?: boolean) => void;
 	selectedImage: ImageData | null;
 	showEditor: boolean;
@@ -34,6 +35,7 @@ export default function MainLayout({
 	images,
 	onSaveHeaderData,
 	onNewTest,
+	executePendingRename,
 	onFolderChange,
 	selectedImage,
 	showEditor,
@@ -60,12 +62,14 @@ export default function MainLayout({
 					headerData={headerData}
 					onSaveHeaderData={onSaveHeaderData}
 					onNewTest={onNewTest}
+					executePendingRename={executePendingRename}
 					showEditor={showEditor}
 				/>
 
 				<FolderManager
 					currentFolder={currentFolder}
 					onFolderChange={onFolderChange}
+					executePendingRename={executePendingRename}
 					headerData={headerData}
 					showEditor={showEditor}
 				/>

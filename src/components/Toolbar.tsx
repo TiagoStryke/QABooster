@@ -20,6 +20,7 @@ interface ToolbarProps {
 	headerData: HeaderData;
 	onSaveHeaderData: () => void;
 	onNewTest: () => void;
+	executePendingRename: () => Promise<boolean>;
 	showEditor?: boolean;
 }
 
@@ -29,6 +30,7 @@ export default function Toolbar({
 	headerData,
 	onSaveHeaderData,
 	onNewTest,
+	executePendingRename,
 	showEditor = false,
 }: ToolbarProps) {
 	const { t } = useLanguage();
@@ -84,6 +86,9 @@ export default function Toolbar({
 		}
 
 		setIsGenerating(true);
+
+		// Execute pending rename BEFORE saving
+		await executePendingRename();
 
 		// Salvar headerData antes de gerar PDF
 		await onSaveHeaderData();

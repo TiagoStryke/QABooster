@@ -1,11 +1,11 @@
 import {
-	app,
-	BrowserWindow,
-	clipboard,
-	globalShortcut,
-	ipcMain,
-	screen,
-	Tray,
+    app,
+    BrowserWindow,
+    clipboard,
+    globalShortcut,
+    ipcMain,
+    screen,
+    Tray,
 } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,8 +13,8 @@ import * as path from 'path';
 // Window management
 import { createMainWindow } from './windows/main-window';
 import {
-	closeOverlayWindow,
-	createOverlayWindow,
+    closeOverlayWindow,
+    createOverlayWindow,
 } from './windows/overlay-window';
 import { createTray, setupTrayFlashHandler } from './windows/tray';
 
@@ -28,9 +28,9 @@ import { registerWindowHandlers } from './handlers/window-handlers';
 
 // Services
 import {
-	captureAreaScreenshot,
-	captureFullscreenScreenshot,
-	captureScreenshotForOverlay,
+    captureAreaScreenshot,
+    captureFullscreenScreenshot,
+    captureScreenshotForOverlay,
 } from './services/screenshot-service';
 import { getNextScreenshotFilename } from './utils/filename-generator';
 
@@ -55,18 +55,81 @@ let pendingScreenshot: Electron.NativeImage | null = null;
 // Desabilitar verificação de certificado SSL para evitar erros no console
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 
+/**
+ * Tenta criar a estrutura de pastas se necessário
+ * Chamado quando screenshot é capturado pela primeira vez
+ */
+async function tryCreateFolderIfNeeded(): Promise<boolean> {
+	// Se já tem pasta, não precisa criar
+	if (currentFolder) return true;
+
+	try {
+		// Pega o estado atual do frontend
+		const stateResult = await mainWindow?.webContents.executeJavaScript(`
+			(function() {
+				try {
+					const headerData = JSON.parse(localStorage.getItem('qabooster-headerData') || '{}');
+					const rootFolder = localStorage.getItem('qabooster-rootFolder') || '';
+					return { success: true, headerData, rootFolder };
+				} catch (e) {
+					return { success: false, error: e.message };
+				}
+			})()
+		`);
+
+		if (!stateResult?.success || !stateResult.rootFolder) {
+			return false;
+		}
+
+		const { headerData, rootFolder } = stateResult;
+
+		// Importa e valida
+		const { validateHeaderForScreenshot, ensureFolderStructure } =
+			await import('./services/folder-structure-service');
+
+		const isValid = validateHeaderForScreenshot(headerData);
+		if (!isValid) {
+			return false;
+		}
+
+		// Cria a estrutura
+		const folderPath = ensureFolderStructure(rootFolder, headerData);
+
+		if (folderPath) {
+			// Atualiza currentFolder globalmente
+			currentFolder = folderPath;
+
+			// Notifica o frontend
+			mainWindow?.webContents.send('folder-created', {
+				path: folderPath,
+			});
+
+			return true;
+		}
+
+		return false;
+	} catch (error) {
+		console.error('Error creating folder structure:', error);
+		return false;
+	}
+}
+
 function registerGlobalShortcut() {
 	globalShortcut.unregisterAll();
 
 	// Fullscreen screenshot
 	const ret = globalShortcut.register(shortcutKey, async () => {
+		// Try to create folder if needed
 		if (!currentFolder) {
-			mainWindow?.webContents.send(
-				'screenshot-error',
-				'Selecione uma pasta primeiro',
-			);
-			mainWindow?.show();
-			return;
+			const created = await tryCreateFolderIfNeeded();
+			if (!created) {
+				mainWindow?.webContents.send(
+					'screenshot-error',
+					'Preencha os campos obrigatórios primeiro',
+				);
+				mainWindow?.show();
+				return;
+			}
 		}
 
 		try {
@@ -98,13 +161,17 @@ function registerGlobalShortcut() {
 
 	// Area screenshot
 	const retArea = globalShortcut.register(shortcutKeyArea, async () => {
+		// Try to create folder if needed
 		if (!currentFolder) {
-			mainWindow?.webContents.send(
-				'screenshot-error',
-				'Selecione uma pasta primeiro',
-			);
-			mainWindow?.show();
-			return;
+			const created = await tryCreateFolderIfNeeded();
+			if (!created) {
+				mainWindow?.webContents.send(
+					'screenshot-error',
+					'Preencha os campos obrigatórios primeiro',
+				);
+				mainWindow?.show();
+				return;
+			}
 		}
 
 		// Se deve usar área salva E tem área salva = tira print direto
@@ -374,13 +441,27 @@ ipcMain.handle('open-area-selector', async () => {
 });
 
 // Handler para quando área é selecionada PARA SCREENSHOT
-ipcMain.on('area-selected-for-screenshot', (_, area) => {
+ipcMain.on('area-selected-for-screenshot', async (_, area) => {
 	savedArea = area;
 
 	// Fecha o overlay imediatamente
 	if (overlayWindow) {
 		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
+	}
+
+	// Try to create folder if needed
+	if (!currentFolder) {
+		const created = await tryCreateFolderIfNeeded();
+		if (!created) {
+			mainWindow?.webContents.send(
+				'screenshot-error',
+				'Preencha os campos obrigatórios primeiro',
+			);
+			mainWindow?.show();
+			pendingScreenshot = null;
+			return;
+		}
 	}
 
 	// Salva o screenshot com crop da área
