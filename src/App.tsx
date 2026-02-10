@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import MainLayout from './components/MainLayout';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { useAppSettings } from './hooks/useAppSettings';
 import { useFolderManager } from './hooks/useFolderManager';
 import { useHeaderData } from './hooks/useHeaderData';
 import { useImageManager } from './hooks/useImageManager';
 import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
-
-const { ipcRenderer } = window.require('electron');
+import { ipcService } from './services/ipc-service';
 
 function App() {
 	const { t } = useLanguage();
 	const [isNotesPanelOpen, setIsNotesPanelOpen] = useState(false);
+	const { settings } = useAppSettings();
 
 	// Initialize theme and shortcuts
 	useThemeManager();
@@ -51,6 +52,45 @@ function App() {
 
 	// Screenshot event listeners
 	useScreenshotListeners({ currentFolderRef, setImages, t });
+
+	// Auto-create folder structure when header is complete
+	useEffect(() => {
+		const createStructureIfNeeded = async () => {
+			// Only create if:
+			// 1. No current folder
+			// 2. Root folder is configured
+			// 3. Header is complete
+			if (currentFolder) return;
+			if (!settings.rootFolder) return;
+
+			// Validate header is complete
+			const validation = await ipcService.validateHeaderComplete(headerData);
+			if (!validation.success || !validation.isComplete) return;
+
+			// Create folder structure
+			const result = await ipcService.createTestStructure(
+				settings.rootFolder,
+				headerData,
+			);
+
+			if (result.success && result.path) {
+				// Set the new folder 
+				setCurrentFolder(result.path);
+			}
+		};
+
+		// Debounce to avoid creating while user is still typing
+		const timeoutId = setTimeout(() => {
+			createStructureIfNeeded();
+		}, 1000);
+
+		return () => clearTimeout(timeoutId);
+	}, [
+		headerData,
+		currentFolder,
+		settings.rootFolder,
+		setCurrentFolder,
+	]);
 
 	const handleNewTest = () => {
 		const hasData =
