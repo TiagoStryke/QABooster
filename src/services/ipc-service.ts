@@ -48,19 +48,6 @@ class IpcService {
 	}
 
 	/**
-	 * Create a subfolder inside a parent folder
-	 * @param parentPath - Parent folder path
-	 * @param folderName - Name for the new folder
-	 * @returns Created folder path (with auto-increment if exists)
-	 */
-	async createSubfolder(
-		parentPath: string,
-		folderName: string,
-	): Promise<string> {
-		return ipcRenderer.invoke('create-subfolder', parentPath, folderName);
-	}
-
-	/**
 	 * Open folder in system file explorer (Finder on macOS)
 	 * @param folderPath - Path to open
 	 */

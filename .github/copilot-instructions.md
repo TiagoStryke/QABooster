@@ -63,7 +63,70 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 - 2 componentes novos
 - 1 serviço novo
 
-### **FASE 4: Context API** 🔄 PENDING
+### **FASE 4: Folder Organization Refactoring** ✅ COMPLETE
+
+**Objective**: Replace date-based flat folder structure with hierarchical organization system
+
+**New Folder Structure**: `rootFolder/MM-YYYY/testType/testCycle/testCase/`
+**Example**: `/evidencias/01-2026/CDSUST-4535/TSTGOL-R20938/TSTGOL-T20938 (1.0)/`
+
+**Key Changes (9 commits total)**:
+
+#### STEP 1-3: Interface & Frontend Updates
+- **Interfaces**: Added `TestType`, `AppSettings`, updated `HeaderData`
+- **Settings**: Added rootFolder selector + executorName field
+- **Header**: Replaced executor input with testType dropdown + value input
+- **Translation Keys**: 57 new keys (PT + EN)
+
+#### STEP 4-5: Backend Infrastructure
+- **folder-structure-service.ts** (210 lines): Core folder logic
+  - `getMonthFolderName()`: Returns "MM-YYYY" format
+  - `validateHeaderComplete()`: Checks all 6 fields filled
+  - `buildFolderPath()`: Constructs full hierarchical path
+  - `ensureFolderStructure()`: Creates all folder levels
+  - `detectChangedLevel()`: Identifies which folder changed
+  - `rebuildPathAfterRename()`: Reconstructs path after rename
+  - `isValidTestFolder()`: Validates folder structure
+- **7 new IPC handlers**: All typed and registered
+
+#### STEP 6-8: Hook Refactoring & Auto-Creation
+- **useFolderManager**: Complete rewrite with selective renaming
+  - Tracks previousHeader to detect changes
+  - Renames only the changed folder level (no more (2), (3) suffixes)
+  - Debounce 500ms to avoid multiple renames
+- **useHeaderData**: Removed executor field, added testType fields
+- **App.tsx**: Auto-creates folder structure when header complete
+  - Validates before creating
+  - Debounce 1s to avoid premature creation
+  - Eliminates "select folder" errors
+
+#### STEP 9: PDF Generation Updates
+- **Toolbar**: Updated validation to check testType + testTypeValue
+- **PDF Generator**: 
+  - Executor from appSettings instead of headerData
+  - Added testType field to PDF header
+  - Card link support: `https://smiles.atlassian.net/browse/{value}`
+  - Saves testTypeValue to history (separate for Regressivo/GMUD)
+
+#### STEP 10-11: Cleanup & Testing
+- **FolderManager**: "Continuar Teste" validates folder structure
+- **Removed**: Obsolete `create-subfolder` handler and IPC method
+- **Testing**: All features validated with zero compilation errors
+
+**New Hooks Created**:
+- `useAppSettings.ts` (91 lines): rootFolder + executorName persistence
+- `useTestTypeHistory.ts` (112 lines): Separate autocomplete for Regressivo/GMUD
+
+**Benefits**:
+- ✅ Hierarchical organization (month/type/cycle/case)
+- ✅ One-time rootFolder configuration (no more repeated dialogs)
+- ✅ Selective folder renaming (only changed levels)
+- ✅ Auto-creation when header complete
+- ✅ Card link support in PDFs (Atlassian integration)
+- ✅ Separate autocomplete histories (15 items each for Regressivo/GMUD)
+- ✅ Executor persisted in settings (always available for PDFs)
+
+### **FASE 5: Context API** 🔄 PENDING
 
 - Status: Avaliação necessária (prop drilling moderado detectado)
 - Next steps: Avaliar necessidade de FolderContext/TestDataContext
@@ -98,7 +161,8 @@ electron/
 │   ├── screenshot-service.ts  # Screenshot capture logic
 │   ├── cursor-service.ts      # Cursor overlay
 │   ├── file-service.ts        # File operations
-│   └── display-service.ts     # Display management
+│   ├── display-service.ts     # Display management
+│   └── folder-structure-service.ts # Hierarchical folder organization (FASE 4)
 ├── utils/
 │   ├── filename-generator.ts  # Sequential naming
 │   └── shortcut-manager.ts    # Global shortcuts
@@ -134,7 +198,7 @@ src/
 │   ├── ShortcutEditor.tsx    # Reutilizável shortcuts UI (NOVO - FASE 3)
 │   ├── FolderManager.tsx     # Folder selection/creation
 │   └── MainLayout.tsx        # Layout principal
-├── hooks/                     # Custom Hooks (FASE 1 + FASE 3)
+├── hooks/                     # Custom Hooks (FASE 1 + FASE 3 + FASE 4)
 │   ├── useFolderManager.ts   # Gerenciamento de pastas
 │   ├── useHeaderData.ts      # Dados do header
 │   ├── useImageManager.ts    # Gerenciamento de imagens
@@ -144,10 +208,13 @@ src/
 │   ├── useEditorState.ts     # Estado do editor de imagens (FASE 3)
 │   ├── useEditorCanvas.ts    # Canvas Fabric.js (FASE 3)
 │   ├── useSettingsState.ts   # Estado de configurações (FASE 3)
-│   └── useToolbarState.ts    # Estado da toolbar (FASE 3)
-├── services/                  # Service Layer (FASE 2 + FASE 3)
-│   ├── ipc-service.ts        # IPC centralizado (373 linhas)
-│   └── pdf-generator-service.ts  # Geração de PDFs (240 linhas - FASE 3)
+│   ├── useToolbarState.ts    # Estado da toolbar (FASE 3)
+│   ├── useAppSettings.ts     # rootFolder + executorName (FASE 4)
+│   └── useTestTypeHistory.ts # Autocomplete Regressivo/GMUD (FASE 4)
+├── services/                  # Service Layer (FASE 2 + FASE 3 + FASE 4)
+│   ├── ipc-service.ts        # IPC centralizado (460+ linhas)
+│   ├── pdf-generator-service.ts  # Geração de PDFs (268 linhas - FASE 3)
+│   └── folder-structure-service.ts # Folder organization (210 linhas - FASE 4 backend)
 ├── contexts/
 │   ├── LanguageContext.tsx   # i18n state management
 │   └── ThemeContext.tsx      # Theme state management

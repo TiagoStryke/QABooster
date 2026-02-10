@@ -58,29 +58,6 @@ export function registerFolderHandlers(
 		return null;
 	});
 
-	// Create subfolder
-	ipcMain.handle(
-		'create-subfolder',
-		async (_, parentPath: string, folderName: string) => {
-			let newFolderPath = path.join(parentPath, folderName);
-
-			// If exists, add (2), (3), etc
-			if (fileExists(newFolderPath)) {
-				let counter = 2;
-				while (
-					fileExists(path.join(parentPath, `${folderName} (${counter})`))
-				) {
-					counter++;
-				}
-				newFolderPath = path.join(parentPath, `${folderName} (${counter})`);
-			}
-
-			ensureFolder(newFolderPath);
-			setCurrentFolder(newFolderPath);
-			return newFolderPath;
-		},
-	);
-
 	// Rename folder
 	ipcMain.handle(
 		'rename-folder',
