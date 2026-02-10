@@ -2,15 +2,25 @@ import { dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import { APP_CONSTANTS } from '../config/app-config';
 import {
-    deleteFile,
-    ensureFolder,
-    fileExists,
-    listImages,
-    loadJSON,
-    renameFolder as renameFolderService,
-    saveBase64Image,
-    saveJSON,
+	deleteFile,
+	ensureFolder,
+	fileExists,
+	listImages,
+	loadJSON,
+	renameFolder as renameFolderService,
+	saveBase64Image,
+	saveJSON,
 } from '../services/file-service';
+import {
+	buildFolderPath,
+	detectChangedLevel,
+	ensureFolderStructure,
+	getMonthFolderName,
+	isValidTestFolder,
+	rebuildPathAfterRename,
+	validateHeaderComplete,
+	type HeaderData,
+} from '../services/folder-structure-service';
 
 /**
  * Registers folder and file management IPC handlers
@@ -223,5 +233,125 @@ export function registerFolderHandlers(
 	ipcMain.handle('read-image-as-base64', async (_, filepath: string) => {
 		const { readImageAsBase64 } = require('../services/file-service');
 		return readImageAsBase64(filepath);
+	});
+
+	// ==================== NEW FOLDER STRUCTURE HANDLERS ====================
+
+	// Validate if header is complete
+	ipcMain.handle('validate-header-complete', async (_, headerData: HeaderData) => {
+		try {
+			const isComplete = validateHeaderComplete(headerData);
+			return { success: true, isComplete };
+		} catch (error) {
+			console.error('Error validating header:', error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	// Build folder path from header data
+	ipcMain.handle(
+		'build-folder-path',
+		async (_, rootFolder: string, headerData: HeaderData) => {
+			try {
+				const folderPath = buildFolderPath(rootFolder, headerData);
+				return { success: true, path: folderPath };
+			} catch (error) {
+				console.error('Error building folder path:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	// Create test folder structure
+	ipcMain.handle(
+		'create-test-structure',
+		async (_, rootFolder: string, headerData: HeaderData) => {
+			try {
+				const folderPath = ensureFolderStructure(rootFolder, headerData);
+				
+				if (folderPath) {
+					setCurrentFolder(folderPath);
+					return { success: true, path: folderPath };
+				}
+				
+				return {
+					success: false,
+					error: 'Invalid header data or root folder not configured',
+				};
+			} catch (error) {
+				console.error('Error creating test structure:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	// Detect which folder level changed
+	ipcMain.handle(
+		'detect-changed-level',
+		async (_, oldHeader: HeaderData, newHeader: HeaderData, oldPath: string) => {
+			try {
+				const change = detectChangedLevel(oldHeader, newHeader, oldPath);
+				return { success: true, change };
+			} catch (error) {
+				console.error('Error detecting changed level:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	// Rename folder level and return new path
+	ipcMain.handle(
+		'rename-folder-level',
+		async (
+			_,
+			oldPath: string,
+			level: 'month' | 'type' | 'cycle' | 'case',
+			newName: string,
+		) => {
+			try {
+				// Constrói novo caminho
+				const newPath = rebuildPathAfterRename(oldPath, level, newName);
+
+				// Se o novo caminho é igual ao antigo, não faz nada
+				if (newPath === oldPath) {
+					return { success: true, path: oldPath };
+				}
+
+				// Renomeia a pasta
+				const renamedPath = renameFolderService(oldPath, newPath);
+				
+				if (renamedPath) {
+					setCurrentFolder(renamedPath);
+					return { success: true, path: renamedPath };
+				}
+
+				return { success: false, error: 'Failed to rename folder' };
+			} catch (error) {
+				console.error('Error renaming folder level:', error);
+				return { success: false, error: String(error) };
+			}
+		},
+	);
+
+	// Validate if folder is a valid test folder
+	ipcMain.handle('is-valid-test-folder', async (_, folderPath: string) => {
+		try {
+			const isValid = isValidTestFolder(folderPath);
+			return { success: true, isValid };
+		} catch (error) {
+			console.error('Error validating test folder:', error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	// Get month folder name (utility)
+	ipcMain.handle('get-month-folder-name', async () => {
+		try {
+			const monthName = getMonthFolderName();
+			return { success: true, name: monthName };
+		} catch (error) {
+			console.error('Error getting month folder name:', error);
+			return { success: false, error: String(error) };
+		}
 	});
 }
