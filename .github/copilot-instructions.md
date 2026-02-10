@@ -19,6 +19,7 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 ## ✅ Refactoring Status (UPDATED 2026-02-06)
 
 ### **FASE 1: Custom Hooks Extraction** ✅ COMPLETE
+
 - **App.tsx**: 418 → 108 linhas (74% redução)
 - **Hooks criados:**
   - `useFolderManager.ts` - Gerenciamento de pastas
@@ -29,6 +30,7 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
   - `useThemeManager.ts` - Gerenciamento de temas
 
 ### **FASE 2: IPC Service Centralization** ✅ COMPLETE
+
 - **ipc-service.ts criado**: 373 linhas, 35+ métodos tipados
 - **14 arquivos atualizados** para usar serviço centralizado
 - Remove chamadas diretas `ipcRenderer.invoke()` dos componentes
@@ -37,6 +39,7 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
 ### **FASE 3: Component Refactoring** ✅ COMPLETE
 
 #### Etapa 1: ImageEditor (Commit 1c0e51d)
+
 - **ImageEditor.tsx**: 941 → 127 linhas (86.5% redução)
 - **Hooks criados:**
   - `useEditorState.ts` (60 linhas) - Estado do editor
@@ -45,6 +48,7 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
   - `EditorToolbar.tsx` (320 linhas) - UI da toolbar extraída
 
 #### Etapa 2: Settings + Toolbar (Commit 65d86e3)
+
 - **Settings.tsx**: 516 → 284 linhas (45% redução)
   - `useSettingsState.ts` (200 linhas) - Gerencia 6 configs + 3 shortcuts
   - `ShortcutEditor.tsx` (90 linhas) - Componente reutilizável shortcuts
@@ -53,12 +57,14 @@ Electron + React + TypeScript application for QA testers to capture, organize, e
   - `pdf-generator-service.ts` (240 linhas) - Lógica de PDF extraída
 
 **TOTAIS FASE 3:**
+
 - 3 componentes refatorados: 1950 → 578 linhas (70% redução)
 - 4 hooks criados
 - 2 componentes novos
 - 1 serviço novo
 
 ### **FASE 4: Context API** 🔄 PENDING
+
 - Status: Avaliação necessária (prop drilling moderado detectado)
 - Next steps: Avaliar necessidade de FolderContext/TestDataContext
 
@@ -174,55 +180,69 @@ src/
 ## � Refactoring Patterns (FASES 1-3)
 
 ### **Pattern 1: Extract Business Logic to Hooks**
+
 **When:** Component has > 150 lines of useState/useEffect/handlers
 **How:**
+
 1. Create `use[ComponentName]State.ts` hook
 2. Move all state declarations and handlers
 3. Return object with state + handlers
 4. Component becomes thin "presentation layer"
 
 **Example:** `ImageEditor.tsx` (941 → 127 lines)
+
 - Created `useEditorState.ts` + `useEditorCanvas.ts`
 - Component only handles UI and event wiring
 
 ### **Pattern 2: Extract Complex UI to Sub-Components**
+
 **When:** Component has > 100 lines of JSX or repetitive UI blocks
 **How:**
+
 1. Identify repetitive/complex UI sections
 2. Create new component with clear props interface
 3. Extract to separate file (e.g., `EditorToolbar.tsx`)
 4. Parent passes state via props
 
 **Example:** `Settings.tsx` → `ShortcutEditor.tsx`
+
 - 3 duplicate shortcut blocks → 1 reusable component
 - Reduced repetition by 200+ lines
 
 ### **Pattern 3: Extract Business Logic to Services**
+
 **When:** Component has complex algorithms/calculations (not UI-related)
 **How:**
+
 1. Create `[domain]-service.ts` in `/services`
 2. Export pure functions (input → output, no React hooks)
 3. Component imports and calls service functions
 4. Service can be easily tested in isolation
 
 **Example:** `Toolbar.tsx` → `pdf-generator-service.ts`
+
 - 250 lines of PDF generation logic → separate service
 - Component reduced to 167 lines (UI + orchestration)
 
 ### **Pattern 4: Centralize External Communication**
+
 **When:** Multiple components call same external APIs (IPC, HTTP, etc.)
 **How:**
+
 1. Create centralized service (e.g., `ipc-service.ts`)
 2. All methods typed with TypeScript interfaces
 3. Single source of truth for API calls
 4. Easy to mock for testing
 
 **Example:** FASE 2 - `ipc-service.ts`
+
 - 35+ IPC methods centralized
 - No more scattered `ipcRenderer.invoke()` calls
 
 ### **Refactoring Checklist (Before/After)**
+
 Before refactoring a component, check:
+
 - [ ] Component > 300 lines?
 - [ ] Multiple responsibilities (UI + logic + state)?
 - [ ] Repetitive code blocks?
@@ -230,6 +250,7 @@ Before refactoring a component, check:
 - [ ] Complex algorithms mixed with JSX?
 
 After refactoring, verify:
+
 - [ ] Zero TypeScript errors
 - [ ] All functionality preserved
 - [ ] Component < 300 lines
