@@ -1,5 +1,6 @@
 /**
- * Application data interfaces
+ * Shared interfaces for Test Database
+ * Used by both main process and renderer process
  */
 
 /**
@@ -8,11 +9,11 @@
 export type TestType = 'card' | 'regressivo' | 'gmud' | 'outro' | '';
 
 /**
- * Application settings (persisted)
+ * Test status in database
  */
-export interface AppSettings {
-	rootFolder: string;
-	executorName: string;
+export enum TestStatus {
+	IN_PROGRESS = 'in-progress',
+	COMPLETED = 'completed',
 }
 
 /**
@@ -25,81 +26,6 @@ export interface HeaderData {
 	testCase: string;
 	testType: TestType;
 	testTypeValue: string;
-}
-
-/**
- * Response from loading header data
- */
-export interface LoadHeaderDataResponse {
-	success: boolean;
-	data?: HeaderData;
-	error?: string;
-}
-
-/**
- * Image file data with optional timestamp for cache busting
- */
-export interface ImageData {
-	name: string;
-	path: string;
-	timestamp?: number;
-}
-
-/**
- * Display information for multi-monitor setup
- */
-export interface Display {
-	id: number;
-	label: string;
-	bounds: { x: number; y: number; width: number; height: number };
-	primary: boolean;
-}
-
-/**
- * Screenshot area coordinates
- */
-export interface ScreenshotArea {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
-
-/**
- * Notes data structure
- */
-export interface NotesData {
-	text: string;
-	images: string[];
-}
-
-/**
- * PDF generation parameters
- */
-export interface PdfParams {
-	folder: string;
-	filename: string;
-}
-
-/**
- * Save image parameters
- */
-export interface SaveImageParams {
-	dataURL: string;
-	originalPath: string;
-	folder: string;
-}
-
-// ====================================================================
-// DATABASE-DRIVEN TEST MANAGEMENT (FASE 4 REVISED)
-// ====================================================================
-
-/**
- * Test status in database
- */
-export enum TestStatus {
-	IN_PROGRESS = 'in-progress',
-	COMPLETED = 'completed',
 }
 
 /**
