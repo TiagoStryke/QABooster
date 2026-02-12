@@ -493,6 +493,17 @@ class IpcService {
 	}> {
 		return ipcRenderer.invoke('db-cleanup-old-tests');
 	}
+
+	/**
+	 * Cleanup empty tests (no screenshots, empty headers, no PDF)
+	 * @returns { deletedCount: number, errors: string[] }
+	 */
+	async cleanupEmptyTests(): Promise<{
+		deletedCount: number;
+		errors: string[];
+	}> {
+		return ipcRenderer.invoke('db-cleanup-empty-tests');
+	}
 }
 
 /**

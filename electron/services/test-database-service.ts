@@ -406,6 +406,71 @@ export function updateScreenshot(
 // ====================================================================
 
 /**
+ * Check if a test is empty (no screenshots, empty headers, no PDF)
+ */
+export function isEmptyTest(test: TestRecord): boolean {
+	// Has screenshots? Not empty
+	if (test.screenshots && test.screenshots.length > 0) {
+		return false;
+	}
+
+	// Has PDF? Not empty
+	if (test.pdfGenerated) {
+		return false;
+	}
+
+	// Check if all header fields are empty
+	const hasHeaderData =
+		test.headerData.testName ||
+		test.headerData.system ||
+		test.headerData.testCycle ||
+		test.headerData.testCase ||
+		test.headerData.testType ||
+		test.headerData.testTypeValue;
+
+	// If has any header data, not empty
+	if (hasHeaderData) {
+		return false;
+	}
+
+	// No screenshots, no PDF, no header data = empty test
+	return true;
+}
+
+/**
+ * Delete empty tests (no screenshots, empty headers, no PDF)
+ * Call this to clean up auto-created tests that user never used
+ */
+export function cleanupEmptyTests(): {
+	deletedCount: number;
+	errors: string[];
+} {
+	const database = loadDatabase();
+
+	const emptyTests = database.tests.filter((t) => isEmptyTest(t));
+
+	console.log(`[DB] 🧹 Cleaning up ${emptyTests.length} empty tests...`);
+
+	const errors: string[] = [];
+	let deletedCount = 0;
+
+	for (const test of emptyTests) {
+		try {
+			const success = deleteTest(test.id);
+			if (success) {
+				deletedCount++;
+				console.log(`[DB] 🗑️ Deleted empty test: ${test.id}`);
+			}
+		} catch (error) {
+			errors.push(`Failed to delete test ${test.id}: ${error}`);
+		}
+	}
+
+	console.log(`[DB] ✅ Empty cleanup complete: ${deletedCount} tests deleted`);
+	return { deletedCount, errors };
+}
+
+/**
  * Delete old completed tests based on autoDeleteAfterDays setting
  */
 export function cleanupOldTests(): { deletedCount: number; errors: string[] } {

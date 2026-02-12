@@ -13,6 +13,7 @@ import type {
 } from '../interfaces/test-database';
 import {
     addScreenshot,
+    cleanupEmptyTests,
     cleanupOldTests,
     createTest,
     deleteTest,
@@ -341,6 +342,29 @@ export function registerTestDatabaseHandlers(): void {
 				return result;
 			} catch (error) {
 				console.error('[IPC] ❌ Failed to cleanup old tests:', error);
+				throw error;
+			}
+		},
+	);
+
+	/**
+	 * Delete empty tests (no screenshots, empty headers, no PDF)
+	 * @returns { deletedCount: number, errors: string[] }
+	 */
+	ipcMain.handle(
+		'db-cleanup-empty-tests',
+		async (): Promise<{ deletedCount: number; errors: string[] }> => {
+			try {
+				console.log('[IPC] db-cleanup-empty-tests');
+				const result = cleanupEmptyTests();
+				console.log(
+					'[IPC] ✅ Empty cleanup complete:',
+					result.deletedCount,
+					'tests deleted',
+				);
+				return result;
+			} catch (error) {
+				console.error('[IPC] ❌ Failed to cleanup empty tests:', error);
 				throw error;
 			}
 		},

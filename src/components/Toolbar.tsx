@@ -24,7 +24,7 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({
-	currentFolder: _currentFolder,
+	currentFolder,
 	images,
 	headerData,
 	onSaveHeaderData,
@@ -113,14 +113,33 @@ export default function Toolbar({
 		setIsGenerating(false);
 
 		if (result.success) {
-			// PDF gerado com sucesso - dados já estão no banco de dados
+			// PDF gerado com sucesso - marcar teste como concluído
 			console.log('[Toolbar] PDF generated successfully');
+
+			// Buscar testId pelo folderPath
+			if (currentFolder) {
+				try {
+					const allTests = await ipcService.getAllTests();
+					const currentTest = allTests.find(
+						(t) => t.folderPath === currentFolder,
+					);
+
+					if (currentTest) {
+						// Marcar como concluído
+						await ipcService.updateTest(currentTest.id, {
+							status: 'completed',
+							pdfGenerated: true,
+						});
+						console.log('[Toolbar] Test marked as completed:', currentTest.id);
+					}
+				} catch (error) {
+					console.error('[Toolbar] Error marking test as completed:', error);
+				}
+			}
 		} else if (result.error !== 'cancelled') {
 			alert(`${t('errorGeneratingPDF')}: ${result.error}`);
 		}
 	};
-
-	// ==================== RENDER ====================
 
 	return (
 		<div className="bg-slate-800 border-b border-slate-700 p-3">
