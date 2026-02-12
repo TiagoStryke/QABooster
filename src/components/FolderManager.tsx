@@ -56,13 +56,24 @@ export default function FolderManager({
 			return;
 		}
 
-		// Clear currentFolder in backend (main process)
-		ipcService.clearCurrentFolder();
+		// Verificar se rootFolder está configurado
+		if (!settings.rootFolder) {
+			alert(t('configureRootFolderFirst'));
+			return;
+		}
 
-		// Sinaliza para App que é um novo teste (limpa tudo)
-		// A estrutura de pastas será criada automaticamente quando
-		// o usuário preencher o cabeçalho completo
-		onFolderChange('', true);
+		try {
+			// Criar novo teste no banco de dados
+			const newTest = await ipcService.createTest(settings.rootFolder);
+
+			// Carregar o novo teste no UI
+			onLoadTest(newTest);
+
+			console.log('[FolderManager] ✅ New test created:', newTest.id);
+		} catch (error) {
+			console.error('[FolderManager] ❌ Failed to create test:', error);
+			alert(t('errorCreatingTest'));
+		}
 	};
 
 	const handleOpenFolder = async () => {

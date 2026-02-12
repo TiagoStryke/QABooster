@@ -211,6 +211,9 @@ export const translations = {
 		discardButton: 'Descartar',
 		closeEditorFirst:
 			'Por favor, salve as edições na imagem antes de começar um novo teste ou continuar outro teste.',
+		configureRootFolderFirst:
+			'Configure a pasta raiz nas configurações antes de criar um novo teste.',
+		errorCreatingTest: 'Erro ao criar novo teste. Por favor, tente novamente.',
 		saveEditsBeforePDF:
 			'Por favor, salve as edições na imagem antes de gerar o PDF.',
 
@@ -427,6 +430,9 @@ export const translations = {
 		discardButton: 'Discard',
 		closeEditorFirst:
 			'Please save your image edits before starting a new test or continuing another test.',
+		configureRootFolderFirst:
+			'Please configure the root folder in settings before creating a new test.',
+		errorCreatingTest: 'Error creating new test. Please try again.',
 		saveEditsBeforePDF:
 			'Please save your image edits before generating the PDF.',
 
