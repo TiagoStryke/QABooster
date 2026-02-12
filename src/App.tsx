@@ -8,6 +8,7 @@ import { useImageManager } from './hooks/useImageManager';
 import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
+import { ipcService } from './services/ipc-service';
 
 function App() {
 	const { t } = useLanguage();
@@ -51,6 +52,7 @@ function App() {
 		handleFolderChange,
 		hasPendingChanges,
 		executePendingRename,
+		setPreserveHeaders, // Function to preserve headers when folder created via shortcut
 	} = useFolderManager({ setImages, headerData, setHeaderData });
 
 	// Screenshot event listeners
@@ -61,32 +63,36 @@ function App() {
 		t,
 	});
 
-	// Execute pending rename before window closes
+	// Listen for folder created from shortcut (keeps headers)
 	useEffect(() => {
-		const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-			if (hasPendingChanges()) {
-				// Execute pending rename
-				await executePendingRename();
-
-				// Save header data if there's a current folder
-				if (currentFolder) {
-					await saveHeaderData(currentFolder, headerData);
-				}
+		const handleFolderCreatedFromShortcut = ((event: CustomEvent) => {
+			const { path } = event.detail;
+			console.log('[APP] 🎉 folder-created-from-shortcut event:', path);
+			console.log(
+				'[APP] 🔒 Setting preserve headers flag before updating folder',
+			);
+			// Set flag to preserve headers BEFORE calling setCurrentFolder
+			setPreserveHeaders(true);
+			// Now update folder (useEffect will skip header clearing)
+			setCurrentFolder(path);
+			// Load images for the new folder
+			if (path) {
+				ipcService.getImages(path).then(setImages);
 			}
-		};
+		}) as EventListener;
 
-		window.addEventListener('beforeunload', handleBeforeUnload);
+		window.addEventListener(
+			'folder-created-from-shortcut',
+			handleFolderCreatedFromShortcut,
+		);
 
 		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload);
+			window.removeEventListener(
+				'folder-created-from-shortcut',
+				handleFolderCreatedFromShortcut,
+			);
 		};
-	}, [
-		hasPendingChanges,
-		executePendingRename,
-		currentFolder,
-		headerData,
-		saveHeaderData,
-	]);
+	}, [setCurrentFolder, setImages]);
 
 	// Execute pending rename before window closes
 	useEffect(() => {

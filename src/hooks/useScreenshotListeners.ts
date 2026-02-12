@@ -30,9 +30,28 @@ export function useScreenshotListeners({
 			}
 		};
 
-		const handleFolderCreated = (_: any, data: { path: string }) => {
+		const handleFolderCreated = (
+			_: any,
+			data: { path: string; fromShortcut?: boolean },
+		) => {
+			console.log('[FRONTEND] 📥 folder-created event received:', data);
 			// Backend criou a pasta, atualiza o frontend
-			setCurrentFolder(data.path);
+			// Se fromShortcut = true, marca como pasta criada com dados (não limpar headers)
+			if (data.fromShortcut) {
+				console.log('[FRONTEND] 🎯 From shortcut - updating ref only');
+				// Atualiza currentFolderRef diretamente (sem trigger do useEffect que limpa)
+				currentFolderRef.current = data.path;
+				// Força atualização via evento customizado
+				window.dispatchEvent(
+					new CustomEvent('folder-created-from-shortcut', {
+						detail: { path: data.path },
+					}),
+				);
+			} else {
+				console.log('[FRONTEND] 📁 Manual selection - normal behavior');
+				// Pasta selecionada manualmente - comportamento normal
+				setCurrentFolder(data.path);
+			}
 		};
 
 		const handleScreenshotFlash = () => {

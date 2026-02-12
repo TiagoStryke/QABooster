@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { HeaderData } from '../interfaces';
-import { ipcService } from '../services/ipc-service';
 
 interface UseHeaderDataParams {
 	currentFolder: string;
@@ -13,13 +12,14 @@ interface UseHeaderDataReturn {
 }
 
 /**
- * Manages header data state and auto-save
- * Handles debounced auto-save to IPC
- * NEW: No longer manages executor (moved to AppSettings)
+ * Manages header data state
+ * Simple state management - does NOT initialize from localStorage
+ * useFolderManager is responsible for loading/saving
  */
 export function useHeaderData({
 	currentFolder,
 }: UseHeaderDataParams): UseHeaderDataReturn {
+	// Simple state initialization - always start empty
 	const [headerData, setHeaderData] = useState<HeaderData>({
 		testName: '',
 		system: '',
@@ -29,31 +29,26 @@ export function useHeaderData({
 		testTypeValue: '',
 	});
 
-	// Auto-save headerData when it changes (with debounce)
+	// Save to localStorage whenever headerData changes (for screenshot shortcut)
 	useEffect(() => {
-		if (!currentFolder) return;
-
-		const folderToSave = currentFolder;
-		const dataToSave = headerData;
-
-		const timeoutId = setTimeout(() => {
-			if (folderToSave && dataToSave.testCase) {
-				ipcService.saveHeaderData(folderToSave, dataToSave);
-			}
-		}, 1000);
-
-		return () => clearTimeout(timeoutId);
-	}, [headerData, currentFolder]);
+		try {
+			localStorage.setItem('qabooster-headerData', JSON.stringify(headerData));
+		} catch (error) {
+			console.error('Error saving headerData to localStorage:', error);
+		}
+	}, [headerData]);
 
 	const resetHeaderData = () => {
-		setHeaderData({
+		const emptyData = {
 			testName: '',
 			system: '',
 			testCycle: '',
 			testCase: '',
 			testType: '',
 			testTypeValue: '',
-		});
+		};
+		setHeaderData(emptyData);
+		localStorage.setItem('qabooster-headerData', JSON.stringify(emptyData));
 	};
 
 	return {

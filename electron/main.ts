@@ -10,6 +10,9 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Config
+import { APP_CONSTANTS } from './config/app-config';
+
 // Window management
 import { createMainWindow } from './windows/main-window';
 import {
@@ -60,16 +63,23 @@ app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
  * Chamado quando screenshot é capturado pela primeira vez
  */
 async function tryCreateFolderIfNeeded(): Promise<boolean> {
+	console.log('[tryCreate] 🚀 Starting - currentFolder:', currentFolder);
+
 	// Se já tem pasta, não precisa criar
-	if (currentFolder) return true;
+	if (currentFolder) {
+		console.log('[tryCreate] ✅ Already have folder, returning true');
+		return true;
+	}
 
 	try {
+		console.log('[tryCreate] 📋 Fetching state from frontend...');
 		// Pega o estado atual do frontend
 		const stateResult = await mainWindow?.webContents.executeJavaScript(`
 			(function() {
 				try {
 					const headerData = JSON.parse(localStorage.getItem('qabooster-headerData') || '{}');
-					const rootFolder = localStorage.getItem('qabooster-rootFolder') || '';
+					const appSettings = JSON.parse(localStorage.getItem('qabooster-app-settings') || '{}');
+					const rootFolder = appSettings.rootFolder || '';
 					return { success: true, headerData, rootFolder };
 				} catch (e) {
 					return { success: false, error: e.message };
@@ -77,7 +87,13 @@ async function tryCreateFolderIfNeeded(): Promise<boolean> {
 			})()
 		`);
 
+		console.log(
+			'[tryCreate] State result:',
+			JSON.stringify(stateResult, null, 2),
+		);
+
 		if (!stateResult?.success || !stateResult.rootFolder) {
+			console.log('[tryCreate] ❌ Invalid state or no rootFolder');
 			return false;
 		}
 
@@ -88,28 +104,48 @@ async function tryCreateFolderIfNeeded(): Promise<boolean> {
 			await import('./services/folder-structure-service');
 
 		const isValid = validateHeaderForScreenshot(headerData);
+		console.log('[tryCreate] Validation result:', isValid);
+
 		if (!isValid) {
+			console.log('[tryCreate] ❌ Header validation failed');
 			return false;
 		}
 
 		// Cria a estrutura
+		console.log('[tryCreate] 📁 Creating folder structure...');
 		const folderPath = ensureFolderStructure(rootFolder, headerData);
 
 		if (folderPath) {
+			console.log('[MAIN] ✅ Folder created:', folderPath);
 			// Atualiza currentFolder globalmente
 			currentFolder = folderPath;
 
-			// Notifica o frontend
+			// Salva headerData na pasta imediatamente
+			const { saveJSON } = await import('./services/file-service');
+			const headerFilePath = path.join(
+				folderPath,
+				APP_CONSTANTS.CONFIG.HEADER_DATA,
+			);
+			await saveJSON(headerFilePath, headerData);
+			console.log('[MAIN] 💾 Config saved to:', headerFilePath);
+
+			// Notifica o frontend (fromShortcut = não limpar headers)
+			console.log(
+				'[MAIN] 📤 Sending folder-created event with fromShortcut=true',
+			);
 			mainWindow?.webContents.send('folder-created', {
 				path: folderPath,
+				fromShortcut: true,
 			});
 
+			console.log('[tryCreate] ✅ SUCCESS - returning true');
 			return true;
 		}
 
+		console.log('[tryCreate] ❌ No folder path created');
 		return false;
 	} catch (error) {
-		console.error('Error creating folder structure:', error);
+		console.error('[tryCreate] ❌ ERROR:', error);
 		return false;
 	}
 }
@@ -119,10 +155,40 @@ function registerGlobalShortcut() {
 
 	// Fullscreen screenshot
 	const ret = globalShortcut.register(shortcutKey, async () => {
+		console.log('[MAIN] 🔘 Fullscreen shortcut pressed');
+		console.log('[MAIN] Current folder BEFORE check:', currentFolder);
+
+		// Check if currentFolder is set but folder doesn't exist physically
+		if (currentFolder) {
+			const fs = await import('fs');
+			if (!fs.existsSync(currentFolder)) {
+				console.log(
+					'[MAIN] ⚠️ Folder path set but does not exist physically:',
+					currentFolder,
+				);
+				console.log('[MAIN] 🔨 Creating folder structure...');
+				const created = await tryCreateFolderIfNeeded();
+				if (!created) {
+					console.log('[MAIN] ❌ Failed to create folder');
+					mainWindow?.webContents.send(
+						'screenshot-error',
+						'Erro ao criar pasta de teste',
+					);
+					return;
+				}
+				console.log('[MAIN] ✅ Folder created successfully');
+			}
+		}
+
 		// Try to create folder if needed
 		if (!currentFolder) {
+			console.log('[MAIN] No folder - calling tryCreateFolderIfNeeded()');
 			const created = await tryCreateFolderIfNeeded();
+			console.log('[MAIN] tryCreateFolderIfNeeded result:', created);
+			console.log('[MAIN] Current folder AFTER tryCreate:', currentFolder);
+
 			if (!created) {
+				console.log('[MAIN] ❌ Failed to create folder - aborting');
 				mainWindow?.webContents.send(
 					'screenshot-error',
 					'Preencha os campos obrigatórios primeiro',
@@ -130,8 +196,14 @@ function registerGlobalShortcut() {
 				mainWindow?.show();
 				return;
 			}
+
+			console.log('[MAIN] ✅ Folder created successfully, continuing...');
 		}
 
+		console.log(
+			'[MAIN] 📸 Attempting to capture screenshot in folder:',
+			currentFolder,
+		);
 		try {
 			const result = await captureFullscreenScreenshot({
 				mainWindow,
@@ -141,14 +213,25 @@ function registerGlobalShortcut() {
 				cursorInScreenshots,
 			});
 
+			console.log('[MAIN] Screenshot result:', result);
+
 			if (result) {
+				console.log(
+					'[MAIN] ✅ Screenshot captured successfully:',
+					result.filepath,
+				);
+				// Screenshot capturado com sucesso - notifica frontend
 				mainWindow?.webContents.send('screenshot-captured', {
 					filepath: result.filepath,
 					filename: result.filename,
 				});
-			}
 
-			mainWindow?.webContents.send('trigger-screenshot-flash');
+				// Toca som APENAS if screenshot foi capturado
+				console.log('[MAIN] 🔊 Sending trigger-screenshot-flash');
+				mainWindow?.webContents.send('trigger-screenshot-flash');
+			} else {
+				console.log('[MAIN] ❌ Screenshot failed - no result');
+			}
 		} catch (error) {
 			console.error('Screenshot error:', error);
 			mainWindow?.show();
@@ -191,9 +274,10 @@ function registerGlobalShortcut() {
 						filepath: result.filepath,
 						filename: result.filename,
 					});
-				}
 
-				mainWindow?.webContents.send('trigger-screenshot-flash');
+					// Toca som APENAS se screenshot foi capturado
+					mainWindow?.webContents.send('trigger-screenshot-flash');
+				}
 			} catch (error) {
 				console.error('Screenshot error:', error);
 				mainWindow?.webContents.send(
@@ -546,4 +630,10 @@ ipcMain.on('contract-window', () => {
 		const [, height] = mainWindow.getSize();
 		mainWindow.setSize(originalWindowWidth, height, true);
 	}
+});
+
+// Clear current folder (when starting new test)
+ipcMain.on('clear-current-folder', () => {
+	console.log('[MAIN] 🧹 Clearing currentFolder (new test started)');
+	currentFolder = '';
 });

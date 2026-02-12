@@ -16,6 +16,7 @@ import type {
     Display,
     HeaderData,
     ImageData,
+    LoadHeaderDataResponse,
     NotesData,
     SaveImageParams,
     ScreenshotArea,
@@ -74,9 +75,9 @@ class IpcService {
 	/**
 	 * Load header data from folder
 	 * @param folder - Folder path
-	 * @returns Header data or null if not found
+	 * @returns Response with success status and data or error
 	 */
-	async loadHeaderData(folder: string): Promise<HeaderData | null> {
+	async loadHeaderData(folder: string): Promise<LoadHeaderDataResponse> {
 		return ipcRenderer.invoke('load-header-data', folder);
 	}
 
@@ -460,6 +461,13 @@ class IpcService {
 		name: string;
 	}> {
 		return ipcRenderer.invoke('get-month-folder-name');
+	}
+
+	/**
+	 * Clear current folder in main process (for new test)
+	 */
+	clearCurrentFolder(): void {
+		ipcRenderer.send('clear-current-folder');
 	}
 }
 

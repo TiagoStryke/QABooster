@@ -36,17 +36,17 @@ export default function FolderManager({
 			const validationResult = await ipcService.isValidTestFolder(folder);
 
 			if (validationResult.success && validationResult.isValid) {
-				// Verifica se existe headerData.json na pasta
+				// Verifica se existe .qabooster-config.json na pasta
 				const result = await ipcService.loadHeaderData(folder);
-				if (result) {
+				if (result.success && result.data) {
 					onFolderChange(folder, false);
 				} else {
 					alert(t('noTestFoundInFolder'));
 				}
 			} else {
-				// Pasta não segue a estrutura esperada, mas pode conter headerData
+				// Pasta não segue a estrutura esperada, mas pode conter .qabooster-config.json
 				const result = await ipcService.loadHeaderData(folder);
-				if (result) {
+				if (result.success && result.data) {
 					onFolderChange(folder, false);
 				} else {
 					alert(t('noTestFoundInFolder'));
@@ -60,6 +60,9 @@ export default function FolderManager({
 			alert(t('closeEditorFirst'));
 			return;
 		}
+
+		// Clear currentFolder in backend (main process)
+		ipcService.clearCurrentFolder();
 
 		// Sinaliza para App que é um novo teste (limpa tudo)
 		// A estrutura de pastas será criada automaticamente quando

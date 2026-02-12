@@ -1,26 +1,27 @@
 import { dialog, ipcMain } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import { APP_CONSTANTS } from '../config/app-config';
 import {
-	deleteFile,
-	ensureFolder,
-	fileExists,
-	listImages,
-	loadJSON,
-	renameFolder as renameFolderService,
-	saveBase64Image,
-	saveJSON,
+    deleteFile,
+    ensureFolder,
+    fileExists,
+    listImages,
+    loadJSON,
+    renameFolder as renameFolderService,
+    saveBase64Image,
+    saveJSON,
 } from '../services/file-service';
 import {
-	buildFolderPath,
-	detectChangedLevel,
-	ensureFolderStructure,
-	getMonthFolderName,
-	HeaderData,
-	isValidTestFolder,
-	rebuildPathAfterRename,
-	validateHeaderComplete,
-	validateHeaderForScreenshot,
+    buildFolderPath,
+    detectChangedLevel,
+    ensureFolderStructure,
+    getMonthFolderName,
+    HeaderData,
+    isValidTestFolder,
+    rebuildPathAfterRename,
+    validateHeaderComplete,
+    validateHeaderForScreenshot,
 } from '../services/folder-structure-service';
 
 /**
@@ -132,11 +133,15 @@ export function registerFolderHandlers(
 				folderPath,
 				APP_CONSTANTS.CONFIG.HEADER_DATA,
 			);
+			console.log('[BACKEND] 💾 Saving header data to:', configPath);
+			console.log('[BACKEND] 💾 Data:', headerData);
+
 			const success = saveJSON(configPath, headerData);
 
+			console.log('[BACKEND] 💾 Save result:', success);
 			return { success };
 		} catch (error) {
-			console.error('Error saving header data:', error);
+			console.error('[BACKEND] ❌ Error saving header data:', error);
 			return { success: false, error: String(error) };
 		}
 	});
@@ -148,15 +153,20 @@ export function registerFolderHandlers(
 				folderPath,
 				APP_CONSTANTS.CONFIG.HEADER_DATA,
 			);
+			console.log('[BACKEND] 📂 Looking for header file at:', configPath);
+			console.log('[BACKEND] 📂 File exists?', fs.existsSync(configPath));
+
 			const data = loadJSON(configPath);
 
 			if (data) {
+				console.log('[BACKEND] ✅ Header data loaded successfully');
 				return { success: true, data };
 			}
 
+			console.log('[BACKEND] ❌ Config file not found or empty');
 			return { success: false, error: 'Config file not found' };
 		} catch (error) {
-			console.error('Error loading header data:', error);
+			console.error('[BACKEND] ❌ Error loading header data:', error);
 			return { success: false, error: String(error) };
 		}
 	});

@@ -28,6 +28,15 @@ export interface HeaderData {
 }
 
 /**
+ * Response from loading header data
+ */
+export interface LoadHeaderDataResponse {
+	success: boolean;
+	data?: HeaderData;
+	error?: string;
+}
+
+/**
  * Image file data with optional timestamp for cache busting
  */
 export interface ImageData {

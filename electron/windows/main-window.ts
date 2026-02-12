@@ -10,10 +10,8 @@ export function createMainWindow(): BrowserWindow {
 
 	if (process.env.NODE_ENV === 'development') {
 		mainWindow.loadURL('http://localhost:3000');
-		// Only open DevTools if DEVTOOLS env var is set
-		if (process.env.DEVTOOLS === 'true') {
-			mainWindow.webContents.openDevTools();
-		}
+		// Always open DevTools in development
+		mainWindow.webContents.openDevTools();
 	} else {
 		// In production, use app.getAppPath() which works even when packaged
 		const indexPath = path.join(
