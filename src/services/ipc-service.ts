@@ -469,6 +469,136 @@ class IpcService {
 	clearCurrentFolder(): void {
 		ipcRenderer.send('clear-current-folder');
 	}
+
+	// ====================================================================
+	// TEST DATABASE OPERATIONS (FASE 2)
+	// ====================================================================
+
+	/**
+	 * Create new test in database
+	 * @param rootFolder - Root folder path
+	 * @param headerData - Optional initial header data
+	 * @returns TestRecord with generated UUID
+	 */
+	async createTest(
+		rootFolder: string,
+		headerData?: Partial<any>,
+	): Promise<any> {
+		return ipcRenderer.invoke('db-create-test', rootFolder, headerData);
+	}
+
+	/**
+	 * Get test by ID from database
+	 * @param testId - Test UUID
+	 * @returns TestRecord or null
+	 */
+	async getTest(testId: string): Promise<any | null> {
+		return ipcRenderer.invoke('db-get-test', testId);
+	}
+
+	/**
+	 * Get all tests from database (sorted by updatedAt desc)
+	 * @returns Array of TestRecord
+	 */
+	async getAllTests(): Promise<any[]> {
+		return ipcRenderer.invoke('db-get-all-tests');
+	}
+
+	/**
+	 * Update test in database
+	 * @param testId - Test UUID
+	 * @param updates - Partial updates
+	 * @returns Success boolean
+	 */
+	async updateTest(testId: string, updates: Partial<any>): Promise<boolean> {
+		return ipcRenderer.invoke('db-update-test', testId, updates);
+	}
+
+	/**
+	 * Delete test from database (removes folder too)
+	 * @param testId - Test UUID
+	 * @returns Success boolean
+	 */
+	async deleteTest(testId: string): Promise<boolean> {
+		return ipcRenderer.invoke('db-delete-test', testId);
+	}
+
+	/**
+	 * Search/filter tests in database
+	 * @param query - Search parameters
+	 * @returns Array of matching TestRecord
+	 */
+	async searchTests(query: any): Promise<any[]> {
+		return ipcRenderer.invoke('db-search-tests', query);
+	}
+
+	/**
+	 * Add screenshot to test in database
+	 * @param testId - Test UUID
+	 * @param filename - Screenshot filename
+	 * @param edited - Whether screenshot was edited
+	 * @returns Success boolean
+	 */
+	async addScreenshotToTest(
+		testId: string,
+		filename: string,
+		edited: boolean = false,
+	): Promise<boolean> {
+		return ipcRenderer.invoke('db-add-screenshot', testId, filename, edited);
+	}
+
+	/**
+	 * Update screenshot metadata in database
+	 * @param testId - Test UUID
+	 * @param filename - Screenshot filename
+	 * @param updates - Partial updates
+	 * @returns Success boolean
+	 */
+	async updateScreenshotInTest(
+		testId: string,
+		filename: string,
+		updates: Partial<any>,
+	): Promise<boolean> {
+		return ipcRenderer.invoke(
+			'db-update-screenshot',
+			testId,
+			filename,
+			updates,
+		);
+	}
+
+	/**
+	 * Validate header data for saving (testResult optional)
+	 * @param headerData - Test header data
+	 * @returns { isValid: boolean, missingFields: string[] }
+	 */
+	async validateForSave(
+		headerData: any,
+	): Promise<{ isValid: boolean; missingFields: string[] }> {
+		return ipcRenderer.invoke('db-validate-for-save', headerData);
+	}
+
+	/**
+	 * Validate header data for PDF (testResult required)
+	 * @param headerData - Test header data
+	 * @returns { isValid: boolean, missingFields: string[] }
+	 */
+	async validateForPDF(
+		headerData: any,
+	): Promise<{ isValid: boolean; missingFields: string[] }> {
+		return ipcRenderer.invoke('db-validate-for-pdf', headerData);
+	}
+
+	/**
+	 * Cleanup old completed tests
+	 * @returns { deletedCount: number, errors: string[] }
+	 */
+	async cleanupOldTests(): Promise<{
+		deletedCount: number;
+		errors: string[];
+	}> {
+		return ipcRenderer.invoke('db-cleanup-old-tests');
+	}
 }
 
 /**

@@ -27,6 +27,7 @@ import { registerFolderHandlers } from './handlers/folder-handlers';
 import { registerPdfHandlers } from './handlers/pdf-handlers';
 import { registerSettingsHandlers } from './handlers/settings-handlers';
 import { registerShortcutHandlers } from './handlers/shortcut-handlers';
+import { registerTestDatabaseHandlers } from './handlers/test-database-handlers';
 import { registerWindowHandlers } from './handlers/window-handlers';
 
 // Services
@@ -425,6 +426,9 @@ app.whenReady().then(() => {
 			originalWindowWidth = width;
 		},
 	);
+
+	// Register test database handlers
+	registerTestDatabaseHandlers();
 
 	// NOW create windows (after handlers are registered)
 	mainWindow = createMainWindow();

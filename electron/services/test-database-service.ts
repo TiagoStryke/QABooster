@@ -19,13 +19,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
-	TestDatabase,
-	TestRecord,
-	TestStatus,
-	HeaderData,
-	ScreenshotData,
-	TestSearchQuery,
-	TestValidation,
+    HeaderData,
+    ScreenshotData,
+    TestDatabase,
+    TestRecord,
+    TestSearchQuery,
+    TestStatus,
+    TestValidation,
 } from '../interfaces/test-database';
 
 const DATABASE_FILENAME = 'test-database.json';
@@ -195,8 +195,7 @@ export function getAllTests(): TestRecord[] {
 	const database = loadDatabase();
 	// Sort by updatedAt descending (most recent first)
 	return database.tests.sort(
-		(a, b) =>
-			new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+		(a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
 	);
 }
 
@@ -267,9 +266,7 @@ export function searchTests(query: TestSearchQuery): TestRecord[] {
 	// Filter by fields
 	if (query.system) {
 		results = results.filter((t) =>
-			t.headerData.system
-				.toLowerCase()
-				.includes(query.system!.toLowerCase()),
+			t.headerData.system.toLowerCase().includes(query.system!.toLowerCase()),
 		);
 	}
 
@@ -315,15 +312,12 @@ export function searchTests(query: TestSearchQuery): TestRecord[] {
 
 	if (query.endDate) {
 		const endTime = new Date(query.endDate).getTime();
-		results = results.filter(
-			(t) => new Date(t.createdAt).getTime() <= endTime,
-		);
+		results = results.filter((t) => new Date(t.createdAt).getTime() <= endTime);
 	}
 
 	// Sort by updatedAt descending
 	return results.sort(
-		(a, b) =>
-			new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+		(a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
 	);
 }
 

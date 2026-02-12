@@ -11,47 +11,47 @@ Centralized JSON database that stores all test metadata, eliminating the complex
 
 ```json
 {
-  "tests": [
-    {
-      "id": "uuid-1234-5678-90ab-cdef",
-      "createdAt": "2026-02-12T11:23:52.000Z",
-      "updatedAt": "2026-02-12T14:30:00.000Z",
-      "status": "in-progress",
-      
-      "headerData": {
-        "testName": "approved",
-        "system": "hom-0001",
-        "testCycle": "tsgol-0003",
-        "testCase": "tsgol-00003",
-        "testType": "card",
-        "testTypeValue": "cdsust-0003"
-      },
-      
-      "folderPath": "/Users/user/evidencias/test-uuid-1234-5678-90ab-cdef",
-      "screenshots": [
-        {
-          "filename": "screenshot-001.png",
-          "capturedAt": "2026-02-12T11:25:00.000Z",
-          "edited": false
-        },
-        {
-          "filename": "screenshot-002.png",
-          "capturedAt": "2026-02-12T11:26:30.000Z",
-          "edited": true
-        }
-      ],
-      
-      "notes": "Teste realizado com sucesso. Backend respondeu em 200ms.",
-      
-      "pdfGenerated": true,
-      "pdfPath": "/Users/user/evidencias/test-uuid-1234/evidencia-qa.pdf"
-    }
-  ],
-  
-  "settings": {
-    "autoDeleteAfterDays": 90,
-    "lastCleanup": "2026-02-01T00:00:00.000Z"
-  }
+	"tests": [
+		{
+			"id": "uuid-1234-5678-90ab-cdef",
+			"createdAt": "2026-02-12T11:23:52.000Z",
+			"updatedAt": "2026-02-12T14:30:00.000Z",
+			"status": "in-progress",
+
+			"headerData": {
+				"testName": "approved",
+				"system": "hom-0001",
+				"testCycle": "tsgol-0003",
+				"testCase": "tsgol-00003",
+				"testType": "card",
+				"testTypeValue": "cdsust-0003"
+			},
+
+			"folderPath": "/Users/user/evidencias/test-uuid-1234-5678-90ab-cdef",
+			"screenshots": [
+				{
+					"filename": "screenshot-001.png",
+					"capturedAt": "2026-02-12T11:25:00.000Z",
+					"edited": false
+				},
+				{
+					"filename": "screenshot-002.png",
+					"capturedAt": "2026-02-12T11:26:30.000Z",
+					"edited": true
+				}
+			],
+
+			"notes": "Teste realizado com sucesso. Backend respondeu em 200ms.",
+
+			"pdfGenerated": true,
+			"pdfPath": "/Users/user/evidencias/test-uuid-1234/evidencia-qa.pdf"
+		}
+	],
+
+	"settings": {
+		"autoDeleteAfterDays": 90,
+		"lastCleanup": "2026-02-01T00:00:00.000Z"
+	}
 }
 ```
 
@@ -59,44 +59,44 @@ Centralized JSON database that stores all test metadata, eliminating the complex
 
 ### TestRecord
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | ✅ | UUID v4 generated on test creation |
-| `createdAt` | string | ✅ | ISO 8601 timestamp of test creation |
-| `updatedAt` | string | ✅ | ISO 8601 timestamp of last update |
-| `status` | enum | ✅ | `in-progress` or `completed` |
-| `headerData` | object | ✅ | Test metadata (see below) |
-| `folderPath` | string | ✅ | Absolute path to test folder |
-| `screenshots` | array | ✅ | Array of screenshot metadata |
-| `notes` | string | ✅ | User notes (can be empty) |
-| `pdfGenerated` | boolean | ✅ | Whether PDF was generated |
-| `pdfPath` | string | ❌ | Path to generated PDF (optional) |
+| Field          | Type    | Required | Description                         |
+| -------------- | ------- | -------- | ----------------------------------- |
+| `id`           | string  | ✅       | UUID v4 generated on test creation  |
+| `createdAt`    | string  | ✅       | ISO 8601 timestamp of test creation |
+| `updatedAt`    | string  | ✅       | ISO 8601 timestamp of last update   |
+| `status`       | enum    | ✅       | `in-progress` or `completed`        |
+| `headerData`   | object  | ✅       | Test metadata (see below)           |
+| `folderPath`   | string  | ✅       | Absolute path to test folder        |
+| `screenshots`  | array   | ✅       | Array of screenshot metadata        |
+| `notes`        | string  | ✅       | User notes (can be empty)           |
+| `pdfGenerated` | boolean | ✅       | Whether PDF was generated           |
+| `pdfPath`      | string  | ❌       | Path to generated PDF (optional)    |
 
 ### HeaderData
 
-| Field | Type | Required (Save) | Required (PDF) | Description |
-|-------|------|----------------|----------------|-------------|
-| `testName` | string | ❌ | ✅ | Test result (approved, reproved, partial) |
-| `system` | string | ✅ | ✅ | System under test (e.g., "hom-0001") |
-| `testCycle` | string | ✅ | ✅ | Test cycle ID (e.g., "tsgol-0003") |
-| `testCase` | string | ✅ | ✅ | Test case ID (e.g., "tsgol-00003") |
-| `testType` | enum | ✅ | ✅ | One of: `card`, `regressivo`, `gmud`, `outro` |
-| `testTypeValue` | string | ✅ | ✅ | Value for testType (e.g., "cdsust-0003") |
+| Field           | Type   | Required (Save) | Required (PDF) | Description                                   |
+| --------------- | ------ | --------------- | -------------- | --------------------------------------------- |
+| `testName`      | string | ❌              | ✅             | Test result (approved, reproved, partial)     |
+| `system`        | string | ✅              | ✅             | System under test (e.g., "hom-0001")          |
+| `testCycle`     | string | ✅              | ✅             | Test cycle ID (e.g., "tsgol-0003")            |
+| `testCase`      | string | ✅              | ✅             | Test case ID (e.g., "tsgol-00003")            |
+| `testType`      | enum   | ✅              | ✅             | One of: `card`, `regressivo`, `gmud`, `outro` |
+| `testTypeValue` | string | ✅              | ✅             | Value for testType (e.g., "cdsust-0003")      |
 
 ### ScreenshotData
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `filename` | string | Screenshot filename (e.g., "screenshot-001.png") |
-| `capturedAt` | string | ISO 8601 timestamp of capture |
-| `edited` | boolean | Whether screenshot was edited in editor |
+| Field        | Type    | Description                                      |
+| ------------ | ------- | ------------------------------------------------ |
+| `filename`   | string  | Screenshot filename (e.g., "screenshot-001.png") |
+| `capturedAt` | string  | ISO 8601 timestamp of capture                    |
+| `edited`     | boolean | Whether screenshot was edited in editor          |
 
 ### Settings
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field                 | Type   | Description                                             |
+| --------------------- | ------ | ------------------------------------------------------- |
 | `autoDeleteAfterDays` | number | Days before auto-deleting completed tests (default: 90) |
-| `lastCleanup` | string | ISO 8601 timestamp of last cleanup run |
+| `lastCleanup`         | string | ISO 8601 timestamp of last cleanup run                  |
 
 ## Status Flow
 
@@ -117,6 +117,7 @@ AUTO-DELETE (cleanup job)
 ## Folder Structure
 
 **Old System (DEPRECATED):**
+
 ```
 /evidencias/
   └── 02-2026/
@@ -128,6 +129,7 @@ AUTO-DELETE (cleanup job)
 ```
 
 **New System (ACTIVE):**
+
 ```
 /evidencias/
   ├── test-uuid-1234-5678-90ab-cdef/
@@ -142,6 +144,7 @@ AUTO-DELETE (cleanup job)
 ```
 
 **Benefits:**
+
 - ✅ Flat structure (no nesting)
 - ✅ Unique folder per test (UUID)
 - ✅ No rename issues
@@ -151,6 +154,7 @@ AUTO-DELETE (cleanup job)
 ## Validation Rules
 
 ### For Saving Test (`validateForSave`)
+
 - ✅ `system` required
 - ✅ `testCycle` required
 - ✅ `testCase` required
@@ -159,6 +163,7 @@ AUTO-DELETE (cleanup job)
 - ❌ `testName` OPTIONAL
 
 ### For Generating PDF (`validateForPDF`)
+
 - ✅ ALL fields from `validateForSave`
 - ✅ `testName` REQUIRED
 
@@ -184,9 +189,9 @@ const success = deleteTest(testId);
 
 // Search/filter tests
 const results = searchTests({
-  system: 'hom-0001',
-  testType: 'card',
-  startDate: '2026-01-01T00:00:00Z'
+	system: 'hom-0001',
+	testType: 'card',
+	startDate: '2026-01-01T00:00:00Z',
 });
 ```
 
@@ -206,13 +211,13 @@ updateScreenshot(testId, 'screenshot-001.png', { edited: true });
 // Validate for save (testResult optional)
 const validation = validateForSave(headerData);
 if (!validation.isValid) {
-  console.error('Missing fields:', validation.missingFields);
+	console.error('Missing fields:', validation.missingFields);
 }
 
 // Validate for PDF (testResult required)
 const validation = validateForPDF(headerData);
 if (!validation.isValid) {
-  console.error('Cannot generate PDF. Missing:', validation.missingFields);
+	console.error('Cannot generate PDF. Missing:', validation.missingFields);
 }
 ```
 
@@ -227,6 +232,7 @@ console.log(`Deleted ${result.deletedCount} tests`);
 ## Migration from Old System
 
 Old tests using `.qabooster-config.json` can be:
+
 1. **Migrated**: Script reads old structure, creates database entries
 2. **Supported**: Fallback reads `.qabooster-config.json` if not in database
 3. **Ignored**: Users start fresh with new system
@@ -237,11 +243,11 @@ Old tests using `.qabooster-config.json` can be:
 
 ```typescript
 import {
-  createTest,
-  getAllTests,
-  updateTest,
-  validateForPDF,
-  TestStatus
+	createTest,
+	getAllTests,
+	updateTest,
+	validateForPDF,
+	TestStatus,
 } from './services/test-database-service';
 
 // 1. Start new test
@@ -259,15 +265,15 @@ test.headerData.testTypeValue = 'cdsust-0003';
 // 3. Validate before PDF
 const validation = validateForPDF(test.headerData);
 if (!validation.isValid) {
-  alert('Preencha: ' + validation.missingFields.join(', '));
-  return;
+	alert('Preencha: ' + validation.missingFields.join(', '));
+	return;
 }
 
 // 4. Generate PDF and mark complete
 updateTest(test.id, {
-  status: TestStatus.COMPLETED,
-  pdfGenerated: true,
-  pdfPath: path.join(test.folderPath, 'evidencia-qa.pdf')
+	status: TestStatus.COMPLETED,
+	pdfGenerated: true,
+	pdfPath: path.join(test.folderPath, 'evidencia-qa.pdf'),
 });
 
 // 5. List all tests
