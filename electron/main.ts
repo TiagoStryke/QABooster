@@ -11,7 +11,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Config
-import { APP_CONSTANTS } from './config/app-config';
 
 // Window management
 import { createMainWindow } from './windows/main-window';
@@ -140,99 +139,6 @@ async function createTestIfNeeded(): Promise<{
 	} catch (error) {
 		console.error('[createTest] ❌ ERROR:', error);
 		return null;
-	}
-}
-
-/**
- * OLD SYSTEM - Will be deprecated after FASE 9 cleanup
- * Tenta criar a estrutura de pastas se necessário
- * Chamado quando screenshot é capturado pela primeira vez
- */
-async function tryCreateFolderIfNeeded(): Promise<boolean> {
-	console.log('[tryCreate] 🚀 Starting - currentFolder:', currentFolder);
-
-	// Se já tem pasta, não precisa criar
-	if (currentFolder) {
-		console.log('[tryCreate] ✅ Already have folder, returning true');
-		return true;
-	}
-
-	try {
-		console.log('[tryCreate] 📋 Fetching state from frontend...');
-		// Pega o estado atual do frontend
-		const stateResult = await mainWindow?.webContents.executeJavaScript(`
-			(function() {
-				try {
-					const headerData = JSON.parse(localStorage.getItem('qabooster-headerData') || '{}');
-					const appSettings = JSON.parse(localStorage.getItem('qabooster-app-settings') || '{}');
-					const rootFolder = appSettings.rootFolder || '';
-					return { success: true, headerData, rootFolder };
-				} catch (e) {
-					return { success: false, error: e.message };
-				}
-			})()
-		`);
-
-		console.log(
-			'[tryCreate] State result:',
-			JSON.stringify(stateResult, null, 2),
-		);
-
-		if (!stateResult?.success || !stateResult.rootFolder) {
-			console.log('[tryCreate] ❌ Invalid state or no rootFolder');
-			return false;
-		}
-
-		const { headerData, rootFolder } = stateResult;
-
-		// Importa e valida
-		const { validateHeaderForScreenshot, ensureFolderStructure } =
-			await import('./services/folder-structure-service');
-
-		const isValid = validateHeaderForScreenshot(headerData);
-		console.log('[tryCreate] Validation result:', isValid);
-
-		if (!isValid) {
-			console.log('[tryCreate] ❌ Header validation failed');
-			return false;
-		}
-
-		// Cria a estrutura
-		console.log('[tryCreate] 📁 Creating folder structure...');
-		const folderPath = ensureFolderStructure(rootFolder, headerData);
-
-		if (folderPath) {
-			console.log('[MAIN] ✅ Folder created:', folderPath);
-			// Atualiza currentFolder globalmente
-			currentFolder = folderPath;
-
-			// Salva headerData na pasta imediatamente
-			const { saveJSON } = await import('./services/file-service');
-			const headerFilePath = path.join(
-				folderPath,
-				APP_CONSTANTS.CONFIG.HEADER_DATA,
-			);
-			await saveJSON(headerFilePath, headerData);
-			console.log('[MAIN] 💾 Config saved to:', headerFilePath);
-
-			// Notifica o frontend (fromShortcut = não limpar headers)
-			console.log(
-				'[MAIN] 📤 Sending folder-created event with fromShortcut=true',
-			);
-			mainWindow?.webContents.send('folder-created', {
-				path: folderPath,
-				fromShortcut: true,
-			});
-
-			console.log('[tryCreate] ✅ SUCCESS - returning true');
-			return true;
-		}
-
-		console.log('[tryCreate] ❌ No folder path created');
-		return false;
-	} catch (error) {
-		console.error('[tryCreate] ❌ ERROR:', error);
-		return false;
 	}
 }
 

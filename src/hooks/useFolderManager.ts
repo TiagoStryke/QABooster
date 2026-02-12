@@ -12,10 +12,7 @@ interface UseFolderManagerReturn {
 	currentFolder: string;
 	setCurrentFolder: (folder: string) => void;
 	currentFolderRef: RefObject<string>;
-	isRenamingRef: RefObject<boolean>;
 	isNewFolderRef: RefObject<boolean>;
-	previousHeaderRef: RefObject<HeaderData | null>;
-	hasPendingChanges: () => boolean;
 	executePendingRename: () => Promise<boolean>;
 	loadImages: () => Promise<void>;
 	loadHeaderData: (folder: string) => Promise<void>;
@@ -25,9 +22,8 @@ interface UseFolderManagerReturn {
 }
 
 /**
- * Manages folder operations with new organizational structure
- * Handles currentFolder, selective folder renaming, and folder state
- * NEW: Supports rootFolder/month/testType/cycle/case structure
+ * Manages folder operations with database-driven structure
+ * Handles currentFolder state and folder operations
  */
 export function useFolderManager({
 	setImages,
@@ -36,9 +32,7 @@ export function useFolderManager({
 }: UseFolderManagerParams): UseFolderManagerReturn {
 	const [currentFolder, setCurrentFolder] = useState<string>('');
 	const currentFolderRef = useRef<string>('');
-	const isRenamingRef = useRef(false);
 	const isNewFolderRef = useRef(false);
-	const previousHeaderRef = useRef<HeaderData | null>(null);
 	const preserveHeadersRef = useRef(false); // Flag to preserve headers when folder created via shortcut
 
 	// Keep ref synced with state
@@ -56,89 +50,25 @@ export function useFolderManager({
 	}, []);
 
 	/**
-	 * Verifica se há mudanças pendentes no header que afetariam a estrutura de pastas
-	 */
-	const hasPendingChanges = useCallback((): boolean => {
-		if (!currentFolder || !previousHeaderRef.current) return false;
-
-		const prev = previousHeaderRef.current;
-		const curr = headerData;
-
-		return (
-			prev.testType !== curr.testType ||
-			prev.testTypeValue !== curr.testTypeValue ||
-			prev.testCycle !== curr.testCycle ||
-			prev.testCase !== curr.testCase
-		);
-	}, [currentFolder, headerData]);
-
-	/**
-	 * Executa rename pendente se houver mudanças
-	 * Retorna true se sucesso ou se não havia mudanças, false se erro
+	 * Execute pending operations before navigation
+	 * Simplified - just saves header data
+	 * Returns true if success
 	 */
 	const executePendingRename = useCallback(async (): Promise<boolean> => {
-		// Se não tem pasta ou mudanças, apenas retorna sucesso
-		if (!currentFolder || !hasPendingChanges()) {
-			// Atualiza previousHeader even if no changes
-			if (currentFolder) {
-				previousHeaderRef.current = { ...headerData };
-			}
+		// If no folder, just return success
+		if (!currentFolder) {
 			return true;
 		}
 
-		// Skip if currently renaming
-		if (isRenamingRef.current) return false;
-
 		try {
-			// Detecta qual nível mudou
-			const result = await ipcService.detectChangedLevel(
-				previousHeaderRef.current!,
-				headerData,
-				currentFolder,
-			);
-
-			if (!result.success || !result.change) {
-				// Nenhuma mudança detectada, considera sucesso
-				previousHeaderRef.current = { ...headerData };
-				return true;
-			}
-
-			const { level, newName } = result.change;
-			if (!level || !newName) {
-				previousHeaderRef.current = { ...headerData };
-				return true;
-			}
-
-			// Marca que está renomeando
-			isRenamingRef.current = true;
-
-			// Salva header ANTES de renomear
+			// Save current header data
 			await ipcService.saveHeaderData(currentFolder, headerData);
-
-			// Renomeia o nível específico
-			const renameResult = await ipcService.renameFolderLevel(
-				currentFolder,
-				level,
-				newName.trim(),
-			);
-
-			if (renameResult.success && renameResult.path) {
-				// Atualiza currentFolder com novo caminho
-				setCurrentFolder(renameResult.path);
-				// Atualiza previousHeader
-				previousHeaderRef.current = { ...headerData };
-				isRenamingRef.current = false;
-				return true;
-			}
-
-			isRenamingRef.current = false;
-			return false;
+			return true;
 		} catch (error) {
-			console.error('Error executing pending rename:', error);
-			isRenamingRef.current = false;
+			console.error('Error saving header data:', error);
 			return false;
 		}
-	}, [currentFolder, headerData, hasPendingChanges]);
+	}, [currentFolder, headerData]);
 
 	const loadImages = useCallback(async () => {
 		if (currentFolder) {
@@ -171,8 +101,6 @@ export function useFolderManager({
 					};
 					console.log('[useFolderManager] ✅ Setting header data:', loadedData);
 					setHeaderData(loadedData);
-					// Update previousHeader to track changes
-					previousHeaderRef.current = { ...loadedData };
 				} else {
 					console.log(
 						'[useFolderManager] ❌ No header data found:',
@@ -237,7 +165,6 @@ export function useFolderManager({
 		);
 		console.log('[useFolderManager] Flags:', {
 			preserveHeaders: preserveHeadersRef.current,
-			isRenaming: isRenamingRef.current,
 			isNewFolder: isNewFolderRef.current,
 		});
 
@@ -264,20 +191,12 @@ export function useFolderManager({
 				testType: '',
 				testTypeValue: '',
 			});
-			previousHeaderRef.current = null;
 			return;
 		}
 
 		// Load images
 		console.log('[useFolderManager] 📂 Loading images...');
 		loadImages();
-
-		// If renaming, don't do anything with header
-		if (isRenamingRef.current) {
-			console.log('[useFolderManager] 🔄 Is renaming - skipping header load');
-			isRenamingRef.current = false;
-			return;
-		}
 
 		// If it's a NEW folder, DON'T load header (wait for user input)
 		// Just clear the header
@@ -292,7 +211,6 @@ export function useFolderManager({
 				testType: '',
 				testTypeValue: '',
 			});
-			previousHeaderRef.current = null;
 			return;
 		}
 
@@ -309,15 +227,12 @@ export function useFolderManager({
 		currentFolder,
 		setCurrentFolder,
 		currentFolderRef,
-		isRenamingRef,
 		isNewFolderRef,
-		previousHeaderRef,
 		loadImages,
 		loadHeaderData,
 		saveHeaderData,
 		handleFolderChange,
-		hasPendingChanges,
 		executePendingRename,
-		setPreserveHeaders, // Function to preserve headers when folder created via shortcut
+		setPreserveHeaders,
 	};
 }

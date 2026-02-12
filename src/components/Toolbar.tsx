@@ -8,8 +8,6 @@
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAppSettings } from '../hooks/useAppSettings';
-import { useSystemHistory } from '../hooks/useSystemHistory';
-import { useTestTypeHistory } from '../hooks/useTestTypeHistory';
 import { useToolbarState } from '../hooks/useToolbarState';
 import { HeaderData, ImageData } from '../interfaces';
 import { ipcService } from '../services/ipc-service';
@@ -37,8 +35,6 @@ export default function Toolbar({
 	const { t } = useLanguage();
 	const [isGenerating, setIsGenerating] = useState(false);
 	const { settings } = useAppSettings();
-	const { addToHistory: addSystemToHistory } = useSystemHistory();
-	const { addToHistory: addTestTypeToHistory } = useTestTypeHistory();
 
 	// Estados do toolbar (displays, área fixa, orientação PDF)
 	const {
@@ -117,13 +113,8 @@ export default function Toolbar({
 		setIsGenerating(false);
 
 		if (result.success) {
-			// PDF gerado com sucesso - salvar no histórico
-			if (headerData.system) {
-				addSystemToHistory(headerData.system);
-			}
-			if (headerData.testType && headerData.testTypeValue) {
-				addTestTypeToHistory(headerData.testType, headerData.testTypeValue);
-			}
+			// PDF gerado com sucesso - dados já estão no banco de dados
+			console.log('[Toolbar] PDF generated successfully');
 		} else if (result.error !== 'cancelled') {
 			alert(`${t('errorGeneratingPDF')}: ${result.error}`);
 		}

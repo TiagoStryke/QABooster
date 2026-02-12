@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useSystemHistory } from '../hooks/useSystemHistory';
-import { useTestTypeHistory } from '../hooks/useTestTypeHistory';
 import { HeaderData, TestType } from '../interfaces';
 import HelpTips from './HelpTips';
 import Settings from './Settings';
@@ -14,8 +12,6 @@ interface HeaderProps {
 export default function Header({ headerData, setHeaderData }: HeaderProps) {
 	const [showSettings, setShowSettings] = useState(false);
 	const { t } = useLanguage();
-	const { history: systemHistory } = useSystemHistory();
-	const { getHistoryForType } = useTestTypeHistory();
 
 	const handleChange = (field: keyof HeaderData, value: string) => {
 		setHeaderData({ ...headerData, [field]: value });
@@ -36,11 +32,6 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 				return t('selectOption');
 		}
 	}, [headerData.testType, t]);
-
-	// Histórico para o tipo selecionado (apenas regressivo/gmud têm autocomplete)
-	const currentTypeHistory = useMemo(() => {
-		return getHistoryForType(headerData.testType);
-	}, [headerData.testType, getHistoryForType]);
 
 	return (
 		<div
@@ -179,15 +170,9 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 							placeholder={testTypePlaceholder}
 							value={headerData.testTypeValue || ''}
 							onChange={(e) => handleChange('testTypeValue', e.target.value)}
-							list="testtype-history"
 							autoComplete="off"
 							disabled={!headerData.testType}
 						/>
-						<datalist id="testtype-history">
-							{currentTypeHistory.map((value, index) => (
-								<option key={index} value={value} />
-							))}
-						</datalist>
 					</div>
 				</div>
 

@@ -57,19 +57,6 @@ class IpcService {
 		return ipcRenderer.invoke('open-folder-in-finder', folderPath);
 	}
 
-	/**
-	 * Rename a folder
-	 * @param currentPath - Current folder path
-	 * @param newName - New folder name (not full path, just name)
-	 * @returns New folder path or null if failed
-	 */
-	async renameFolder(
-		currentPath: string,
-		newName: string,
-	): Promise<string | null> {
-		return ipcRenderer.invoke('rename-folder', currentPath, newName);
-	}
-
 	// ==================== HEADER DATA ====================
 
 	/**
@@ -349,121 +336,6 @@ class IpcService {
 	// ==================== FOLDER STRUCTURE (NEW) ====================
 
 	/**
-	 * Validate if header data is complete for SCREENSHOT
-	 * testName (result) is NOT required for screenshots
-	 * @param headerData - Header data to validate
-	 * @returns Whether header is complete for screenshot
-	 */
-	async validateHeaderForScreenshot(
-		headerData: HeaderData,
-	): Promise<{ success: boolean; isComplete: boolean }> {
-		return ipcRenderer.invoke('validate-header-for-screenshot', headerData);
-	}
-
-	/**
-	 * Validate if header data is complete for PDF
-	 * testName (result) IS required for PDF generation
-	 * @param headerData - Header data to validate
-	 * @returns Whether header is complete for PDF
-	 */
-	async validateHeaderComplete(
-		headerData: HeaderData,
-	): Promise<{ success: boolean; isComplete: boolean }> {
-		return ipcRenderer.invoke('validate-header-complete', headerData);
-	}
-
-	/**
-	 * Build folder path from header data without creating it
-	 * @param rootFolder - Root folder path from settings
-	 * @param headerData - Header data with test info
-	 * @returns Constructed folder path or null if invalid
-	 */
-	async buildFolderPath(
-		rootFolder: string,
-		headerData: HeaderData,
-	): Promise<{ success: boolean; path: string | null }> {
-		return ipcRenderer.invoke('build-folder-path', rootFolder, headerData);
-	}
-
-	/**
-	 * Create entire test folder structure
-	 * Structure: rootFolder/month/testType/testCycle/testCase/
-	 * @param rootFolder - Root folder path from settings
-	 * @param headerData - Complete header data
-	 * @returns Created folder path
-	 */
-	async createTestStructure(
-		rootFolder: string,
-		headerData: HeaderData,
-	): Promise<{ success: boolean; path?: string; error?: string }> {
-		return ipcRenderer.invoke('create-test-structure', rootFolder, headerData);
-	}
-
-	/**
-	 * Detect which folder level changed between two headers
-	 * @param oldHeader - Previous header data
-	 * @param newHeader - New header data
-	 * @param oldPath - Current folder path
-	 * @returns Changed level info or null
-	 */
-	async detectChangedLevel(
-		oldHeader: HeaderData,
-		newHeader: HeaderData,
-		oldPath: string,
-	): Promise<{
-		success: boolean;
-		change: {
-			level: 'month' | 'type' | 'cycle' | 'case' | null;
-			oldName: string;
-			newName: string;
-		} | null;
-	}> {
-		return ipcRenderer.invoke(
-			'detect-changed-level',
-			oldHeader,
-			newHeader,
-			oldPath,
-		);
-	}
-
-	/**
-	 * Rename a specific folder level in the structure
-	 * @param oldPath - Current folder path
-	 * @param level - Which level to rename
-	 * @param newName - New name for that level
-	 * @returns New folder path
-	 */
-	async renameFolderLevel(
-		oldPath: string,
-		level: 'month' | 'type' | 'cycle' | 'case',
-		newName: string,
-	): Promise<{ success: boolean; path?: string; error?: string }> {
-		return ipcRenderer.invoke('rename-folder-level', oldPath, level, newName);
-	}
-
-	/**
-	 * Validate if a folder follows the expected test structure
-	 * @param folderPath - Folder path to validate
-	 * @returns Whether it's a valid test folder
-	 */
-	async isValidTestFolder(
-		folderPath: string,
-	): Promise<{ success: boolean; isValid: boolean }> {
-		return ipcRenderer.invoke('is-valid-test-folder', folderPath);
-	}
-
-	/**
-	 * Get current month folder name (MM-YYYY format)
-	 * @returns Month folder name
-	 */
-	async getMonthFolderName(): Promise<{
-		success: boolean;
-		name: string;
-	}> {
-		return ipcRenderer.invoke('get-month-folder-name');
-	}
-
-	/**
 	 * Clear current folder in main process (for new test)
 	 */
 	clearCurrentFolder(): void {
@@ -471,7 +343,7 @@ class IpcService {
 	}
 
 	// ====================================================================
-	// TEST DATABASE OPERATIONS (FASE 2)
+	// TEST DATABASE OPERATIONS
 	// ====================================================================
 
 	/**

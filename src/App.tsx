@@ -47,11 +47,8 @@ function App() {
 		currentFolder,
 		setCurrentFolder,
 		currentFolderRef,
-		loadImages,
-		loadHeaderData,
 		saveHeaderData,
 		handleFolderChange,
-		hasPendingChanges,
 		executePendingRename,
 		setPreserveHeaders, // Function to preserve headers when folder created via shortcut
 	} = useFolderManager({ setImages, headerData, setHeaderData });
@@ -95,17 +92,13 @@ function App() {
 		};
 	}, [setCurrentFolder, setImages]);
 
-	// Execute pending rename before window closes
+	// Save header data before window closes
 	useEffect(() => {
 		const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-			if (hasPendingChanges()) {
-				// Execute pending rename
+			// Execute pending rename and save header data if there's a current folder
+			if (currentFolder) {
 				await executePendingRename();
-
-				// Save header data if there's a current folder
-				if (currentFolder) {
-					await saveHeaderData(currentFolder, headerData);
-				}
+				await saveHeaderData(currentFolder, headerData);
 			}
 		};
 
@@ -114,13 +107,7 @@ function App() {
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
-	}, [
-		hasPendingChanges,
-		executePendingRename,
-		currentFolder,
-		headerData,
-		saveHeaderData,
-	]);
+	}, [executePendingRename, currentFolder, headerData, saveHeaderData]);
 
 	const handleLoadTest = async (test: TestRecord) => {
 		try {
