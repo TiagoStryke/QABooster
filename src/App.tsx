@@ -8,6 +8,7 @@ import { useImageManager } from './hooks/useImageManager';
 import { useScreenshotListeners } from './hooks/useScreenshotListeners';
 import { useShortcutSync } from './hooks/useShortcutSync';
 import { useThemeManager } from './hooks/useThemeManager';
+import type { TestRecord } from './interfaces';
 import { ipcService } from './services/ipc-service';
 
 function App() {
@@ -121,6 +122,25 @@ function App() {
 		saveHeaderData,
 	]);
 
+	const handleLoadTest = async (test: TestRecord) => {
+		try {
+			// Set header data from test
+			setHeaderData(test.headerData);
+
+			// Set current folder
+			setCurrentFolder(test.folderPath);
+
+			// Load images from folder
+			const folderImages = await ipcService.getImages(test.folderPath);
+			setImages(folderImages);
+
+			console.log('[APP] Test loaded successfully:', test.id);
+		} catch (error) {
+			console.error('[APP] Error loading test:', error);
+			alert('Failed to load test');
+		}
+	};
+
 	const handleNewTest = async () => {
 		const hasHeaderData =
 			headerData.testName ||
@@ -170,6 +190,7 @@ function App() {
 			images={images}
 			onSaveHeaderData={() => saveHeaderData(currentFolder, headerData)}
 			onNewTest={handleNewTest}
+			onLoadTest={handleLoadTest}
 			executePendingRename={executePendingRename}
 			onFolderChange={handleFolderChange}
 			selectedImage={selectedImage}

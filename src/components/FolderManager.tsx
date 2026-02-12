@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAppSettings } from '../hooks/useAppSettings';
+import type { TestRecord } from '../interfaces';
 import { HeaderData } from '../interfaces';
 import { ipcService } from '../services/ipc-service';
+import TestSelector from './TestSelector';
 
 interface FolderManagerProps {
 	currentFolder: string;
@@ -9,6 +12,7 @@ interface FolderManagerProps {
 	executePendingRename: () => Promise<boolean>;
 	headerData: HeaderData;
 	showEditor: boolean;
+	onLoadTest: (test: TestRecord) => void;
 }
 
 export default function FolderManager({
@@ -17,9 +21,11 @@ export default function FolderManager({
 	executePendingRename,
 	headerData,
 	showEditor,
+	onLoadTest,
 }: FolderManagerProps) {
 	const { t } = useLanguage();
 	const { settings } = useAppSettings();
+	const [showTestSelector, setShowTestSelector] = useState(false);
 
 	const handleContinueTest = async () => {
 		if (showEditor) {
@@ -30,29 +36,18 @@ export default function FolderManager({
 		// Execute pending rename BEFORE continuing test
 		await executePendingRename();
 
-		const folder = await ipcService.selectFolder();
-		if (folder) {
-			// Valida se é uma pasta de teste válida
-			const validationResult = await ipcService.isValidTestFolder(folder);
+		// Open test selector modal
+		setShowTestSelector(true);
+	};
 
-			if (validationResult.success && validationResult.isValid) {
-				// Verifica se existe .qabooster-config.json na pasta
-				const result = await ipcService.loadHeaderData(folder);
-				if (result.success && result.data) {
-					onFolderChange(folder, false);
-				} else {
-					alert(t('noTestFoundInFolder'));
-				}
-			} else {
-				// Pasta não segue a estrutura esperada, mas pode conter .qabooster-config.json
-				const result = await ipcService.loadHeaderData(folder);
-				if (result.success && result.data) {
-					onFolderChange(folder, false);
-				} else {
-					alert(t('noTestFoundInFolder'));
-				}
-			}
-		}
+	const handleTestSelected = async (test: TestRecord) => {
+		setShowTestSelector(false);
+
+		// Load the selected test
+		onLoadTest(test);
+
+		// Set the folder
+		onFolderChange(test.folderPath, false);
 	};
 
 	const handleNewTest = async () => {
@@ -156,6 +151,13 @@ export default function FolderManager({
 						</svg>
 					</button>
 				</div>
+			)}
+
+			{showTestSelector && (
+				<TestSelector
+					onSelect={handleTestSelected}
+					onClose={() => setShowTestSelector(false)}
+				/>
 			)}
 		</div>
 	);

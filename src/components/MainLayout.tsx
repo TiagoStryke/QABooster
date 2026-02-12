@@ -1,4 +1,5 @@
 import { useLanguage } from '../contexts/LanguageContext';
+import type { TestRecord } from '../interfaces';
 import { HeaderData, ImageData } from '../interfaces';
 import FolderManager from './FolderManager';
 import Header from './Header';
@@ -14,6 +15,7 @@ interface MainLayoutProps {
 	images: ImageData[];
 	onSaveHeaderData: () => void;
 	onNewTest: () => void;
+	onLoadTest: (test: TestRecord) => void;
 	executePendingRename: () => Promise<boolean>;
 	onFolderChange: (folder: string, isNewFolder?: boolean) => void;
 	selectedImage: ImageData | null;
@@ -35,6 +37,7 @@ export default function MainLayout({
 	images,
 	onSaveHeaderData,
 	onNewTest,
+	onLoadTest,
 	executePendingRename,
 	onFolderChange,
 	selectedImage,
@@ -72,6 +75,7 @@ export default function MainLayout({
 					executePendingRename={executePendingRename}
 					headerData={headerData}
 					showEditor={showEditor}
+					onLoadTest={onLoadTest}
 				/>
 
 				<button

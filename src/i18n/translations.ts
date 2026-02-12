@@ -56,6 +56,21 @@ export const translations = {
 		newTest: 'Novo Teste',
 		openFolderInFinder: 'Abrir pasta no Finder',
 
+		// Test Selector
+		selectTest: 'Selecionar Teste',
+		searchTests: 'Buscar testes...',
+		allTests: 'Todos',
+		inProgress: 'Em Andamento',
+		completed: 'Concluído',
+		noTestsFound: 'Nenhum teste encontrado',
+		noTestsYet: 'Nenhum teste cadastrado ainda',
+		screenshots: 'screenshots',
+		testsFound: 'testes encontrados',
+		confirmDeleteTest:
+			'Tem certeza que deseja deletar este teste e todos os seus arquivos?',
+		deleteTestFailed: 'Erro ao deletar teste',
+		deleteTest: 'Deletar Teste',
+
 		// Image Gallery
 		imageGallery: 'Galeria de Imagens',
 		noImagesYet: 'Nenhuma imagem capturada ainda',
@@ -243,6 +258,21 @@ export const translations = {
 		continueTest: 'Continue Test',
 		newTest: 'New Test',
 		openFolderInFinder: 'Open folder in Finder',
+
+		// Test Selector
+		selectTest: 'Select Test',
+		searchTests: 'Search tests...',
+		allTests: 'All',
+		inProgress: 'In Progress',
+		completed: 'Completed',
+		noTestsFound: 'No tests found',
+		noTestsYet: 'No tests registered yet',
+		screenshots: 'screenshots',
+		testsFound: 'tests found',
+		confirmDeleteTest:
+			'Are you sure you want to delete this test and all its files?',
+		deleteTestFailed: 'Error deleting test',
+		deleteTest: 'Delete Test',
 
 		// Image Gallery
 		imageGallery: 'Image Gallery',

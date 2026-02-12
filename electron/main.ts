@@ -277,9 +277,8 @@ function registerGlobalShortcut() {
 				);
 
 				// Add screenshot to database
-				const { addScreenshot } = await import(
-					'./services/test-database-service'
-				);
+				const { addScreenshot } =
+					await import('./services/test-database-service');
 				addScreenshot(testInfo.testId, result.filename, false);
 				console.log('[MAIN] 💾 Screenshot added to database');
 
@@ -339,9 +338,8 @@ function registerGlobalShortcut() {
 
 				if (result) {
 					// Add screenshot to database
-					const { addScreenshot } = await import(
-						'./services/test-database-service'
-					);
+					const { addScreenshot } =
+						await import('./services/test-database-service');
 					addScreenshot(testInfo.testId, result.filename, false);
 					console.log('[MAIN] 💾 Screenshot added to database');
 
@@ -637,9 +635,8 @@ ipcMain.on('area-selected-for-screenshot', async (_, area) => {
 			fs.writeFileSync(filepath, cropped.toPNG());
 
 			// Add screenshot to database
-			const { addScreenshot } = await import(
-				'./services/test-database-service'
-			);
+			const { addScreenshot } =
+				await import('./services/test-database-service');
 			addScreenshot(currentTestId, filename, false);
 			console.log('[MAIN] 💾 Screenshot added to database');
 
