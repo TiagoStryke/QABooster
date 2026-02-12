@@ -347,6 +347,10 @@ app.whenReady().then(() => {
 		(folder) => {
 			currentFolder = folder;
 		},
+		() => currentTestId,
+		(testId) => {
+			currentTestId = testId;
+		},
 	);
 
 	registerDisplayHandlers(

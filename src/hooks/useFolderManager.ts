@@ -43,10 +43,6 @@ export function useFolderManager({
 	// Function to preserve headers on next folder change (used by shortcut flow)
 	const setPreserveHeaders = useCallback((preserve: boolean) => {
 		preserveHeadersRef.current = preserve;
-		console.log(
-			'[useFolderManager] 🔒 Preserve headers flag set to:',
-			preserve,
-		);
 	}, []);
 
 	/**
@@ -79,18 +75,13 @@ export function useFolderManager({
 
 	const loadHeaderData = useCallback(
 		async (folder: string) => {
-			console.log(
-				'[useFolderManager] 📥 loadHeaderData called for folder:',
-				folder,
-			);
 			if (folder) {
 				const result: LoadHeaderDataResponse =
 					await ipcService.loadHeaderData(folder);
-				console.log('[useFolderManager] 📥 loadHeaderData result:', result);
 
 				// Check if result is valid and has data field
 				if (result.success && result.data) {
-					// BUG FIX: Garante que todos os campos sejam strings (nunca undefined)
+					// Ensure all fields are strings (never undefined)
 					const loadedData: HeaderData = {
 						testName: result.data.testName || '',
 						system: result.data.system || '',
@@ -99,13 +90,7 @@ export function useFolderManager({
 						testType: result.data.testType || '',
 						testTypeValue: result.data.testTypeValue || '',
 					};
-					console.log('[useFolderManager] ✅ Setting header data:', loadedData);
 					setHeaderData(loadedData);
-				} else {
-					console.log(
-						'[useFolderManager] ❌ No header data found:',
-						result.error || 'No data field in response',
-					);
 				}
 			}
 		},
@@ -123,24 +108,33 @@ export function useFolderManager({
 
 	const handleFolderChange = useCallback(
 		async (folder: string, isNewFolder = false) => {
-			console.log('[useFolderManager] 📁 handleFolderChange called:', {
-				folder,
-				isNewFolder,
-				currentFolder,
-			});
-
 			// Save data from previous folder if exists
 			if (currentFolder && headerData.testCase) {
-				console.log('[useFolderManager] 💾 Saving previous folder data...');
 				await saveHeaderData(currentFolder, headerData);
 			}
 
+			// Get testId from database by folderPath
+			// (Cannot extract from folder name anymore since format changed)
+			let testId: string | null = null;
+			if (folder) {
+				try {
+					const allTests = await ipcService.getAllTests();
+					const test = allTests.find((t) => t.folderPath === folder);
+					testId = test?.id || null;
+				} catch (error) {
+					console.error('[useFolderManager] Error finding testId:', error);
+				}
+			}
+
+			// Sync with backend
+			if (folder) {
+				await ipcService.setCurrentTest(testId, folder);
+			}
+
 			// Mark if it's a new folder
-			console.log('[useFolderManager] Setting isNewFolderRef to:', isNewFolder);
 			isNewFolderRef.current = isNewFolder;
 
 			// Change folder - useEffect will handle header
-			console.log('[useFolderManager] Calling setCurrentFolder with:', folder);
 			setCurrentFolder(folder);
 		},
 		[currentFolder, headerData, saveHeaderData],
@@ -159,20 +153,8 @@ export function useFolderManager({
 
 	// Load images and header when folder changes
 	useEffect(() => {
-		console.log(
-			'[useFolderManager] 🔄 useEffect triggered - currentFolder:',
-			currentFolder,
-		);
-		console.log('[useFolderManager] Flags:', {
-			preserveHeaders: preserveHeadersRef.current,
-			isNewFolder: isNewFolderRef.current,
-		});
-
 		// Check if headers should be preserved (folder created via shortcut)
 		if (preserveHeadersRef.current) {
-			console.log(
-				'[useFolderManager] 🔒 Preserving headers - skipping clear/load',
-			);
 			preserveHeadersRef.current = false; // Reset flag
 			if (currentFolder) {
 				loadImages(); // Still load images
@@ -181,7 +163,6 @@ export function useFolderManager({
 		}
 
 		if (!currentFolder) {
-			console.log('[useFolderManager] 🧹 No folder - clearing everything');
 			setImages([]);
 			setHeaderData({
 				testName: '',
@@ -195,13 +176,11 @@ export function useFolderManager({
 		}
 
 		// Load images
-		console.log('[useFolderManager] 📂 Loading images...');
 		loadImages();
 
 		// If it's a NEW folder, DON'T load header (wait for user input)
 		// Just clear the header
 		if (isNewFolderRef.current) {
-			console.log('[useFolderManager] 🆕 New folder - clearing headers');
 			isNewFolderRef.current = false;
 			setHeaderData({
 				testName: '',

@@ -57,6 +57,18 @@ class IpcService {
 		return ipcRenderer.invoke('open-folder-in-finder', folderPath);
 	}
 
+	/**
+	 * Set current test (sync frontend -> backend)
+	 * @param testId - Database test ID (or null to clear)
+	 * @param folderPath - Full folder path
+	 */
+	async setCurrentTest(
+		testId: string | null,
+		folderPath: string,
+	): Promise<{ success: boolean }> {
+		return ipcRenderer.invoke('set-current-test', testId, folderPath);
+	}
+
 	// ==================== HEADER DATA ====================
 
 	/**

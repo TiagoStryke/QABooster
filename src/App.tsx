@@ -114,8 +114,8 @@ function App() {
 			// Set header data from test
 			setHeaderData(test.headerData);
 
-			// Set current folder
-			setCurrentFolder(test.folderPath);
+			// Use handleFolderChange to sync with backend
+			await handleFolderChange(test.folderPath, false);
 
 			// Load images from folder
 			const folderImages = await ipcService.getImages(test.folderPath);

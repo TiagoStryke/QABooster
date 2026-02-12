@@ -107,14 +107,8 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 						placeholder="Ex: hom-regressivo-b2c.voegol.com.br"
 						value={headerData.system || ''}
 						onChange={(e) => handleChange('system', e.target.value)}
-						list="system-history"
 						autoComplete="off"
 					/>
-					<datalist id="system-history">
-						{systemHistory.map((system, index) => (
-							<option key={index} value={system} />
-						))}
-					</datalist>
 				</div>
 
 				<div>

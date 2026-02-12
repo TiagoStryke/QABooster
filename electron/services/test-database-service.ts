@@ -143,8 +143,18 @@ export function createTest(
 	const testId = uuidv4();
 	const now = new Date().toISOString();
 
-	// Create folder path
-	const folderPath = path.join(rootFolder, `test-${testId}`);
+	// Generate human-readable folder name: YYYYMMDD-HHmmss-{uuid-short}
+	const date = new Date();
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	const seconds = String(date.getSeconds()).padStart(2, '0');
+	const shortId = testId.split('-')[0]; // First 8 chars of UUID
+
+	const folderName = `${year}${month}${day}-${hours}${minutes}${seconds}-${shortId}`;
+	const folderPath = path.join(rootFolder, folderName);
 
 	// Create folder
 	if (!fs.existsSync(folderPath)) {

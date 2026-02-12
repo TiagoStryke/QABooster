@@ -17,6 +17,8 @@ import {
 export function registerFolderHandlers(
 	getCurrentFolder: () => string,
 	setCurrentFolder: (folder: string) => void,
+	getCurrentTestId: () => string | null,
+	setCurrentTestId: (testId: string | null) => void,
 ): void {
 	// Select folder dialog
 	ipcMain.handle('select-folder', async () => {
@@ -170,4 +172,15 @@ export function registerFolderHandlers(
 		const { readImageAsBase64 } = require('../services/file-service');
 		return readImageAsBase64(filepath);
 	});
+
+	// Set current test (sync frontend -> backend)
+	ipcMain.handle(
+		'set-current-test',
+		async (_, testId: string | null, folderPath: string) => {
+			console.log('[IPC] set-current-test:', { testId, folderPath });
+			setCurrentTestId(testId);
+			setCurrentFolder(folderPath);
+			return { success: true };
+		},
+	);
 }
