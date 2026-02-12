@@ -131,13 +131,13 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 	const getStatusBadge = (status: string) => {
 		if (status === 'completed') {
 			return (
-				<span className="px-2 py-1 text-xs font-semibold rounded bg-green-500/20 text-green-400">
+				<span className="px-2 py-0.5 text-xs font-semibold rounded bg-green-500/20 text-green-400">
 					{t('completed')}
 				</span>
 			);
 		}
 		return (
-			<span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-500/20 text-yellow-400">
+			<span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-500/20 text-yellow-400">
 				{t('inProgress')}
 			</span>
 		);
@@ -194,91 +194,79 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 								: t('noTestsYet')}
 						</div>
 					) : (
-						<div className="space-y-3">
+						<div className="space-y-2">
 							{filteredTests.map((test) => (
 								<div
 									key={test.id}
-									className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors border border-slate-600"
+									className="relative bg-slate-700/50 rounded-lg p-3 hover:bg-slate-700 transition-colors border border-slate-600 cursor-pointer group"
+									onClick={() => onSelect(test)}
 								>
-									<div className="flex items-start justify-between gap-4">
-										{/* Test Info */}
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-2 mb-2">
-												{getStatusBadge(test.status)}
-												{test.pdfGenerated && (
-													<span className="px-2 py-1 text-xs font-semibold rounded bg-blue-500/20 text-blue-400">
-														PDF
-													</span>
-												)}
-											</div>
+									{/* Delete button - top right corner */}
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											handleDelete(test.id);
+										}}
+										className="absolute top-2 right-2 p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-colors opacity-0 group-hover:opacity-100"
+										title={t('deleteTest')}
+									>
+										<svg
+											className="w-4 h-4"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+											/>
+										</svg>
+									</button>
 
-											<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-												<div>
-													<span className="text-slate-400">{t('system')}:</span>{' '}
-													<span className="text-slate-200 font-medium">
-														{test.headerData.system || '-'}
-													</span>
-												</div>
-												<div>
-													<span className="text-slate-400">
-														{t('testType')}:
-													</span>{' '}
-													<span className="text-slate-200 font-medium">
-														{test.headerData.testTypeValue || '-'}
-													</span>
-												</div>
-												<div>
-													<span className="text-slate-400">
-														{t('testCycle')}:
-													</span>{' '}
-													<span className="text-slate-200">
-														{test.headerData.testCycle || '-'}
-													</span>
-												</div>
-												<div>
-													<span className="text-slate-400">
-														{t('testCase')}:
-													</span>{' '}
-													<span className="text-slate-200">
-														{test.headerData.testCase || '-'}
-													</span>
-												</div>
-												{test.headerData.testName && (
-													<div className="col-span-2">
-														<span className="text-slate-400">
-															{t('testResult')}:
-														</span>{' '}
-														<span className="text-slate-200">
-															{test.headerData.testName}
-														</span>
-													</div>
-												)}
-											</div>
+									{/* Badges */}
+									<div className="flex items-center gap-2 mb-2">
+										{getStatusBadge(test.status)}
+										{test.pdfGenerated && (
+											<span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-500/20 text-blue-400">
+												PDF
+											</span>
+										)}
+									</div>
 
-											<div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
-												<span>
-													📸 {test.screenshots.length} {t('screenshots')}
-												</span>
-												<span>🕒 {formatDate(test.updatedAt)}</span>
-											</div>
+									{/* Test Info - Compact 2 columns */}
+									<div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+										<div>
+											<span className="text-slate-400">{t('system')}:</span>{' '}
+											<span className="text-slate-200 font-medium">
+												{test.headerData.system || '-'}
+											</span>
 										</div>
-
-										{/* Actions */}
-										<div className="flex gap-2">
-											<button
-												onClick={() => onSelect(test)}
-												className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-											>
-												{t('select')}
-											</button>
-											<button
-												onClick={() => handleDelete(test.id)}
-												className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
-												title={t('deleteTest')}
-											>
-												🗑️
-											</button>
+										<div>
+											<span className="text-slate-400">{t('testType')}:</span>{' '}
+											<span className="text-slate-200 font-medium">
+												{test.headerData.testTypeValue || '-'}
+											</span>
 										</div>
+										<div>
+											<span className="text-slate-400">{t('testCycle')}:</span>{' '}
+											<span className="text-slate-200">
+												{test.headerData.testCycle || '-'}
+											</span>
+										</div>
+										<div>
+											<span className="text-slate-400">{t('testCase')}:</span>{' '}
+											<span className="text-slate-200">
+												{test.headerData.testCase || '-'}
+											</span>
+										</div>
+									</div>
+
+									{/* Footer info */}
+									<div className="mt-1.5 text-xs text-slate-400 flex items-center gap-3">
+										<span>📸 {test.screenshots.length}</span>
+										<span>🕒 {formatDate(test.updatedAt)}</span>
 									</div>
 								</div>
 							))}

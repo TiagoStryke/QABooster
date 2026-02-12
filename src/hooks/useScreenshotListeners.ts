@@ -30,6 +30,22 @@ export function useScreenshotListeners({
 			}
 		};
 
+		const handleTestAutoCreated = async (
+			_: any,
+			data: { testId: string; folderPath: string },
+		) => {
+			console.log('[FRONTEND] 🎯 Test auto-created via shortcut:', data);
+			// Update frontend state with the newly created test
+			currentFolderRef.current = data.folderPath;
+			setCurrentFolder(data.folderPath);
+
+			// Sync with backend
+			await ipcService.setCurrentTest(data.testId, data.folderPath);
+
+			// Load images (will be empty initially, but ready for screenshot-captured event)
+			ipcService.getImages(data.folderPath).then(setImages);
+		};
+
 		const handleFolderCreated = (
 			_: any,
 			data: { path: string; fromShortcut?: boolean },
@@ -85,6 +101,7 @@ export function useScreenshotListeners({
 
 		// Register listeners
 		ipcRenderer.on('screenshot-captured', handleScreenshotCaptured);
+		ipcRenderer.on('test-auto-created', handleTestAutoCreated);
 		ipcRenderer.on('folder-created', handleFolderCreated);
 		ipcRenderer.on('trigger-screenshot-flash', handleScreenshotFlash);
 		ipcRenderer.on('screenshot-error', handleScreenshotError);
@@ -96,6 +113,7 @@ export function useScreenshotListeners({
 		// Cleanup
 		return () => {
 			ipcRenderer.removeAllListeners('screenshot-captured');
+			ipcRenderer.removeAllListeners('test-auto-created');
 			ipcRenderer.removeAllListeners('folder-created');
 			ipcRenderer.removeAllListeners('screenshot-error');
 			ipcRenderer.removeAllListeners('trigger-screenshot-flash');

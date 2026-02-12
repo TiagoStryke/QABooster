@@ -61,6 +61,31 @@ function App() {
 		t,
 	});
 
+	// Auto-save header data to database when it changes
+	useEffect(() => {
+		if (!currentFolder) return;
+
+		const timeoutId = setTimeout(async () => {
+			console.log('[APP] 💾 Auto-saving header data...');
+			try {
+				// Find test by folder path
+				const allTests = await ipcService.getAllTests();
+				const currentTest = allTests.find(
+					(t) => t.folderPath === currentFolder,
+				);
+
+				if (currentTest) {
+					await ipcService.updateTest(currentTest.id, { headerData });
+					console.log('[APP] ✅ Header auto-saved to database');
+				}
+			} catch (error) {
+				console.error('[APP] ❌ Failed to auto-save header:', error);
+			}
+		}, 1000); // Debounce 1s
+
+		return () => clearTimeout(timeoutId);
+	}, [headerData, currentFolder]);
+
 	// Listen for folder created from shortcut (keeps headers)
 	useEffect(() => {
 		const handleFolderCreatedFromShortcut = ((event: CustomEvent) => {

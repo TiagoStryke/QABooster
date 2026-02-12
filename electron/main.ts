@@ -73,6 +73,7 @@ app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 async function createTestIfNeeded(): Promise<{
 	testId: string;
 	folderPath: string;
+	isNew: boolean;
 } | null> {
 	console.log('[createTest] 🚀 Starting...');
 	console.log('[createTest] currentTestId:', currentTestId);
@@ -85,7 +86,11 @@ async function createTestIfNeeded(): Promise<{
 			// Verify folder exists
 			if (fs.existsSync(currentFolder)) {
 				console.log('[createTest] ✅ Using existing test:', currentTestId);
-				return { testId: currentTestId, folderPath: currentFolder };
+				return {
+					testId: currentTestId,
+					folderPath: currentFolder,
+					isNew: false,
+				};
 			} else {
 				console.log('[createTest] ⚠️ Test folder missing, creating new test');
 				// Reset if folder doesn't exist
@@ -138,6 +143,7 @@ async function createTestIfNeeded(): Promise<{
 		return {
 			testId: currentTestId,
 			folderPath: currentFolder,
+			isNew: true,
 		};
 	} catch (error) {
 		console.error('[createTest] ❌ ERROR:', error);
@@ -165,6 +171,15 @@ function registerGlobalShortcut() {
 			);
 			mainWindow?.show();
 			return;
+		}
+
+		// Notify frontend if test was just created
+		if (testInfo.isNew) {
+			console.log('[MAIN] 📢 Notifying frontend about new test:', testInfo);
+			mainWindow?.webContents.send('test-auto-created', {
+				testId: testInfo.testId,
+				folderPath: testInfo.folderPath,
+			});
 		}
 
 		console.log(
@@ -231,6 +246,15 @@ function registerGlobalShortcut() {
 			);
 			mainWindow?.show();
 			return;
+		}
+
+		// Notify frontend if test was just created
+		if (testInfo.isNew) {
+			console.log('[MAIN] 📢 Notifying frontend about new test:', testInfo);
+			mainWindow?.webContents.send('test-auto-created', {
+				testId: testInfo.testId,
+				folderPath: testInfo.folderPath,
+			});
 		}
 
 		// Update currentFolder for area capture
