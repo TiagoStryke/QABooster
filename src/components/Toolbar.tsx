@@ -12,6 +12,7 @@ import { useSystemHistory } from '../hooks/useSystemHistory';
 import { useTestTypeHistory } from '../hooks/useTestTypeHistory';
 import { useToolbarState } from '../hooks/useToolbarState';
 import { HeaderData, ImageData } from '../interfaces';
+import { ipcService } from '../services/ipc-service';
 import { generateTestPDF } from '../services/pdf-generator-service';
 
 interface ToolbarProps {
@@ -60,16 +61,27 @@ export default function Toolbar({
 			return;
 		}
 
-		// Validação 2: Verificar se todos os campos do header estão preenchidos
-		if (
-			!headerData.testName ||
-			!headerData.system ||
-			!headerData.testCycle ||
-			!headerData.testCase ||
-			!headerData.testType ||
-			!headerData.testTypeValue
-		) {
-			alert(t('incompleteHeaderData'));
+		// Validação 2: Validar header data usando validação do banco de dados
+		// (testResult é obrigatório para PDF)
+		const validation = await ipcService.validateForPDF(headerData);
+		if (!validation.isValid) {
+			// Traduzir nomes dos campos faltantes
+			const fieldTranslations: Record<string, string> = {
+				testName: t('testResult'),
+				system: t('system'),
+				testCycle: t('testCycle'),
+				testCase: t('testCase'),
+				testType: t('testType'),
+				testTypeValue: t('testTypeValue'),
+			};
+
+			const missingFieldsText = validation.missingFields
+				.map((field) => fieldTranslations[field] || field)
+				.join(', ');
+
+			alert(
+				`${t('incompleteHeaderData')}\n\n${t('missingFields')}: ${missingFieldsText}`,
+			);
 			return;
 		}
 
