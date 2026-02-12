@@ -28,7 +28,10 @@ import { registerPdfHandlers } from './handlers/pdf-handlers';
 import { registerSettingsHandlers } from './handlers/settings-handlers';
 import { registerShortcutHandlers } from './handlers/shortcut-handlers';
 import { registerTestDatabaseHandlers } from './handlers/test-database-handlers';
+
+// Services
 import { registerWindowHandlers } from './handlers/window-handlers';
+import { cleanupOldTests } from './services/test-database-service';
 
 // Services
 import {
@@ -501,6 +504,16 @@ app.whenReady().then(() => {
 
 	// Register test database handlers
 	registerTestDatabaseHandlers();
+
+	// Run cleanup on startup (delete old completed tests)
+	console.log('[STARTUP] Running cleanup on app startup...');
+	const cleanupResult = cleanupOldTests();
+	console.log(
+		`[STARTUP] Cleanup completed: ${cleanupResult.deletedCount} tests deleted`,
+	);
+	if (cleanupResult.errors.length > 0) {
+		console.error('[STARTUP] Cleanup errors:', cleanupResult.errors);
+	}
 
 	// NOW create windows (after handlers are registered)
 	mainWindow = createMainWindow();

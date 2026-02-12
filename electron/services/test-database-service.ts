@@ -433,3 +433,25 @@ export function cleanupOldTests(): { deletedCount: number; errors: string[] } {
 	console.log(`[DB] ✅ Cleanup complete: ${deletedCount} tests deleted`);
 	return { deletedCount, errors };
 }
+
+/**
+ * Update database settings
+ * @param settings - Partial settings object to update
+ */
+export function updateDatabaseSettings(settings: {
+	autoDeleteAfterDays?: number | null;
+}): void {
+	const database = loadDatabase();
+
+	if (settings.autoDeleteAfterDays !== undefined) {
+		// null or 0 means never delete
+		database.settings.autoDeleteAfterDays =
+			settings.autoDeleteAfterDays === null ||
+			settings.autoDeleteAfterDays === 0
+				? 0
+				: settings.autoDeleteAfterDays;
+	}
+
+	saveDatabase(database);
+	console.log('[DB] ✅ Settings updated:', database.settings);
+}

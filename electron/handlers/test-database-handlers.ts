@@ -19,6 +19,7 @@ import {
     getAllTests,
     getTest,
     searchTests,
+    updateDatabaseSettings,
     updateScreenshot,
     updateTest,
     validateForPDF,
@@ -300,6 +301,27 @@ export function registerTestDatabaseHandlers(): void {
 	// ====================================================================
 	// CLEANUP
 	// ====================================================================
+
+	/**
+	 * Update database settings
+	 * @param settings - Partial settings object to update
+	 */
+	ipcMain.handle(
+		'db-update-settings',
+		async (
+			_,
+			settings: { autoDeleteAfterDays?: number | null },
+		): Promise<void> => {
+			try {
+				console.log('[IPC] db-update-settings:', settings);
+				updateDatabaseSettings(settings);
+				console.log('[IPC] ✅ Settings updated');
+			} catch (error) {
+				console.error('[IPC] ❌ Failed to update settings:', error);
+				throw error;
+			}
+		},
+	);
 
 	/**
 	 * Delete old completed tests based on autoDeleteAfterDays setting

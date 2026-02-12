@@ -42,6 +42,14 @@ export function useSettingsState() {
 		localStorage.getItem('qabooster-cursor-in-screenshots') !== 'false',
 	);
 
+	// ==================== CLEANUP SETTINGS ====================
+
+	const [autoDeleteAfterDays, setAutoDeleteAfterDays] = useState<number>(
+		parseInt(localStorage.getItem('qabooster-auto-delete-days') || '0', 10),
+	);
+
+	const [cleanupInProgress, setCleanupInProgress] = useState(false);
+
 	// ==================== KEYBOARD SHORTCUTS ====================
 
 	const [shortcutFull, setShortcutFull] = useState(
@@ -114,6 +122,28 @@ export function useSettingsState() {
 		setCursorInScreenshots(enabled);
 		localStorage.setItem('qabooster-cursor-in-screenshots', enabled.toString());
 		ipcService.setCursorInScreenshots(enabled);
+	};
+
+	// ==================== HANDLERS - CLEANUP ====================
+
+	const handleAutoDeleteDaysChange = async (days: number) => {
+		setAutoDeleteAfterDays(days);
+		localStorage.setItem('qabooster-auto-delete-days', days.toString());
+		await ipcService.updateDatabaseSettings({
+			autoDeleteAfterDays: days === 0 ? null : days,
+		});
+	};
+
+	const handleCleanupNow = async () => {
+		if (autoDeleteAfterDays === 0) return;
+
+		setCleanupInProgress(true);
+		try {
+			const result = await ipcService.cleanupOldTests();
+			return result;
+		} finally {
+			setCleanupInProgress(false);
+		}
 	};
 
 	// ==================== HANDLERS - SHORTCUTS ====================
@@ -197,6 +227,14 @@ export function useSettingsState() {
 		handleCopyToClipboardChange,
 		handleSoundEnabledChange,
 		handleCursorInScreenshotsChange,
+
+		// Cleanup settings
+		autoDeleteAfterDays,
+		cleanupInProgress,
+
+		// Cleanup handlers
+		handleAutoDeleteDaysChange,
+		handleCleanupNow,
 
 		// Shortcuts
 		shortcutFull,

@@ -590,6 +590,16 @@ class IpcService {
 	}
 
 	/**
+	 * Update database settings
+	 * @param settings - Partial settings object to update
+	 */
+	async updateDatabaseSettings(settings: {
+		autoDeleteAfterDays?: number | null;
+	}): Promise<void> {
+		return ipcRenderer.invoke('db-update-settings', settings);
+	}
+
+	/**
 	 * Cleanup old completed tests
 	 * @returns { deletedCount: number, errors: string[] }
 	 */

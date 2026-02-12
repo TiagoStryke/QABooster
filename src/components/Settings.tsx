@@ -41,6 +41,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 		handleSoundEnabledChange,
 		handleCursorInScreenshotsChange,
 
+		// Cleanup settings
+		autoDeleteAfterDays,
+		cleanupInProgress,
+		handleAutoDeleteDaysChange,
+		handleCleanupNow,
+
 		// Shortcuts
 		shortcutFull,
 		shortcutArea,
@@ -335,6 +341,71 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 							onCancel={handleShortcutCancel}
 							onKeyDown={handleShortcutKeyDown}
 						/>
+					</div>
+
+					{/* Cleanup Settings Section */}
+					<div className="mb-4">
+						<h3 className="text-sm font-bold text-slate-300 mb-3">
+							🧹 {t('cleanupSettings')}
+						</h3>
+
+						<div className="bg-slate-700/50 p-3 rounded-lg mb-2">
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex-1">
+									<h4 className="text-sm font-medium text-slate-200">
+										{t('autoDeleteAfterDays')}
+									</h4>
+									<p className="text-xs text-slate-400 mt-1">
+										{t('autoDeleteAfterDaysDesc')}
+									</p>
+								</div>
+								<div className="ml-3">
+									<input
+										type="number"
+										min="0"
+										max="365"
+										value={autoDeleteAfterDays}
+										onChange={(e) =>
+											handleAutoDeleteDaysChange(parseInt(e.target.value) || 0)
+										}
+										className="w-20 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-sm text-slate-200 text-center focus:outline-none focus:ring-2 focus:ring-primary-500"
+									/>
+								</div>
+							</div>
+							{autoDeleteAfterDays === 0 && (
+								<p className="text-xs text-amber-400 italic">
+									{t('neverDelete')}
+								</p>
+							)}
+						</div>
+
+						{autoDeleteAfterDays > 0 && (
+							<button
+								onClick={async () => {
+									if (
+										window.confirm(
+											t('confirmCleanup').replace(
+												'{days}',
+												autoDeleteAfterDays.toString(),
+											),
+										)
+									) {
+										const result = await handleCleanupNow();
+										if (result) {
+											alert(
+												`${t('cleanupComplete')}: ${result.deletedCount} ${t('testsDeleted')}`,
+											);
+										} else {
+											alert(t('noTestsToDelete'));
+										}
+									}
+								}}
+								disabled={cleanupInProgress}
+								className="w-full px-3 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+							>
+								{cleanupInProgress ? t('cleanupInProgress') : t('cleanupNow')}
+							</button>
+						)}
 					</div>
 				</div>
 			</div>

@@ -71,6 +71,20 @@ export const translations = {
 		deleteTestFailed: 'Erro ao deletar teste',
 		deleteTest: 'Deletar Teste',
 
+		// Cleanup System
+		cleanupSettings: 'Limpeza Automática',
+		autoDeleteAfterDays: 'Auto-deletar testes após (dias)',
+		autoDeleteAfterDaysDesc:
+			'Testes concluídos serão deletados automaticamente após este período',
+		neverDelete: 'Nunca deletar',
+		cleanupNow: 'Limpar Agora',
+		cleanupInProgress: 'Limpeza em andamento...',
+		cleanupComplete: 'Limpeza concluída',
+		testsDeleted: 'teste(s) deletado(s)',
+		noTestsToDelete: 'Nenhum teste antigo para deletar',
+		confirmCleanup:
+			'Tem certeza que deseja deletar todos os testes concluídos com mais de {days} dias?',
+
 		// Image Gallery
 		imageGallery: 'Galeria de Imagens',
 		noImagesYet: 'Nenhuma imagem capturada ainda',
@@ -273,6 +287,20 @@ export const translations = {
 			'Are you sure you want to delete this test and all its files?',
 		deleteTestFailed: 'Error deleting test',
 		deleteTest: 'Delete Test',
+
+		// Cleanup System
+		cleanupSettings: 'Auto Cleanup',
+		autoDeleteAfterDays: 'Auto-delete tests after (days)',
+		autoDeleteAfterDaysDesc:
+			'Completed tests will be automatically deleted after this period',
+		neverDelete: 'Never delete',
+		cleanupNow: 'Cleanup Now',
+		cleanupInProgress: 'Cleanup in progress...',
+		cleanupComplete: 'Cleanup complete',
+		testsDeleted: 'test(s) deleted',
+		noTestsToDelete: 'No old tests to delete',
+		confirmCleanup:
+			'Are you sure you want to delete all completed tests older than {days} days?',
 
 		// Image Gallery
 		imageGallery: 'Image Gallery',
