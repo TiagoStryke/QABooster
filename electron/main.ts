@@ -43,6 +43,7 @@ let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let currentFolder: string = '';
+let currentTestId: string | null = null; // Database test ID (FASE 3)
 let shortcutKey: string = 'CommandOrControl+Shift+S';
 let shortcutKeyArea: string = 'CommandOrControl+Shift+A';
 let shortcutKeyQuick: string = 'CommandOrControl+Shift+Q';
@@ -60,6 +61,87 @@ let pendingScreenshot: Electron.NativeImage | null = null;
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 
 /**
+ * FASE 3: Create test in database if needed
+ * Called when screenshot is captured - NO validation required
+ * @returns Test record with folder path, or null if failed
+ */
+async function createTestIfNeeded(): Promise<{
+	testId: string;
+	folderPath: string;
+} | null> {
+	console.log('[createTest] 🚀 Starting...');
+	console.log('[createTest] currentTestId:', currentTestId);
+	console.log('[createTest] currentFolder:', currentFolder);
+
+	try {
+		// If already has active test, return it
+		if (currentTestId && currentFolder) {
+			const fs = await import('fs');
+			// Verify folder exists
+			if (fs.existsSync(currentFolder)) {
+				console.log('[createTest] ✅ Using existing test:', currentTestId);
+				return { testId: currentTestId, folderPath: currentFolder };
+			} else {
+				console.log('[createTest] ⚠️ Test folder missing, creating new test');
+				// Reset if folder doesn't exist
+				currentTestId = null;
+				currentFolder = '';
+			}
+		}
+
+		// Get rootFolder from app settings
+		console.log('[createTest] 📋 Fetching rootFolder from frontend...');
+		const stateResult = await mainWindow?.webContents.executeJavaScript(`
+			(function() {
+				try {
+					const appSettings = JSON.parse(localStorage.getItem('qabooster-app-settings') || '{}');
+					const rootFolder = appSettings.rootFolder || '';
+					return { success: true, rootFolder };
+				} catch (e) {
+					return { success: false, error: e.message };
+				}
+			})()
+		`);
+
+		if (!stateResult?.success || !stateResult.rootFolder) {
+			console.log('[createTest] ❌ No rootFolder configured');
+			return null;
+		}
+
+		const { rootFolder } = stateResult;
+
+		// Create new test in database (NO header validation)
+		console.log('[createTest] 📝 Creating test in database...');
+		const { createTest } = await import('./services/test-database-service');
+		const testRecord = createTest(rootFolder);
+
+		// Update global variables
+		currentTestId = testRecord.id;
+		currentFolder = testRecord.folderPath;
+
+		console.log('[createTest] ✅ Test created:', {
+			testId: currentTestId,
+			folderPath: currentFolder,
+		});
+
+		// Notify frontend
+		mainWindow?.webContents.send('test-created', {
+			testId: currentTestId,
+			folderPath: currentFolder,
+		});
+
+		return {
+			testId: currentTestId,
+			folderPath: currentFolder,
+		};
+	} catch (error) {
+		console.error('[createTest] ❌ ERROR:', error);
+		return null;
+	}
+}
+
+/**
+ * OLD SYSTEM - Will be deprecated after FASE 9 cleanup
  * Tenta criar a estrutura de pastas se necessário
  * Chamado quando screenshot é capturado pela primeira vez
  */
@@ -157,58 +239,30 @@ function registerGlobalShortcut() {
 	// Fullscreen screenshot
 	const ret = globalShortcut.register(shortcutKey, async () => {
 		console.log('[MAIN] 🔘 Fullscreen shortcut pressed');
-		console.log('[MAIN] Current folder BEFORE check:', currentFolder);
+		console.log('[MAIN] Current test:', currentTestId);
+		console.log('[MAIN] Current folder:', currentFolder);
 
-		// Check if currentFolder is set but folder doesn't exist physically
-		if (currentFolder) {
-			const fs = await import('fs');
-			if (!fs.existsSync(currentFolder)) {
-				console.log(
-					'[MAIN] ⚠️ Folder path set but does not exist physically:',
-					currentFolder,
-				);
-				console.log('[MAIN] 🔨 Creating folder structure...');
-				const created = await tryCreateFolderIfNeeded();
-				if (!created) {
-					console.log('[MAIN] ❌ Failed to create folder');
-					mainWindow?.webContents.send(
-						'screenshot-error',
-						'Erro ao criar pasta de teste',
-					);
-					return;
-				}
-				console.log('[MAIN] ✅ Folder created successfully');
-			}
-		}
+		// FASE 3: Create test if needed (NO validation)
+		const testInfo = await createTestIfNeeded();
 
-		// Try to create folder if needed
-		if (!currentFolder) {
-			console.log('[MAIN] No folder - calling tryCreateFolderIfNeeded()');
-			const created = await tryCreateFolderIfNeeded();
-			console.log('[MAIN] tryCreateFolderIfNeeded result:', created);
-			console.log('[MAIN] Current folder AFTER tryCreate:', currentFolder);
-
-			if (!created) {
-				console.log('[MAIN] ❌ Failed to create folder - aborting');
-				mainWindow?.webContents.send(
-					'screenshot-error',
-					'Preencha os campos obrigatórios primeiro',
-				);
-				mainWindow?.show();
-				return;
-			}
-
-			console.log('[MAIN] ✅ Folder created successfully, continuing...');
+		if (!testInfo) {
+			console.log('[MAIN] ❌ Failed to create test');
+			mainWindow?.webContents.send(
+				'screenshot-error',
+				'Erro ao criar teste. Configure a pasta raiz nas configurações.',
+			);
+			mainWindow?.show();
+			return;
 		}
 
 		console.log(
 			'[MAIN] 📸 Attempting to capture screenshot in folder:',
-			currentFolder,
+			testInfo.folderPath,
 		);
 		try {
 			const result = await captureFullscreenScreenshot({
 				mainWindow,
-				currentFolder,
+				currentFolder: testInfo.folderPath,
 				selectedDisplayId,
 				copyToClipboard,
 				cursorInScreenshots,
@@ -221,13 +275,21 @@ function registerGlobalShortcut() {
 					'[MAIN] ✅ Screenshot captured successfully:',
 					result.filepath,
 				);
-				// Screenshot capturado com sucesso - notifica frontend
+
+				// Add screenshot to database
+				const { addScreenshot } = await import(
+					'./services/test-database-service'
+				);
+				addScreenshot(testInfo.testId, result.filename, false);
+				console.log('[MAIN] 💾 Screenshot added to database');
+
+				// Notify frontend
 				mainWindow?.webContents.send('screenshot-captured', {
 					filepath: result.filepath,
 					filename: result.filename,
 				});
 
-				// Toca som APENAS if screenshot foi capturado
+				// Play sound
 				console.log('[MAIN] 🔊 Sending trigger-screenshot-flash');
 				mainWindow?.webContents.send('trigger-screenshot-flash');
 			} else {
@@ -245,18 +307,23 @@ function registerGlobalShortcut() {
 
 	// Area screenshot
 	const retArea = globalShortcut.register(shortcutKeyArea, async () => {
-		// Try to create folder if needed
-		if (!currentFolder) {
-			const created = await tryCreateFolderIfNeeded();
-			if (!created) {
-				mainWindow?.webContents.send(
-					'screenshot-error',
-					'Preencha os campos obrigatórios primeiro',
-				);
-				mainWindow?.show();
-				return;
-			}
+		console.log('[MAIN] 🖼️ Area screenshot shortcut pressed');
+
+		// FASE 3: Create test if needed (NO validation)
+		const testInfo = await createTestIfNeeded();
+
+		if (!testInfo) {
+			console.log('[MAIN] ❌ Failed to create test');
+			mainWindow?.webContents.send(
+				'screenshot-error',
+				'Erro ao criar teste. Configure a pasta raiz nas configurações.',
+			);
+			mainWindow?.show();
+			return;
 		}
+
+		// Update currentFolder for area capture
+		currentFolder = testInfo.folderPath;
 
 		// Se deve usar área salva E tem área salva = tira print direto
 		if (useSavedArea && savedArea) {
@@ -271,12 +338,19 @@ function registerGlobalShortcut() {
 				});
 
 				if (result) {
+					// Add screenshot to database
+					const { addScreenshot } = await import(
+						'./services/test-database-service'
+					);
+					addScreenshot(testInfo.testId, result.filename, false);
+					console.log('[MAIN] 💾 Screenshot added to database');
+
 					mainWindow?.webContents.send('screenshot-captured', {
 						filepath: result.filepath,
 						filename: result.filename,
 					});
 
-					// Toca som APENAS se screenshot foi capturado
+					// Play sound
 					mainWindow?.webContents.send('trigger-screenshot-flash');
 				}
 			} catch (error) {
@@ -287,7 +361,7 @@ function registerGlobalShortcut() {
 				);
 			}
 		} else {
-			// Não tem área salva ou não quer usar = tira print e mostra overlay
+			// Não tem área salva ou não quer usar = mostra overlay
 			await openAreaSelectorForScreenshot();
 		}
 	});
@@ -538,13 +612,14 @@ ipcMain.on('area-selected-for-screenshot', async (_, area) => {
 		overlayWindow = null;
 	}
 
-	// Try to create folder if needed
-	if (!currentFolder) {
-		const created = await tryCreateFolderIfNeeded();
-		if (!created) {
+	// FASE 3: Ensure test exists (should already have testId from shortcut)
+	if (!currentTestId || !currentFolder) {
+		console.log('[MAIN] ⚠️ No active test in area-selected, creating...');
+		const testInfo = await createTestIfNeeded();
+		if (!testInfo) {
 			mainWindow?.webContents.send(
 				'screenshot-error',
-				'Preencha os campos obrigatórios primeiro',
+				'Erro ao criar teste. Configure a pasta raiz nas configurações.',
 			);
 			mainWindow?.show();
 			pendingScreenshot = null;
@@ -553,13 +628,20 @@ ipcMain.on('area-selected-for-screenshot', async (_, area) => {
 	}
 
 	// Salva o screenshot com crop da área
-	if (pendingScreenshot && currentFolder) {
+	if (pendingScreenshot && currentFolder && currentTestId) {
 		try {
 			const cropped = pendingScreenshot.crop(area);
 			const filename = getNextScreenshotFilename(currentFolder);
 			const filepath = path.join(currentFolder, filename);
 
 			fs.writeFileSync(filepath, cropped.toPNG());
+
+			// Add screenshot to database
+			const { addScreenshot } = await import(
+				'./services/test-database-service'
+			);
+			addScreenshot(currentTestId, filename, false);
+			console.log('[MAIN] 💾 Screenshot added to database');
 
 			// Copiar para clipboard se habilitado
 			if (copyToClipboard) {

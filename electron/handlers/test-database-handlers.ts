@@ -5,25 +5,25 @@
  */
 
 import { ipcMain } from 'electron';
-import {
-	createTest,
-	getTest,
-	getAllTests,
-	updateTest,
-	deleteTest,
-	searchTests,
-	addScreenshot,
-	updateScreenshot,
-	validateForSave,
-	validateForPDF,
-	cleanupOldTests,
-} from '../services/test-database-service';
 import type {
-	HeaderData,
-	TestRecord,
-	TestSearchQuery,
-	ScreenshotData,
+    HeaderData,
+    ScreenshotData,
+    TestRecord,
+    TestSearchQuery,
 } from '../interfaces/test-database';
+import {
+    addScreenshot,
+    cleanupOldTests,
+    createTest,
+    deleteTest,
+    getAllTests,
+    getTest,
+    searchTests,
+    updateScreenshot,
+    updateTest,
+    validateForPDF,
+    validateForSave,
+} from '../services/test-database-service';
 
 /**
  * Register all test database IPC handlers
@@ -108,7 +108,11 @@ export function registerTestDatabaseHandlers(): void {
 	 */
 	ipcMain.handle(
 		'db-update-test',
-		async (_, testId: string, updates: Partial<TestRecord>): Promise<boolean> => {
+		async (
+			_,
+			testId: string,
+			updates: Partial<TestRecord>,
+		): Promise<boolean> => {
 			try {
 				console.log('[IPC] db-update-test:', { testId, updates });
 				const success = updateTest(testId, updates);
@@ -130,21 +134,24 @@ export function registerTestDatabaseHandlers(): void {
 	 * @param testId - Test UUID
 	 * @returns Success boolean
 	 */
-	ipcMain.handle('db-delete-test', async (_, testId: string): Promise<boolean> => {
-		try {
-			console.log('[IPC] db-delete-test:', testId);
-			const success = deleteTest(testId);
-			if (success) {
-				console.log('[IPC] ✅ Test deleted:', testId);
-			} else {
-				console.log('[IPC] ❌ Test deletion failed:', testId);
+	ipcMain.handle(
+		'db-delete-test',
+		async (_, testId: string): Promise<boolean> => {
+			try {
+				console.log('[IPC] db-delete-test:', testId);
+				const success = deleteTest(testId);
+				if (success) {
+					console.log('[IPC] ✅ Test deleted:', testId);
+				} else {
+					console.log('[IPC] ❌ Test deletion failed:', testId);
+				}
+				return success;
+			} catch (error) {
+				console.error('[IPC] ❌ Failed to delete test:', error);
+				throw error;
 			}
-			return success;
-		} catch (error) {
-			console.error('[IPC] ❌ Failed to delete test:', error);
-			throw error;
-		}
-	});
+		},
+	);
 
 	// ====================================================================
 	// SEARCH
