@@ -131,7 +131,8 @@ export async function generateTestPDF({
 			{ label: `${t('executor')}:`, value: executorName || '-' },
 			{
 				label: `${t('executionDateTime')}:`,
-				value: new Date().toLocaleString('pt-BR'),
+				value:
+					headerData.executionDateTime || new Date().toLocaleString('pt-BR'),
 			},
 		];
 

@@ -63,6 +63,7 @@ export default function MainLayout({
 					currentFolder={currentFolder}
 					images={images}
 					headerData={headerData}
+					setHeaderData={setHeaderData}
 					onSaveHeaderData={onSaveHeaderData}
 					onNewTest={onNewTest}
 					executePendingRename={executePendingRename}

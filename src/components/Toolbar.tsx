@@ -17,6 +17,7 @@ interface ToolbarProps {
 	currentFolder: string;
 	images: ImageData[];
 	headerData: HeaderData;
+	setHeaderData: (data: HeaderData) => void;
 	onSaveHeaderData: () => void;
 	onNewTest: () => void;
 	executePendingRename: () => Promise<boolean>;
@@ -27,6 +28,7 @@ export default function Toolbar({
 	currentFolder,
 	images,
 	headerData,
+	setHeaderData,
 	onSaveHeaderData,
 	onNewTest,
 	executePendingRename,
@@ -98,13 +100,23 @@ export default function Toolbar({
 		// Execute pending rename BEFORE saving
 		await executePendingRename();
 
-		// Salvar headerData antes de gerar PDF
+		// Capturar data/hora atual no momento da geração do PDF
+		const currentDateTime = new Date().toLocaleString('pt-BR');
+		const updatedHeaderData = {
+			...headerData,
+			executionDateTime: currentDateTime,
+		};
+
+		// Atualizar headerData com a data capturada
+		setHeaderData(updatedHeaderData);
+
+		// Salvar headerData com data atualizada
 		await onSaveHeaderData();
 
-		// Gerar PDF usando serviço
+		// Gerar PDF usando serviço com data capturada
 		const result = await generateTestPDF({
 			images,
-			headerData,
+			headerData: updatedHeaderData,
 			executorName: settings.executorName,
 			pdfOrientation,
 			t,

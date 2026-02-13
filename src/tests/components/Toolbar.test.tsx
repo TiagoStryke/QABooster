@@ -30,6 +30,8 @@ describe('Toolbar', () => {
 	let mockIpc: ReturnType<typeof setupIpcMock>;
 	const mockOnSaveHeaderData = vi.fn();
 	const mockOnNewTest = vi.fn();
+	const mockSetHeaderData = vi.fn();
+	const mockExecutePendingRename = vi.fn().mockResolvedValue(true);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -69,8 +71,10 @@ describe('Toolbar', () => {
 					currentFolder="/test/folder"
 					images={mockImages}
 					headerData={mockHeaderData}
+					setHeaderData={mockSetHeaderData}
 					onSaveHeaderData={mockOnSaveHeaderData}
 					onNewTest={mockOnNewTest}
+					executePendingRename={mockExecutePendingRename}
 				/>
 			</LanguageProvider>,
 		);
@@ -177,8 +181,10 @@ describe('Toolbar', () => {
 					currentFolder="/test/folder"
 					images={[]}
 					headerData={mockHeaderData}
+					setHeaderData={mockSetHeaderData}
 					onSaveHeaderData={mockOnSaveHeaderData}
 					onNewTest={mockOnNewTest}
+					executePendingRename={mockExecutePendingRename}
 				/>
 			</LanguageProvider>,
 		);

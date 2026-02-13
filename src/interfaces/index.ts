@@ -25,6 +25,7 @@ export interface HeaderData {
 	testCase: string;
 	testType: TestType;
 	testTypeValue: string;
+	executionDateTime?: string; // Capturado no momento da geração do PDF
 }
 
 /**

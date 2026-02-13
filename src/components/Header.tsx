@@ -181,7 +181,9 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 					<input
 						type="text"
 						className="input-field w-full text-xs py-1.5 bg-slate-700"
-						value={new Date().toLocaleString('pt-BR')}
+						value={
+							headerData.executionDateTime || new Date().toLocaleString('pt-BR')
+						}
 						readOnly
 					/>
 				</div>
