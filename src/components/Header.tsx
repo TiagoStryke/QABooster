@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSystemHistory } from '../hooks/useSystemHistory';
 import { HeaderData, TestType } from '../interfaces';
+import AutocompleteInput from './AutocompleteInput';
 import HelpTips from './HelpTips';
 import Settings from './Settings';
 
@@ -12,6 +14,7 @@ interface HeaderProps {
 export default function Header({ headerData, setHeaderData }: HeaderProps) {
 	const [showSettings, setShowSettings] = useState(false);
 	const { t } = useLanguage();
+	const { filterHistory, addToHistory, removeFromHistory } = useSystemHistory();
 
 	const handleChange = (field: keyof HeaderData, value: string) => {
 		setHeaderData({ ...headerData, [field]: value });
@@ -101,13 +104,14 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 					<label className="block text-xs font-medium text-slate-300 mb-1">
 						{t('system')}
 					</label>
-					<input
-						type="text"
-						className="input-field w-full text-xs py-1.5"
-						placeholder="Ex: hom-regressivo-b2c.voegol.com.br"
+					<AutocompleteInput
 						value={headerData.system || ''}
-						onChange={(e) => handleChange('system', e.target.value)}
-						autoComplete="off"
+						onChange={(value) => handleChange('system', value)}
+						placeholder="Ex: hom-regressivo-b2c.voegol.com.br"
+						className="input-field w-full text-xs py-1.5"
+						suggestions={filterHistory(headerData.system || '')}
+						onRemoveSuggestion={removeFromHistory}
+						onBlur={addToHistory}
 					/>
 				</div>
 
