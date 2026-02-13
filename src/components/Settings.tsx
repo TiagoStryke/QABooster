@@ -103,12 +103,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 			style={{ WebkitAppRegion: 'no-drag' } as any}
 		>
 			<div
-				className="settings-modal-content bg-slate-800 border border-slate-700 rounded-lg shadow-xl w-[500px] max-h-[80vh] overflow-y-auto"
+				className="settings-modal-content bg-slate-800 border border-slate-700 rounded-lg shadow-xl w-[500px] max-h-[80vh] flex flex-col"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<div className="p-6">
-					{/* Header */}
-					<div className="flex items-center justify-between mb-6">
+				{/* Header Sticky */}
+				<div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 rounded-t-lg z-10">
+					<div className="flex items-center justify-between">
 						<h2 className="text-xl font-bold text-slate-100">
 							{t('settings')}
 						</h2>
@@ -131,7 +131,10 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 							</svg>
 						</button>
 					</div>
+				</div>
 
+				{/* Scrollable Content */}
+				<div className="overflow-y-auto flex-1 px-6 py-4">
 					{/* ROOT FOLDER */}
 					<div className="mb-4">
 						<label className="block text-sm font-semibold text-slate-300 mb-2">
@@ -349,7 +352,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 							🧹 {t('cleanupSettings')}
 						</h3>
 
-						<div className="bg-slate-700/50 p-3 rounded-lg mb-2">
+						<div className="bg-slate-700/50 p-3 rounded-lg">
 							<div className="flex items-center justify-between mb-2">
 								<div className="flex-1">
 									<h4 className="text-sm font-medium text-slate-200">
@@ -372,40 +375,39 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 									/>
 								</div>
 							</div>
-							{autoDeleteAfterDays === 0 && (
+
+							{autoDeleteAfterDays === 0 ? (
 								<p className="text-xs text-amber-400 italic">
 									{t('neverDelete')}
 								</p>
+							) : (
+								<button
+									onClick={async () => {
+										if (
+											window.confirm(
+												t('confirmCleanup').replace(
+													'{days}',
+													autoDeleteAfterDays.toString(),
+												),
+											)
+										) {
+											const result = await handleCleanupNow();
+											if (result) {
+												alert(
+													`${t('cleanupComplete')}: ${result.deletedCount} ${t('testsDeleted')}`,
+												);
+											} else {
+												alert(t('noTestsToDelete'));
+											}
+										}
+									}}
+									disabled={cleanupInProgress}
+									className="w-full mt-2 px-2 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+								>
+									{cleanupInProgress ? t('cleanupInProgress') : t('cleanupNow')}
+								</button>
 							)}
 						</div>
-
-						{autoDeleteAfterDays > 0 && (
-							<button
-								onClick={async () => {
-									if (
-										window.confirm(
-											t('confirmCleanup').replace(
-												'{days}',
-												autoDeleteAfterDays.toString(),
-											),
-										)
-									) {
-										const result = await handleCleanupNow();
-										if (result) {
-											alert(
-												`${t('cleanupComplete')}: ${result.deletedCount} ${t('testsDeleted')}`,
-											);
-										} else {
-											alert(t('noTestsToDelete'));
-										}
-									}
-								}}
-								disabled={cleanupInProgress}
-								className="w-full px-3 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
-							>
-								{cleanupInProgress ? t('cleanupInProgress') : t('cleanupNow')}
-							</button>
-						)}
 					</div>
 				</div>
 			</div>
