@@ -125,12 +125,16 @@ export default function Toolbar({
 					);
 
 					if (currentTest) {
-						// Marcar como concluído
+						// Marcar como concluído e salvar caminho do PDF
 						await ipcService.updateTest(currentTest.id, {
 							status: 'completed',
 							pdfGenerated: true,
+							pdfPath: result.filepath, // Salvar caminho do PDF
 						});
-						console.log('[Toolbar] Test marked as completed:', currentTest.id);
+						console.log(
+							'[Toolbar] Test marked as completed with PDF path:',
+							result.filepath,
+						);
 					}
 				} catch (error) {
 					console.error('[Toolbar] Error marking test as completed:', error);

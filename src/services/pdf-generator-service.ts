@@ -44,7 +44,11 @@ export async function generateTestPDF({
 	executorName,
 	pdfOrientation,
 	t,
-}: GeneratePDFParams): Promise<{ success: boolean; error?: string }> {
+}: GeneratePDFParams): Promise<{
+	success: boolean;
+	error?: string;
+	filepath?: string;
+}> {
 	try {
 		// Criar PDF com orientação especificada
 		const pdf = new jsPDF(
@@ -279,7 +283,7 @@ export async function generateTestPDF({
 				await ipcService.openPdf(result.filepath);
 			}
 
-			return { success: true };
+			return { success: true, filepath: result.filepath };
 		} else {
 			return { success: false, error: result.error };
 		}

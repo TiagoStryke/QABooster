@@ -117,6 +117,29 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 		}
 	};
 
+	const handleOpenFolder = async (folderPath: string, e: React.MouseEvent) => {
+		e.stopPropagation();
+		try {
+			await ipcService.openFolderInFinder(folderPath);
+		} catch (error) {
+			console.error('Failed to open folder:', error);
+		}
+	};
+
+	const handleOpenPdf = async (test: TestRecord, e: React.MouseEvent) => {
+		e.stopPropagation();
+
+		// Se não tiver pdfPath salvo, tentar construir caminho padrão (compatibilidade)
+		const pdfPath = test.pdfPath || `${test.folderPath}/evidencia-qa.pdf`;
+
+		try {
+			await ipcService.openPdf(pdfPath);
+		} catch (error) {
+			console.error('Failed to open PDF:', error);
+			alert(t('pdfNotFound'));
+		}
+	};
+
 	const formatDate = (isoDate: string): string => {
 		const date = new Date(isoDate);
 		return date.toLocaleDateString('pt-BR', {
@@ -201,29 +224,76 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 									className="relative bg-slate-700/50 rounded-lg p-3 hover:bg-slate-700 transition-colors border border-slate-600 cursor-pointer group"
 									onClick={() => onSelect(test)}
 								>
-									{/* Delete button - top right corner */}
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											handleDelete(test.id);
-										}}
-										className="absolute top-2 right-2 p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded transition-colors opacity-0 group-hover:opacity-100"
-										title={t('deleteTest')}
-									>
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+									{/* Action buttons - top right corner */}
+									<div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+										{/* Open Folder button */}
+										<button
+											onClick={(e) => handleOpenFolder(test.folderPath, e)}
+											className="bg-blue-600 hover:bg-blue-700 p-1 rounded transition-colors shadow-lg"
+											title={t('openFolderInFinder')}
 										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-											/>
-										</svg>
-									</button>
+											<svg
+												className="w-3 h-3"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+												/>
+											</svg>
+										</button>
+
+										{/* Open PDF button - only if PDF exists */}
+										{test.pdfGenerated && (
+											<button
+												onClick={(e) => handleOpenPdf(test, e)}
+												className="bg-green-600 hover:bg-green-700 p-1 rounded transition-colors shadow-lg"
+												title={t('openPdf')}
+											>
+												<svg
+													className="w-3 h-3"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+													/>
+												</svg>
+											</button>
+										)}
+
+										{/* Delete button */}
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												handleDelete(test.id);
+											}}
+											className="bg-red-600 hover:bg-red-700 p-1 rounded transition-colors shadow-lg"
+											title={t('deleteTest')}
+										>
+											<svg
+												className="w-3 h-3"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+												/>
+											</svg>
+										</button>
+									</div>
 
 									{/* Badges */}
 									<div className="flex items-center gap-2 mb-2">
@@ -234,8 +304,6 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 											</span>
 										)}
 									</div>
-
-									{/* Test Info - Compact 2 columns */}
 									<div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
 										<div>
 											<span className="text-slate-400">{t('system')}:</span>{' '}

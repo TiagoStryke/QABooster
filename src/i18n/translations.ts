@@ -55,6 +55,8 @@ export const translations = {
 		continueTest: 'Continuar Teste',
 		newTest: 'Novo Teste',
 		openFolderInFinder: 'Abrir pasta no Finder',
+		openPdf: 'Abrir PDF',
+		pdfNotFound: 'PDF não encontrado',
 
 		// Test Selector
 		selectTest: 'Selecionar Teste',
@@ -276,6 +278,8 @@ export const translations = {
 		continueTest: 'Continue Test',
 		newTest: 'New Test',
 		openFolderInFinder: 'Open folder in Finder',
+		openPdf: 'Open PDF',
+		pdfNotFound: 'PDF not found',
 
 		// Test Selector
 		selectTest: 'Select Test',
