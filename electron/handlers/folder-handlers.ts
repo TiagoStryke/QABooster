@@ -64,10 +64,47 @@ export function registerFolderHandlers(
 	ipcMain.handle('open-folder-in-finder', async (_, folderPath) => {
 		try {
 			const { shell } = require('electron');
-			await shell.openPath(folderPath);
+			const fs = require('fs');
+
+			console.log('[open-folder-in-finder] Attempting to open:', folderPath);
+
+			// Check if folder exists
+			if (!fs.existsSync(folderPath)) {
+				console.error(
+					'[open-folder-in-finder] Folder does not exist:',
+					folderPath,
+				);
+				return {
+					success: false,
+					error: `Folder not found: ${folderPath}`,
+				};
+			}
+
+			// Check if it's a directory
+			const stats = fs.statSync(folderPath);
+			if (!stats.isDirectory()) {
+				console.error(
+					'[open-folder-in-finder] Path is not a directory:',
+					folderPath,
+				);
+				return {
+					success: false,
+					error: `Path is not a directory: ${folderPath}`,
+				};
+			}
+
+			console.log('[open-folder-in-finder] Opening folder...');
+			const result = await shell.openPath(folderPath);
+
+			if (result) {
+				console.error('[open-folder-in-finder] Failed to open:', result);
+				return { success: false, error: result };
+			}
+
+			console.log('[open-folder-in-finder] ✅ Successfully opened folder');
 			return { success: true };
 		} catch (error) {
-			console.error('Error opening folder:', error);
+			console.error('[open-folder-in-finder] Error:', error);
 			return { success: false, error: String(error) };
 		}
 	});

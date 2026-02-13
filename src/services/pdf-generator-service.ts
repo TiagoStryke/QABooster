@@ -99,25 +99,57 @@ export async function generateTestPDF({
 		// Header data com ícone de status
 		const testResultInfo = getTestResultInfo(headerData.testName);
 
-		// Construir valor do testType (incluir link se for Card)
-		let testTypeDisplay = '-';
-		if (headerData.testType && headerData.testTypeValue) {
-			const typeLabel =
-				headerData.testType === 'card'
-					? 'Card'
-					: headerData.testType === 'regressivo'
-						? 'Regressivo'
-						: headerData.testType === 'gmud'
-							? 'GMUD'
-							: 'Outro';
-			testTypeDisplay = `${typeLabel}: ${headerData.testTypeValue}`;
+		// Função para validar se é um card/issue do Jira (CDSUST-XXXX ou CDAPP-XXXX)
+		// Aceita maiúsculas e minúsculas
+		const isJiraIssue = (value: string): boolean => {
+			return /^(CDSUST|CDAPP)-\d+$/i.test(value.trim());
+		};
 
-			// Se for Card, adicionar link do Atlassian
-			if (headerData.testType === 'card') {
-				testTypeDisplay += ` (https://smiles.atlassian.net/browse/${headerData.testTypeValue})`;
+		// Função para normalizar issue do Jira (forçar CDSUST/CDAPP em maiúsculo)
+		const normalizeJiraIssue = (value: string): string => {
+			return value
+				.trim()
+				.replace(/^(cdsust|cdapp)(-\d+)$/i, (_, prefix, number) => {
+					return prefix.toUpperCase() + number;
+				});
+		};
+
+		// Construir valor do testType (sem incluir URL no texto)
+		let testTypeDisplay = '-';
+		let testTypeHasLink = false;
+		let testTypeLinkUrl = '';
+
+		if (headerData.testType && headerData.testTypeValue) {
+			const value = headerData.testTypeValue.trim();
+
+			// Tipo Progressivo ou Regressivo: validar padrão e criar link
+			if (
+				headerData.testType === 'progressivo' ||
+				headerData.testType === 'regressivo'
+			) {
+				const typeLabel =
+					headerData.testType === 'progressivo' ? 'Progressivo' : 'Regressivo';
+
+				if (isJiraIssue(value)) {
+					const normalizedValue = normalizeJiraIssue(value);
+					testTypeDisplay = `${typeLabel}: ${normalizedValue}`;
+					testTypeHasLink = true;
+					testTypeLinkUrl = `https://smiles.atlassian.net/browse/${normalizedValue}`;
+				} else {
+					testTypeDisplay = `${typeLabel}: ${value}`;
+				}
+			}
+			// Tipo GMUD: mostrar tipo + valor, sem link
+			else if (headerData.testType === 'gmud') {
+				testTypeDisplay = `GMUD: ${value}`;
+			}
+			// Tipo Outro: mostrar apenas o valor, sem o tipo
+			else if (headerData.testType === 'outro') {
+				testTypeDisplay = value;
 			}
 		}
 
+		// Construir headerItems (não inclui linha de Tipo de Teste se for 'outro')
 		const headerItems = [
 			{
 				label: `${t('testResult')}:`,
@@ -125,16 +157,30 @@ export async function generateTestPDF({
 				icon: testResultInfo.icon,
 			},
 			{ label: `${t('system')}:`, value: headerData.system || '-' },
-			{ label: `${t('testType')}:`, value: testTypeDisplay },
-			{ label: `${t('testCycle')}:`, value: headerData.testCycle || '-' },
-			{ label: `${t('testCase')}:`, value: headerData.testCase || '-' },
+		];
+
+		// Adicionar linha de Tipo de Teste apenas se NÃO for "outro"
+		if (headerData.testType !== 'outro') {
+			headerItems.push({ label: `${t('testType')}:`, value: testTypeDisplay });
+		}
+
+		// Continuar com os demais campos
+		headerItems.push(
+			{
+				label: `${t('testCycle')}:`,
+				value: headerData.testCycle ? headerData.testCycle.toUpperCase() : '-',
+			},
+			{
+				label: `${t('testCase')}:`,
+				value: headerData.testCase ? headerData.testCase.toUpperCase() : '-',
+			},
 			{ label: `${t('executor')}:`, value: executorName || '-' },
 			{
 				label: `${t('executionDateTime')}:`,
 				value:
 					headerData.executionDateTime || new Date().toLocaleString('pt-BR'),
 			},
-		];
+		);
 
 		// Calcular larguras para centralização
 		pdf.setFont('helvetica', 'bold');
@@ -175,8 +221,34 @@ export async function generateTestPDF({
 			pdf.setFont('helvetica', 'bold');
 			pdf.text(item.label, tableStartX, yPos);
 			pdf.setFont('helvetica', 'normal');
-			pdf.text(item.value, tableStartX + maxLabelWidth + spacing, yPos);
 
+			// Se for o testType e tem link, criar link clicável (azul)
+			if (item.label === `${t('testType')}:` && testTypeHasLink) {
+				// Separar o label do valor linkável
+				const parts = testTypeDisplay.split(': ');
+				if (parts.length === 2) {
+					const typeLabel = parts[0] + ': '; // "Progressivo: " ou "Regressivo: "
+					const linkValue = parts[1]; // "CDSUST-3444"
+
+					const valuePosX = tableStartX + maxLabelWidth + spacing;
+
+					// Renderizar label do tipo (sem link)
+					pdf.setTextColor(0, 0, 0);
+					pdf.text(typeLabel, valuePosX, yPos);
+
+					// Renderizar valor com link (azul e sublinhado)
+					const labelWidth = pdf.getTextWidth(typeLabel);
+					pdf.setTextColor(0, 0, 255); // Azul
+					pdf.textWithLink(linkValue, valuePosX + labelWidth, yPos, {
+						url: testTypeLinkUrl,
+					});
+					pdf.setTextColor(0, 0, 0); // Voltar para preto
+				} else {
+					pdf.text(item.value, tableStartX + maxLabelWidth + spacing, yPos);
+				}
+			} else {
+				pdf.text(item.value, tableStartX + maxLabelWidth + spacing, yPos);
+			}
 			// Adicionar ícone se existir
 			if (item.icon) {
 				const iconSize = 5;

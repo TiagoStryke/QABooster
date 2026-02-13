@@ -405,10 +405,78 @@ export function updateScreenshot(
 // ====================================================================
 
 /**
+ * Sync test screenshots from physical folder to database
+ * Useful for recovering tests that have files but lost DB sync
+ */
+export function syncTestScreenshots(testId: string): boolean {
+	const database = loadDatabase();
+	const test = database.tests.find((t) => t.id === testId);
+
+	if (!test) {
+		console.error('[DB] ❌ Test not found:', testId);
+		return false;
+	}
+
+	if (!fs.existsSync(test.folderPath)) {
+		console.warn('[DB] ⚠️ Folder does not exist for sync:', test.folderPath);
+		return false;
+	}
+
+	try {
+		const files = fs.readdirSync(test.folderPath);
+		const imageFiles = files.filter(
+			(file) =>
+				file.endsWith('.png') ||
+				file.endsWith('.jpg') ||
+				file.endsWith('.jpeg'),
+		);
+
+		// Get existing screenshot filenames from DB
+		const existingFilenames = new Set(test.screenshots.map((s) => s.filename));
+
+		// Add missing screenshots to DB
+		let addedCount = 0;
+		for (const filename of imageFiles) {
+			if (!existingFilenames.has(filename)) {
+				const screenshot: ScreenshotData = {
+					filename,
+					capturedAt: new Date().toISOString(), // Use current time since we don't know original
+					edited: false, // Assume not edited
+				};
+				test.screenshots.push(screenshot);
+				addedCount++;
+				console.log(`[DB] 🔄 Synced missing screenshot: ${filename}`);
+			}
+		}
+
+		// Check if PDF exists
+		const hasPdf = files.some((file) => file.endsWith('.pdf'));
+		if (hasPdf && !test.pdfGenerated) {
+			test.pdfGenerated = true;
+			test.pdfPath = path.join(test.folderPath, 'evidencia-qa.pdf');
+			console.log('[DB] 🔄 Synced PDF status');
+		}
+
+		if (addedCount > 0 || (hasPdf && !test.pdfGenerated)) {
+			test.updatedAt = new Date().toISOString();
+			saveDatabase(database);
+			console.log(
+				`[DB] ✅ Sync complete for ${testId}: ${addedCount} screenshots added`,
+			);
+		}
+
+		return true;
+	} catch (error) {
+		console.error(`[DB] ❌ Error syncing test ${testId}:`, error);
+		return false;
+	}
+}
+
+/**
  * Check if a test is empty (no screenshots, empty headers, no PDF)
  */
 export function isEmptyTest(test: TestRecord): boolean {
-	// Has screenshots? Not empty
+	// Has screenshots in database? Not empty
 	if (test.screenshots && test.screenshots.length > 0) {
 		return false;
 	}
@@ -416,6 +484,32 @@ export function isEmptyTest(test: TestRecord): boolean {
 	// Has PDF? Not empty
 	if (test.pdfGenerated) {
 		return false;
+	}
+
+	// Check if folder exists and has files (prevents deleting tests with screenshots that weren't synced to DB)
+	if (fs.existsSync(test.folderPath)) {
+		try {
+			const files = fs.readdirSync(test.folderPath);
+			const hasFiles = files.some(
+				(file) =>
+					file.endsWith('.png') ||
+					file.endsWith('.jpg') ||
+					file.endsWith('.jpeg') ||
+					file.endsWith('.pdf'),
+			);
+
+			// If physical folder has images/PDFs, not empty
+			if (hasFiles) {
+				console.log(
+					`[DB] ⚠️ Test ${test.id} has files in folder but not in DB - NOT deleting`,
+				);
+				return false;
+			}
+		} catch (error) {
+			console.error(`[DB] Error checking folder for test ${test.id}:`, error);
+			// If we can't check, assume NOT empty (safer)
+			return false;
+		}
 	}
 
 	// Check if all header fields are empty
@@ -432,7 +526,7 @@ export function isEmptyTest(test: TestRecord): boolean {
 		return false;
 	}
 
-	// No screenshots, no PDF, no header data = empty test
+	// No screenshots, no PDF, no files in folder, no header data = empty test
 	return true;
 }
 
@@ -448,7 +542,7 @@ export function cleanupEmptyTests(): {
 
 	const emptyTests = database.tests.filter((t) => isEmptyTest(t));
 
-	console.log(`[DB] 🧹 Cleaning up ${emptyTests.length} empty tests...`);
+	console.log(`[DB] 🧹 Found ${emptyTests.length} empty tests to clean up...`);
 
 	const errors: string[] = [];
 	let deletedCount = 0;
@@ -474,11 +568,24 @@ export function cleanupEmptyTests(): {
  */
 export function cleanupOldTests(): { deletedCount: number; errors: string[] } {
 	const database = loadDatabase();
+
+	// If autoDeleteAfterDays is 0 or negative, never delete (disabled)
+	if (database.settings.autoDeleteAfterDays <= 0) {
+		console.log('[DB] 🔒 Auto-delete disabled (autoDeleteAfterDays = 0)');
+		return { deletedCount: 0, errors: [] };
+	}
+
 	const cutoffDate = new Date();
 	cutoffDate.setDate(
 		cutoffDate.getDate() - database.settings.autoDeleteAfterDays,
 	);
 	const cutoffTime = cutoffDate.getTime();
+
+	console.log(
+		`[DB] 🧹 Auto-delete after ${database.settings.autoDeleteAfterDays} days`,
+	);
+	console.log(`[DB] 📅 Cutoff date: ${cutoffDate.toISOString()}`);
+	console.log(`[DB] 📊 Total tests in database: ${database.tests.length}`);
 
 	const oldTests = database.tests.filter(
 		(t) =>
@@ -486,7 +593,9 @@ export function cleanupOldTests(): { deletedCount: number; errors: string[] } {
 			new Date(t.updatedAt).getTime() < cutoffTime,
 	);
 
-	console.log(`[DB] 🧹 Cleaning up ${oldTests.length} old tests...`);
+	console.log(
+		`[DB] 🧹 Found ${oldTests.length} old COMPLETED tests to clean up...`,
+	);
 
 	const errors: string[] = [];
 	let deletedCount = 0;

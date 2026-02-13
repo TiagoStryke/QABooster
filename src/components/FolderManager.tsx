@@ -78,7 +78,18 @@ export default function FolderManager({
 
 	const handleOpenFolder = async () => {
 		if (currentFolder) {
-			await ipcService.openFolderInFinder(currentFolder);
+			try {
+				console.log('[FolderManager] Opening folder:', currentFolder);
+				const result = await ipcService.openFolderInFinder(currentFolder);
+
+				if (!result.success) {
+					console.error('[FolderManager] Failed to open folder:', result.error);
+					alert(`${t('errorOpeningFolder')}: ${result.error}`);
+				}
+			} catch (error) {
+				console.error('[FolderManager] Error opening folder:', error);
+				alert(`${t('errorOpeningFolder')}: ${error}`);
+			}
 		}
 	};
 

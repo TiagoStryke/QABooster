@@ -52,8 +52,11 @@ class IpcService {
 	/**
 	 * Open folder in system file explorer (Finder on macOS)
 	 * @param folderPath - Path to open
+	 * @returns Object with success status and optional error message
 	 */
-	async openFolderInFinder(folderPath: string): Promise<void> {
+	async openFolderInFinder(
+		folderPath: string,
+	): Promise<{ success: boolean; error?: string }> {
 		return ipcRenderer.invoke('open-folder-in-finder', folderPath);
 	}
 

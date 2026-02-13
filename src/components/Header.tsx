@@ -23,8 +23,8 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 	// Placeholder dinâmico baseado no tipo selecionado
 	const testTypePlaceholder = useMemo(() => {
 		switch (headerData.testType) {
-			case 'card':
-				return t('testTypeCardPlaceholder');
+			case 'progressivo':
+				return t('testTypeProgressivoPlaceholder');
 			case 'regressivo':
 				return t('testTypeRegressivoPlaceholder');
 			case 'gmud':
@@ -155,7 +155,7 @@ export default function Header({ headerData, setHeaderData }: HeaderProps) {
 							}
 						>
 							<option value="">{t('selectOption')}</option>
-							<option value="card">{t('card')}</option>
+							<option value="progressivo">{t('progressivo')}</option>
 							<option value="regressivo">{t('regressivo')}</option>
 							<option value="gmud">{t('gmud')}</option>
 							<option value="outro">{t('outro')}</option>

@@ -30,10 +30,6 @@ import { registerTestDatabaseHandlers } from './handlers/test-database-handlers'
 
 // Services
 import { registerWindowHandlers } from './handlers/window-handlers';
-import {
-    cleanupEmptyTests,
-    cleanupOldTests,
-} from './services/test-database-service';
 
 // Services
 import {
@@ -442,26 +438,9 @@ app.whenReady().then(() => {
 	// Register test database handlers
 	registerTestDatabaseHandlers();
 
-	// Run cleanup on startup
-	console.log('[STARTUP] Running cleanup on app startup...');
-
-	// 1. Delete empty tests (no screenshots, empty headers, no PDF)
-	const emptyCleanupResult = cleanupEmptyTests();
-	console.log(
-		`[STARTUP] Empty cleanup: ${emptyCleanupResult.deletedCount} tests deleted`,
-	);
-	if (emptyCleanupResult.errors.length > 0) {
-		console.error('[STARTUP] Empty cleanup errors:', emptyCleanupResult.errors);
-	}
-
-	// 2. Delete old completed tests
-	const oldCleanupResult = cleanupOldTests();
-	console.log(
-		`[STARTUP] Old tests cleanup: ${oldCleanupResult.deletedCount} tests deleted`,
-	);
-	if (oldCleanupResult.errors.length > 0) {
-		console.error('[STARTUP] Old cleanup errors:', oldCleanupResult.errors);
-	}
+	// NOTE: Cleanups disabled on startup to prevent accidental deletions
+	// Users can manually run cleanup from Settings
+	console.log('[STARTUP] Auto-cleanup disabled. Run manually from Settings.');
 
 	// NOW create windows (after handlers are registered)
 	mainWindow = createMainWindow();

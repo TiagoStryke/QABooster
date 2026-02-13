@@ -120,9 +120,16 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 	const handleOpenFolder = async (folderPath: string, e: React.MouseEvent) => {
 		e.stopPropagation();
 		try {
-			await ipcService.openFolderInFinder(folderPath);
+			console.log('[TestSelector] Opening folder:', folderPath);
+			const result = await ipcService.openFolderInFinder(folderPath);
+
+			if (!result.success) {
+				console.error('[TestSelector] Failed to open folder:', result.error);
+				alert(`${t('errorOpeningFolder')}: ${result.error}`);
+			}
 		} catch (error) {
-			console.error('Failed to open folder:', error);
+			console.error('[TestSelector] Error opening folder:', error);
+			alert(`${t('errorOpeningFolder')}: ${error}`);
 		}
 	};
 
@@ -164,6 +171,30 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 				{t('inProgress')}
 			</span>
 		);
+	};
+
+	const getTestTypeDisplay = (testType: string, testTypeValue: string) => {
+		if (!testType || !testTypeValue) return '-';
+
+		let typeLabel = '';
+		switch (testType) {
+			case 'progressivo':
+				typeLabel = t('progressivo');
+				break;
+			case 'regressivo':
+				typeLabel = t('regressivo');
+				break;
+			case 'gmud':
+				typeLabel = t('gmud');
+				break;
+			case 'outro':
+				// Tipo "Outro" não mostra o label, só o valor
+				return testTypeValue;
+			default:
+				typeLabel = testType;
+		}
+
+		return `${typeLabel}: ${testTypeValue}`;
 	};
 
 	return (
@@ -314,7 +345,10 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 										<div>
 											<span className="text-slate-400">{t('testType')}:</span>{' '}
 											<span className="text-slate-200 font-medium">
-												{test.headerData.testTypeValue || '-'}
+												{getTestTypeDisplay(
+													test.headerData.testType,
+													test.headerData.testTypeValue,
+												)}
 											</span>
 										</div>
 										<div>

@@ -5,7 +5,7 @@
 /**
  * Test type options
  */
-export type TestType = 'card' | 'regressivo' | 'gmud' | 'outro' | '';
+export type TestType = 'progressivo' | 'regressivo' | 'gmud' | 'outro' | '';
 
 /**
  * Application settings (persisted)

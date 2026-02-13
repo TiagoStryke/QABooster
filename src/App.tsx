@@ -136,9 +136,6 @@ function App() {
 
 	const handleLoadTest = async (test: TestRecord) => {
 		try {
-			// Clean up empty tests before loading (removes auto-created tests that were never used)
-			await ipcService.cleanupEmptyTests();
-
 			// Set header data from test
 			setHeaderData(test.headerData);
 

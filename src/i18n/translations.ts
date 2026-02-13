@@ -12,12 +12,13 @@ export const translations = {
 		testCase: 'Caso de Teste',
 		testType: 'Tipo de Teste',
 		testTypeValue: 'Valor',
-		card: 'Card',
+		progressivo: 'Progressivo',
 		regressivo: 'Regressivo',
 		gmud: 'GMUD',
 		outro: 'Outro',
+		testTypeProgressivoPlaceholder: 'Ex: CDSUST-4535 ou CDAPP-1234',
 		testTypeCardPlaceholder: 'Ex: CDSUST-4535',
-		testTypeRegressivoPlaceholder: 'Ex: Regressivo B2B - R1.2',
+		testTypeRegressivoPlaceholder: 'Ex: CDSUST-4535 ou Regressivo B2B - R1.2',
 		testTypeGmudPlaceholder: 'Ex: GMUD NBV',
 		testTypeOutroPlaceholder: 'Descreva o tipo de teste',
 		executor: 'Executor',
@@ -216,6 +217,7 @@ export const translations = {
 		configureRootFolderFirst:
 			'Configure a pasta raiz nas configurações antes de criar um novo teste.',
 		errorCreatingTest: 'Erro ao criar novo teste. Por favor, tente novamente.',
+		errorOpeningFolder: 'Erro ao abrir pasta',
 		saveEditsBeforePDF:
 			'Por favor, salve as edições na imagem antes de gerar o PDF.',
 
@@ -235,12 +237,13 @@ export const translations = {
 		testCase: 'Test Case',
 		testType: 'Test Type',
 		testTypeValue: 'Value',
-		card: 'Card',
+		progressivo: 'Progressive',
 		regressivo: 'Regressive',
 		gmud: 'GMUD',
 		outro: 'Other',
+		testTypeProgressivoPlaceholder: 'Ex: CDSUST-4535 or CDAPP-1234',
 		testTypeCardPlaceholder: 'Ex: CDSUST-4535',
-		testTypeRegressivoPlaceholder: 'Ex: Regressive B2B - R1.2',
+		testTypeRegressivoPlaceholder: 'Ex: CDSUST-4535 or Regression B2B - R1.2',
 		testTypeGmudPlaceholder: 'Ex: GMUD NBV',
 		testTypeOutroPlaceholder: 'Describe the test type',
 		executor: 'Executor',
@@ -437,6 +440,7 @@ export const translations = {
 		configureRootFolderFirst:
 			'Please configure the root folder in settings before creating a new test.',
 		errorCreatingTest: 'Error creating new test. Please try again.',
+		errorOpeningFolder: 'Error opening folder',
 		saveEditsBeforePDF:
 			'Please save your image edits before generating the PDF.',
 
