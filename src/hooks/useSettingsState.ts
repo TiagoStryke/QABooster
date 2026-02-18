@@ -135,7 +135,7 @@ export function useSettingsState() {
 	};
 
 	const handleCleanupNow = async () => {
-		if (autoDeleteAfterDays === 0) return;
+		if (autoDeleteAfterDays === 0) return null;
 
 		setCleanupInProgress(true);
 		try {
@@ -143,6 +143,21 @@ export function useSettingsState() {
 			return result;
 		} finally {
 			setCleanupInProgress(false);
+		}
+	};
+
+	/**
+	 * Mark a test as old (for testing cleanup)
+	 * @param testId - Test UUID
+	 * @param daysAgo - How many days ago (default: 100)
+	 */
+	const handleMarkTestAsOld = async (testId: string, daysAgo: number = 100) => {
+		try {
+			const success = await ipcService.markTestAsOld(testId, daysAgo);
+			return success;
+		} catch (error) {
+			console.error('Error marking test as old:', error);
+			return false;
 		}
 	};
 
@@ -235,6 +250,7 @@ export function useSettingsState() {
 		// Cleanup handlers
 		handleAutoDeleteDaysChange,
 		handleCleanupNow,
+		handleMarkTestAsOld,
 
 		// Shortcuts
 		shortcutFull,

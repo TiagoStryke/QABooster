@@ -208,6 +208,17 @@ export const translations = {
 			'Nenhum teste foi encontrado nesta pasta.\n\nPor favor, crie um novo teste clicando em "+ Novo Teste".',
 		pdfFilename: 'Evidencia_',
 		confirmUnsavedTitle: 'Alterações não salvas',
+
+		// Cleanup Testing
+		runCleanupNow: 'Executar Limpeza Agora (Teste)',
+		cleanupSuccess: 'Limpeza executada!',
+		cleanupDeleted: 'testes deletados',
+		cleanupNoTests: 'Nenhum teste antigo encontrado',
+		cleanupError: 'Erro ao executar limpeza',
+		cleanupConfirm:
+			'Isso vai deletar todos os testes COMPLETOS com mais de {days} dias. Continuar?',
+		cleanupDisabled:
+			'Limpeza automática desabilitada (0 dias). Configure os dias antes de executar.',
 		confirmUnsavedMessage:
 			'Deseja salvar as alterações antes de fechar o editor?',
 		saveButton: 'Salvar',
@@ -431,6 +442,16 @@ export const translations = {
 			'No test was found in this folder.\n\nPlease create a new test by clicking "+ New Test".',
 		pdfFilename: 'Evidence_',
 		confirmUnsavedTitle: 'Unsaved Changes',
+		// Cleanup Testing
+		runCleanupNow: 'Run Cleanup Now (Test)',
+		cleanupSuccess: 'Cleanup executed!',
+		cleanupDeleted: 'tests deleted',
+		cleanupNoTests: 'No old tests found',
+		cleanupError: 'Error executing cleanup',
+		cleanupConfirm:
+			'This will delete all COMPLETED tests older than {days} days. Continue?',
+		cleanupDisabled:
+			'Auto-cleanup disabled (0 days). Configure days before running.',
 		confirmUnsavedMessage:
 			'Do you want to save the changes before closing the editor?',
 		saveButton: 'Save',

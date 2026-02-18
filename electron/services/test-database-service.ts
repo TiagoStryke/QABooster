@@ -1,4 +1,16 @@
 /**
+ * Cria um banco de dados vazio
+ */
+function createEmptyDatabase(): TestDatabase {
+	return {
+		tests: [],
+		settings: {
+			autoDeleteAfterDays: 90,
+			lastCleanup: new Date().toISOString(),
+		},
+	};
+}
+/**
  * Test Database Service
  *
  * Manages centralized test database for QA Booster
@@ -19,13 +31,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    HeaderData,
-    ScreenshotData,
-    TestDatabase,
-    TestRecord,
-    TestSearchQuery,
-    TestStatus,
-    TestValidation,
+	HeaderData,
+	ScreenshotData,
+	TestDatabase,
+	TestRecord,
+	TestSearchQuery,
+	TestStatus,
+	TestValidation,
 } from '../interfaces/test-database';
 
 const DATABASE_FILENAME = 'test-database.json';
@@ -35,19 +47,6 @@ const DATABASE_FILENAME = 'test-database.json';
  */
 function getDatabasePath(): string {
 	return path.join(app.getPath('userData'), DATABASE_FILENAME);
-}
-
-/**
- * Initialize empty database structure
- */
-function createEmptyDatabase(): TestDatabase {
-	return {
-		tests: [],
-		settings: {
-			autoDeleteAfterDays: 90,
-			lastCleanup: new Date().toISOString(),
-		},
-	};
 }
 
 /**
@@ -402,169 +401,8 @@ export function updateScreenshot(
 
 // ====================================================================
 // CLEANUP
-// ====================================================================
-
 /**
- * Sync test screenshots from physical folder to database
- * Useful for recovering tests that have files but lost DB sync
- */
-export function syncTestScreenshots(testId: string): boolean {
-	const database = loadDatabase();
-	const test = database.tests.find((t) => t.id === testId);
-
-	if (!test) {
-		console.error('[DB] ❌ Test not found:', testId);
-		return false;
-	}
-
-	if (!fs.existsSync(test.folderPath)) {
-		console.warn('[DB] ⚠️ Folder does not exist for sync:', test.folderPath);
-		return false;
-	}
-
-	try {
-		const files = fs.readdirSync(test.folderPath);
-		const imageFiles = files.filter(
-			(file) =>
-				file.endsWith('.png') ||
-				file.endsWith('.jpg') ||
-				file.endsWith('.jpeg'),
-		);
-
-		// Get existing screenshot filenames from DB
-		const existingFilenames = new Set(test.screenshots.map((s) => s.filename));
-
-		// Add missing screenshots to DB
-		let addedCount = 0;
-		for (const filename of imageFiles) {
-			if (!existingFilenames.has(filename)) {
-				const screenshot: ScreenshotData = {
-					filename,
-					capturedAt: new Date().toISOString(), // Use current time since we don't know original
-					edited: false, // Assume not edited
-				};
-				test.screenshots.push(screenshot);
-				addedCount++;
-				console.log(`[DB] 🔄 Synced missing screenshot: ${filename}`);
-			}
-		}
-
-		// Check if PDF exists
-		const hasPdf = files.some((file) => file.endsWith('.pdf'));
-		if (hasPdf && !test.pdfGenerated) {
-			test.pdfGenerated = true;
-			test.pdfPath = path.join(test.folderPath, 'evidencia-qa.pdf');
-			console.log('[DB] 🔄 Synced PDF status');
-		}
-
-		if (addedCount > 0 || (hasPdf && !test.pdfGenerated)) {
-			test.updatedAt = new Date().toISOString();
-			saveDatabase(database);
-			console.log(
-				`[DB] ✅ Sync complete for ${testId}: ${addedCount} screenshots added`,
-			);
-		}
-
-		return true;
-	} catch (error) {
-		console.error(`[DB] ❌ Error syncing test ${testId}:`, error);
-		return false;
-	}
-}
-
-/**
- * Check if a test is empty (no screenshots, empty headers, no PDF)
- */
-export function isEmptyTest(test: TestRecord): boolean {
-	// Has screenshots in database? Not empty
-	if (test.screenshots && test.screenshots.length > 0) {
-		return false;
-	}
-
-	// Has PDF? Not empty
-	if (test.pdfGenerated) {
-		return false;
-	}
-
-	// Check if folder exists and has files (prevents deleting tests with screenshots that weren't synced to DB)
-	if (fs.existsSync(test.folderPath)) {
-		try {
-			const files = fs.readdirSync(test.folderPath);
-			const hasFiles = files.some(
-				(file) =>
-					file.endsWith('.png') ||
-					file.endsWith('.jpg') ||
-					file.endsWith('.jpeg') ||
-					file.endsWith('.pdf'),
-			);
-
-			// If physical folder has images/PDFs, not empty
-			if (hasFiles) {
-				console.log(
-					`[DB] ⚠️ Test ${test.id} has files in folder but not in DB - NOT deleting`,
-				);
-				return false;
-			}
-		} catch (error) {
-			console.error(`[DB] Error checking folder for test ${test.id}:`, error);
-			// If we can't check, assume NOT empty (safer)
-			return false;
-		}
-	}
-
-	// Check if all header fields are empty
-	const hasHeaderData =
-		test.headerData.testName ||
-		test.headerData.system ||
-		test.headerData.testCycle ||
-		test.headerData.testCase ||
-		test.headerData.testType ||
-		test.headerData.testTypeValue;
-
-	// If has any header data, not empty
-	if (hasHeaderData) {
-		return false;
-	}
-
-	// No screenshots, no PDF, no files in folder, no header data = empty test
-	return true;
-}
-
-/**
- * Delete empty tests (no screenshots, empty headers, no PDF)
- * Call this to clean up auto-created tests that user never used
- */
-export function cleanupEmptyTests(): {
-	deletedCount: number;
-	errors: string[];
-} {
-	const database = loadDatabase();
-
-	const emptyTests = database.tests.filter((t) => isEmptyTest(t));
-
-	console.log(`[DB] 🧹 Found ${emptyTests.length} empty tests to clean up...`);
-
-	const errors: string[] = [];
-	let deletedCount = 0;
-
-	for (const test of emptyTests) {
-		try {
-			const success = deleteTest(test.id);
-			if (success) {
-				deletedCount++;
-				console.log(`[DB] 🗑️ Deleted empty test: ${test.id}`);
-			}
-		} catch (error) {
-			errors.push(`Failed to delete test ${test.id}: ${error}`);
-		}
-	}
-
-	console.log(`[DB] ✅ Empty cleanup complete: ${deletedCount} tests deleted`);
-	return { deletedCount, errors };
-}
-
-/**
- * Delete old completed tests based on autoDeleteAfterDays setting
+ * Delete old tests based on autoDeleteAfterDays setting (any status)
  */
 export function cleanupOldTests(): { deletedCount: number; errors: string[] } {
 	const database = loadDatabase();
@@ -588,30 +426,50 @@ export function cleanupOldTests(): { deletedCount: number; errors: string[] } {
 	console.log(`[DB] 📊 Total tests in database: ${database.tests.length}`);
 
 	const oldTests = database.tests.filter(
-		(t) =>
-			t.status === TestStatus.COMPLETED &&
-			new Date(t.updatedAt).getTime() < cutoffTime,
+		(t) => new Date(t.updatedAt).getTime() < cutoffTime,
 	);
 
-	console.log(
-		`[DB] 🧹 Found ${oldTests.length} old COMPLETED tests to clean up...`,
-	);
+	console.log(`[DB] 🧹 Found ${oldTests.length} old tests to clean up...`);
+	if (oldTests.length > 0) {
+		console.log(
+			`[DB] 📊 Will keep ${database.tests.length - oldTests.length} recent tests`,
+		);
+	}
 
 	const errors: string[] = [];
 	let deletedCount = 0;
 
 	for (const test of oldTests) {
 		try {
+			// Log details about test being deleted
+			const testDate = new Date(test.updatedAt).toLocaleDateString('pt-BR');
+			const daysSinceUpdate = Math.floor(
+				(Date.now() - new Date(test.updatedAt).getTime()) /
+					(1000 * 60 * 60 * 24),
+			);
+			console.log(
+				`[DB] 🗑️ Deleting test: ${test.id.substring(0, 8)}... (updated ${testDate} - ${daysSinceUpdate} days ago)`,
+			);
+			console.log(`[DB]    Folder: ${test.folderPath}`);
+
 			const success = deleteTest(test.id);
-			if (success) deletedCount++;
+			if (success) {
+				deletedCount++;
+				console.log(`[DB] ✅ Deleted successfully`);
+			} else {
+				console.log(`[DB] ❌ Delete failed`);
+			}
 		} catch (error) {
 			errors.push(`Failed to delete test ${test.id}: ${error}`);
+			console.error(`[DB] ❌ Error deleting test ${test.id}:`, error);
 		}
 	}
 
 	// Update lastCleanup
-	database.settings.lastCleanup = new Date().toISOString();
-	saveDatabase(database);
+	// CRITICAL: Reload database after deletions to avoid overwriting with old data
+	const updatedDatabase = loadDatabase();
+	updatedDatabase.settings.lastCleanup = new Date().toISOString();
+	saveDatabase(updatedDatabase);
 
 	console.log(`[DB] ✅ Cleanup complete: ${deletedCount} tests deleted`);
 	return { deletedCount, errors };
@@ -637,4 +495,36 @@ export function updateDatabaseSettings(settings: {
 
 	saveDatabase(database);
 	console.log('[DB] ✅ Settings updated:', database.settings);
+}
+
+// ====================================================================
+// TEST HELPERS
+// ====================================================================
+
+/**
+ * Mark a test as old (for testing purposes)
+ * Changes the updatedAt date to simulate an old test
+ * @param testId - Test UUID
+ * @param daysAgo - How many days ago to set the date (default: 100)
+ */
+export function markTestAsOld(testId: string, daysAgo: number = 100): boolean {
+	const database = loadDatabase();
+	const test = database.tests.find((t) => t.id === testId);
+
+	if (!test) {
+		console.error('[DB] ❌ Test not found:', testId);
+		return false;
+	}
+
+	// Set updatedAt to X days ago
+	const oldDate = new Date();
+	oldDate.setDate(oldDate.getDate() - daysAgo);
+	test.updatedAt = oldDate.toISOString();
+
+	saveDatabase(database);
+	console.log(
+		`[DB] ✅ Test ${testId.substring(0, 8)}... marked as ${daysAgo} days old`,
+	);
+	console.log(`[DB]    New updatedAt: ${test.updatedAt}`);
+	return true;
 }

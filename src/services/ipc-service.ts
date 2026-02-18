@@ -498,14 +498,13 @@ class IpcService {
 	}
 
 	/**
-	 * Cleanup empty tests (no screenshots, empty headers, no PDF)
-	 * @returns { deletedCount: number, errors: string[] }
+	 * Mark a test as old (for testing cleanup functionality)
+	 * @param testId - Test UUID
+	 * @param daysAgo - How many days ago to set the date (default: 100)
+	 * @returns boolean - success
 	 */
-	async cleanupEmptyTests(): Promise<{
-		deletedCount: number;
-		errors: string[];
-	}> {
-		return ipcRenderer.invoke('db-cleanup-empty-tests');
+	async markTestAsOld(testId: string, daysAgo: number = 100): Promise<boolean> {
+		return ipcRenderer.invoke('db-mark-test-as-old', testId, daysAgo);
 	}
 }
 

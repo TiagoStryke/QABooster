@@ -77,6 +77,7 @@ export default function MainLayout({
 					headerData={headerData}
 					showEditor={showEditor}
 					onLoadTest={onLoadTest}
+					onNewTest={onNewTest}
 				/>
 
 				<button

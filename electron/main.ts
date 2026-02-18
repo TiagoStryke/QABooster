@@ -37,9 +37,10 @@ import {
     captureFullscreenScreenshot,
     captureScreenshotForOverlay,
 } from './services/screenshot-service';
+import { cleanupOldTests } from './services/test-database-service';
 import { getNextScreenshotFilename } from './utils/filename-generator';
 
-// Compatibility aliases for existing code
+// Global state
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -438,9 +439,19 @@ app.whenReady().then(() => {
 	// Register test database handlers
 	registerTestDatabaseHandlers();
 
-	// NOTE: Cleanups disabled on startup to prevent accidental deletions
-	// Users can manually run cleanup from Settings
-	console.log('[STARTUP] Auto-cleanup disabled. Run manually from Settings.');
+	// Run automatic cleanup on startup
+	console.log('[STARTUP] 🧹 Running automatic cleanup...');
+
+	// Delete old COMPLETED tests based on autoDeleteAfterDays setting
+	// This is safe - only deletes COMPLETED tests older than configured days
+	// If autoDeleteAfterDays is 0, nothing will be deleted
+	const oldCleanupResult = cleanupOldTests();
+	console.log(
+		`[STARTUP] Old tests cleaned: ${oldCleanupResult.deletedCount} deleted`,
+	);
+	if (oldCleanupResult.errors.length > 0) {
+		console.error('[STARTUP] Old cleanup errors:', oldCleanupResult.errors);
+	}
 
 	// NOW create windows (after handlers are registered)
 	mainWindow = createMainWindow();

@@ -3,7 +3,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import type { TestRecord } from '../interfaces';
 import { HeaderData } from '../interfaces';
-import { ipcService } from '../services/ipc-service';
 import TestSelector from './TestSelector';
 
 interface FolderManagerProps {
@@ -13,6 +12,7 @@ interface FolderManagerProps {
 	headerData: HeaderData;
 	showEditor: boolean;
 	onLoadTest: (test: TestRecord) => void;
+	onNewTest: () => void;
 }
 
 export default function FolderManager({
@@ -22,6 +22,7 @@ export default function FolderManager({
 	headerData,
 	showEditor,
 	onLoadTest,
+	onNewTest,
 }: FolderManagerProps) {
 	const { t } = useLanguage();
 	const { settings } = useAppSettings();
@@ -50,7 +51,7 @@ export default function FolderManager({
 		onFolderChange(test.folderPath, false);
 	};
 
-	const handleNewTest = async () => {
+	const handleNewTestClick = () => {
 		if (showEditor) {
 			alert(t('closeEditorFirst'));
 			return;
@@ -62,18 +63,8 @@ export default function FolderManager({
 			return;
 		}
 
-		try {
-			// Criar novo teste no banco de dados
-			const newTest = await ipcService.createTest(settings.rootFolder);
-
-			// Carregar o novo teste no UI
-			onLoadTest(newTest);
-
-			console.log('[FolderManager] ✅ New test created:', newTest.id);
-		} catch (error) {
-			console.error('[FolderManager] ❌ Failed to create test:', error);
-			alert(t('errorCreatingTest'));
-		}
+		// Call parent's handleNewTest (only clears UI, doesn't create folder)
+		onNewTest();
 	};
 
 	const handleOpenFolder = async () => {
@@ -116,7 +107,7 @@ export default function FolderManager({
 			</button>
 
 			<button
-				onClick={handleNewTest}
+				onClick={handleNewTestClick}
 				className="btn-primary text-xs py-1.5 px-3"
 			>
 				<svg

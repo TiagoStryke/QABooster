@@ -6,25 +6,24 @@
 
 import { ipcMain } from 'electron';
 import type {
-    HeaderData,
-    ScreenshotData,
-    TestRecord,
-    TestSearchQuery,
+	HeaderData,
+	ScreenshotData,
+	TestRecord,
+	TestSearchQuery,
 } from '../interfaces/test-database';
 import {
-    addScreenshot,
-    cleanupEmptyTests,
-    cleanupOldTests,
-    createTest,
-    deleteTest,
-    getAllTests,
-    getTest,
-    searchTests,
-    updateDatabaseSettings,
-    updateScreenshot,
-    updateTest,
-    validateForPDF,
-    validateForSave,
+	addScreenshot,
+	cleanupOldTests,
+	createTest,
+	deleteTest,
+	getAllTests,
+	getTest,
+	searchTests,
+	updateDatabaseSettings,
+	updateScreenshot,
+	updateTest,
+	validateForPDF,
+	validateForSave,
 } from '../services/test-database-service';
 
 /**
@@ -347,24 +346,31 @@ export function registerTestDatabaseHandlers(): void {
 		},
 	);
 
+	// ====================================================================
+	// TEST HELPERS
+	// ====================================================================
+
 	/**
-	 * Delete empty tests (no screenshots, empty headers, no PDF)
-	 * @returns { deletedCount: number, errors: string[] }
+	 * Mark a test as old (for testing cleanup functionality)
+	 * @param testId - Test UUID
+	 * @param daysAgo - How many days ago (default: 100)
 	 */
 	ipcMain.handle(
-		'db-cleanup-empty-tests',
-		async (): Promise<{ deletedCount: number; errors: string[] }> => {
+		'db-mark-test-as-old',
+		async (_, testId: string, daysAgo: number = 100): Promise<boolean> => {
 			try {
-				console.log('[IPC] db-cleanup-empty-tests');
-				const result = cleanupEmptyTests();
-				console.log(
-					'[IPC] ✅ Empty cleanup complete:',
-					result.deletedCount,
-					'tests deleted',
-				);
-				return result;
+				console.log('[IPC] db-mark-test-as-old:', testId, daysAgo);
+				const { markTestAsOld } =
+					await import('../services/test-database-service');
+				const success = markTestAsOld(testId, daysAgo);
+				if (success) {
+					console.log('[IPC] ✅ Test marked as old');
+				} else {
+					console.log('[IPC] ❌ Failed to mark test as old');
+				}
+				return success;
 			} catch (error) {
-				console.error('[IPC] ❌ Failed to cleanup empty tests:', error);
+				console.error('[IPC] ❌ Failed to mark test as old:', error);
 				throw error;
 			}
 		},
