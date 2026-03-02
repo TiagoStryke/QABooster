@@ -489,11 +489,11 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 		overlayWindow = null;
 	}
 
-	// Captura screenshot para o overlay
+	// Captura screenshot para o overlay (nunca desenha cursor - é só um preview)
 	const screenshot = await captureScreenshotForOverlay(
 		mainWindow!,
 		selectedDisplayId,
-		cursorInScreenshots,
+		false,
 	);
 
 	if (!screenshot) {
