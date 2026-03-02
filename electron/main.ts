@@ -43,6 +43,8 @@ import { getNextScreenshotFilename } from './utils/filename-generator';
 // Global state
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
+let quickOverlayWindows: BrowserWindow[] = [];            // quick print multi-monitor
+let pendingQuickScreenshots: Map<number, Electron.NativeImage> = new Map(); // displayIndex → screenshot
 let tray: Tray | null = null;
 let currentFolder: string = '';
 let currentTestId: string | null = null; // Database test ID (FASE 3)
@@ -552,10 +554,51 @@ async function openAreaSelectorOnly() {
 
 // Wrapper para quick print (sempre copia, nunca salva)
 async function openAreaSelectorQuick() {
-	const originalClipboard = copyToClipboard;
-	copyToClipboard = true; // Força clipboard
-	await openAreaSelector('area-selected-quick', true);
-	copyToClipboard = originalClipboard; // Restaura
+	const displays = screen.getAllDisplays();
+
+	// Com múltiplos monitores: abre overlay em TODOS (estilo Lightshot)
+	if (displays.length > 1) {
+		// Fecha overlays anteriores
+		quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+		quickOverlayWindows = [];
+		pendingQuickScreenshots.clear();
+
+		for (let i = 0; i < displays.length; i++) {
+			const display = displays[i];
+			const { x, y, width, height } = display.bounds;
+
+			const screenshot = await captureScreenshotForOverlay(mainWindow!, i, false);
+			if (!screenshot) continue;
+
+			pendingQuickScreenshots.set(i, screenshot);
+
+			const menuBarHeight = Math.max(0, display.workArea.y - display.bounds.y);
+			const overlayY = y + menuBarHeight;
+			const overlayHeight = height - menuBarHeight;
+			const overlayImage = menuBarHeight > 0
+				? screenshot.crop({ x: 0, y: menuBarHeight, width, height: overlayHeight })
+				: screenshot;
+
+			const win = await createOverlayWindow(
+				x, overlayY, width, overlayHeight,
+				overlayImage.toDataURL(),
+				'area-selected-quick',
+				menuBarHeight,
+				i,
+			);
+
+			quickOverlayWindows.push(win);
+			win.on('closed', () => {
+				quickOverlayWindows = quickOverlayWindows.filter((w) => w !== win);
+			});
+		}
+	} else {
+		// Monitor único: usa fluxo normal
+		const originalClipboard = copyToClipboard;
+		copyToClipboard = true;
+		await openAreaSelector('area-selected-quick', true);
+		copyToClipboard = originalClipboard;
+	}
 }
 
 // IPC handler to open area selector
@@ -638,23 +681,36 @@ ipcMain.on('area-selected-only', (_, area) => {
 
 // Handler para quick print (sempre clipboard, nunca salva)
 ipcMain.on('area-selected-quick', (_, area) => {
-	// Fecha o overlay
+	// Fecha TODOS os overlays do quick print (multi-monitor)
+	quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+	quickOverlayWindows = [];
+
+	// Fecha overlay único (monitor único)
 	if (overlayWindow) {
 		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;
 	}
 
-	// Apenas copia para clipboard, NÃO salva arquivo
-	if (pendingScreenshot) {
-		const cropped = pendingScreenshot.crop(area);
+	// Usa o screenshot do display correto (multi-monitor) ou pendingScreenshot (monitor único)
+	const displayIndex: number = area.displayIndex ?? 0;
+	const screenshot = pendingQuickScreenshots.get(displayIndex) ?? pendingScreenshot;
+
+	if (screenshot) {
+		const cropped = screenshot.crop({ x: area.x, y: area.y, width: area.width, height: area.height });
 		clipboard.writeImage(cropped);
 		mainWindow?.webContents.send('trigger-screenshot-flash');
 	}
 
+	pendingQuickScreenshots.clear();
 	pendingScreenshot = null;
 });
 
 ipcMain.on('area-selection-cancelled', () => {
+	// Fecha overlays multi-monitor do quick print
+	quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+	quickOverlayWindows = [];
+	pendingQuickScreenshots.clear();
+
 	if (overlayWindow) {
 		closeOverlayWindow(overlayWindow);
 		overlayWindow = null;

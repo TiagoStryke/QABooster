@@ -13,6 +13,7 @@ export async function createOverlayWindow(
 	screenshotDataURL: string,
 	eventName: string,
 	menuBarOffset: number = 0,
+	displayIndex: number = 0,
 ): Promise<BrowserWindow> {
 	const overlayWindow = new BrowserWindow(
 		getOverlayWindowConfig(x, y, width, height),
@@ -31,13 +32,12 @@ export async function createOverlayWindow(
 
 	await overlayWindow.loadFile(htmlPath);
 
-	// Inject screenshot, event name and menuBarOffset
-	// menuBarOffset é adicionado ao Y retornado para mapear corretamente
-	// para as coordenadas do screenshot completo (que inclui a barra)
+	// Inject screenshot, event name, menuBarOffset and displayIndex
 	await overlayWindow.webContents.executeJavaScript(`
 		document.getElementById('screenshot').src = '${screenshotDataURL}';
 		window.eventName = '${eventName}';
 		window.menuBarOffset = ${menuBarOffset};
+		window.displayIndex = ${displayIndex};
 	`);
 
 	// Show immediately without ready-to-show to avoid animation

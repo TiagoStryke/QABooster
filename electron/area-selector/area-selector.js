@@ -148,6 +148,7 @@ confirmBtn.addEventListener('click', () => {
 		y: y + (window.menuBarOffset || 0),
 		width,
 		height,
+		displayIndex: window.displayIndex || 0,
 	});
 });
 
