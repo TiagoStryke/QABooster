@@ -5,6 +5,15 @@ export default function HelpTips() {
 	const { t } = useLanguage();
 	const [isOpen, setIsOpen] = useState(false);
 
+	const sections = [
+		{ icon: '📸', title: t('helpCapture'), text: t('helpCaptureText') },
+		{ icon: '📐', title: t('helpFixedArea'), text: t('helpFixedAreaText') },
+		{ icon: '🗂️', title: t('helpTestFlow'), text: t('helpTestFlowText') },
+		{ icon: '✏️', title: t('helpEditor'), text: t('helpEditorText') },
+		{ icon: '📋', title: t('helpNotes'), text: t('helpNotesText') },
+		{ icon: '📄', title: t('helpPDF'), text: t('helpPDFText') },
+	];
+
 	return (
 		<div className="relative">
 			<button
@@ -28,7 +37,7 @@ export default function HelpTips() {
 			</button>
 
 			{isOpen && (
-				<div className="absolute right-0 top-12 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 p-3">
+				<div className="absolute right-0 top-12 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 p-3 max-h-[80vh] overflow-y-auto">
 					<div className="flex items-center justify-between mb-2">
 						<h3 className="text-sm font-semibold text-primary-400 flex items-center gap-1.5">
 							<svg
@@ -44,7 +53,7 @@ export default function HelpTips() {
 									d="M13 10V3L4 14h7v7l9-11h-7z"
 								/>
 							</svg>
-							Como Usar
+							{t('howToUse')}
 						</h3>
 						<button
 							onClick={() => setIsOpen(false)}
@@ -67,31 +76,14 @@ export default function HelpTips() {
 					</div>
 
 					<div className="space-y-2 text-slate-300">
-						<div className="bg-slate-900 p-2 rounded">
-							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								⚡ {t('quickStart')}
-							</h4>
-							<p className="text-[11px]">{t('quickStartText')}</p>
-						</div>
-
-						<div className="bg-slate-900 p-2 rounded">
-							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								📸 {t('capture')}
-							</h4>
-							<p className="text-[11px]">{t('captureText')} </p>
-						</div>
-						<div className="bg-slate-900 p-2 rounded">
-							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								✏️ {t('edition')}
-							</h4>
-							<p className="text-[11px]">{t('editionText')} </p>
-						</div>
-						<div className="bg-slate-900 p-2 rounded">
-							<h4 className="text-xs font-semibold text-primary-300 mb-1">
-								📄 {t('pdfGeneration')}
-							</h4>
-							<p className="text-[11px]">{t('pdfText')}</p>
-						</div>
+						{sections.map((section) => (
+							<div key={section.title} className="bg-slate-900 p-2 rounded">
+								<h4 className="text-xs font-semibold text-primary-300 mb-1">
+									{section.icon} {section.title}
+								</h4>
+								<p className="text-[11px]">{section.text}</p>
+							</div>
+						))}
 					</div>
 				</div>
 			)}

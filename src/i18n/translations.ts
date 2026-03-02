@@ -75,18 +75,18 @@ export const translations = {
 		deleteTest: 'Deletar Teste',
 
 		// Cleanup System
-		cleanupSettings: 'Limpeza Automática',
-		autoDeleteAfterDays: 'Auto-deletar testes após (dias)',
+		cleanupSettings: 'Limpeza de Testes',
+		autoDeleteAfterDays: 'Deletar testes mais antigos que (dias)',
 		autoDeleteAfterDaysDesc:
-			'Testes concluídos serão deletados automaticamente após este período',
-		neverDelete: 'Nunca deletar',
-		cleanupNow: 'Limpar Agora',
-		cleanupInProgress: 'Limpeza em andamento...',
+			'Define quantos dias atrás um teste deve ter para ser deletado ao clicar em "Deletar"',
+		neverDelete: 'Digite o número de dias para habilitar a limpeza',
+		cleanupNow: 'Deletar Testes Antigos',
+		cleanupInProgress: 'Deletando...',
 		cleanupComplete: 'Limpeza concluída',
 		testsDeleted: 'teste(s) deletado(s)',
 		noTestsToDelete: 'Nenhum teste antigo para deletar',
 		confirmCleanup:
-			'Tem certeza que deseja deletar todos os testes concluídos com mais de {days} dias?',
+			'Tem certeza? Todos os testes (e suas pastas) com mais de {days} dias serão permanentemente deletados.',
 
 		// Image Gallery
 		imageGallery: 'Galeria de Imagens',
@@ -164,18 +164,25 @@ export const translations = {
 
 		// Help
 		help: 'Ajuda',
-		quickStart: 'Início Rápido',
-		quickStartText:
-			'Use os atalhos de teclado para capturar screenshots rapidamente. Configure seus atalhos preferidos nas configurações.',
-		capture: 'Captura',
-		captureText:
-			'Tela Cheia: Captura todo o monitor selecionado. Área: Permite selecionar uma região específica da tela.',
-		edition: 'Edição',
-		editionText:
-			'Clique em uma imagem para abrir o editor. Adicione setas, círculos e textos para destacar detalhes importantes.',
-		pdfGeneration: 'Geração de PDF',
-		pdfText:
-			'Preencha os dados do cabeçalho e clique em Gerar PDF. O arquivo será salvo na pasta selecionada.',
+		howToUse: 'Como Usar',
+		helpCapture: 'Captura de Tela',
+		helpCaptureText:
+			'Tela Cheia: captura o monitor inteiro. Área: selecione uma região específica. Cópia Rápida: copia direto para a área de transferência.',
+		helpFixedArea: 'Área Fixa',
+		helpFixedAreaText:
+			'Defina coordenadas fixas na barra para capturar sempre a mesma região automaticamente, sem precisar selecionar.',
+		helpTestFlow: 'Fluxo de Teste',
+		helpTestFlowText:
+			'Preencha o cabeçalho (Sistema, Tipo, Ciclo, Caso) → pastas criadas automaticamente. Use o gerenciador para criar ou continuar testes.',
+		helpEditor: 'Editor de Imagens',
+		helpEditorText:
+			'Clique em uma imagem para editar. Adicione setas, círculos e texto. Em modo texto, arraste para reposicionar. Use Ctrl+Z/Y para desfazer/refazer.',
+		helpNotes: 'Notas',
+		helpNotesText:
+			'Abra o painel de notas para registrar observações do teste. As anotações são salvas automaticamente junto com o teste.',
+		helpPDF: 'Geração de PDF',
+		helpPDFText:
+				'Com o cabeçalho preenchido e imagens capturadas, clique em "Gerar PDF". O relatório inclui todos os metadados e screenshots.',
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'Nenhuma imagem para gerar PDF',
@@ -312,18 +319,18 @@ export const translations = {
 		deleteTest: 'Delete Test',
 
 		// Cleanup System
-		cleanupSettings: 'Auto Cleanup',
-		autoDeleteAfterDays: 'Auto-delete tests after (days)',
+		cleanupSettings: 'Test Cleanup',
+		autoDeleteAfterDays: 'Delete tests older than (days)',
 		autoDeleteAfterDaysDesc:
-			'Completed tests will be automatically deleted after this period',
-		neverDelete: 'Never delete',
-		cleanupNow: 'Cleanup Now',
-		cleanupInProgress: 'Cleanup in progress...',
+			'Sets how many days old a test must be to be deleted when clicking "Delete"',
+		neverDelete: 'Enter number of days to enable cleanup',
+		cleanupNow: 'Delete Old Tests',
+		cleanupInProgress: 'Deleting...',
 		cleanupComplete: 'Cleanup complete',
 		testsDeleted: 'test(s) deleted',
 		noTestsToDelete: 'No old tests to delete',
 		confirmCleanup:
-			'Are you sure you want to delete all completed tests older than {days} days?',
+			'Are you sure? All tests (and their folders) older than {days} days will be permanently deleted.',
 
 		// Image Gallery
 		imageGallery: 'Image Gallery',
@@ -401,18 +408,25 @@ export const translations = {
 
 		// Help
 		help: 'Help',
-		quickStart: 'Quick Start',
-		quickStartText:
-			'Use keyboard shortcuts to quickly capture screenshots. Configure your preferred shortcuts in settings.',
-		capture: 'Capture',
-		captureText:
-			'Full Screen: Captures the entire selected monitor. Area: Allows you to select a specific screen region.',
-		edition: 'Edition',
-		editionText:
-			'Click on an image to open the editor. Add arrows, circles and text to highlight important details.',
-		pdfGeneration: 'PDF Generation',
-		pdfText:
-			'Fill in the header data and click Generate PDF. The file will be saved in the selected folder.',
+		howToUse: 'How To Use',
+		helpCapture: 'Screen Capture',
+		helpCaptureText:
+			'Fullscreen: captures the whole monitor. Area: select a specific region. Quick Copy: copies directly to clipboard.',
+		helpFixedArea: 'Fixed Area',
+		helpFixedAreaText:
+			'Set fixed coordinates in the toolbar to always capture the same screen region automatically, without selecting.',
+		helpTestFlow: 'Test Flow',
+		helpTestFlowText:
+			'Fill in the header (System, Type, Cycle, Case) → folders created automatically. Use the manager to create or continue tests.',
+		helpEditor: 'Image Editor',
+		helpEditorText:
+			'Click an image to edit. Add arrows, circles and text. In text mode, drag to reposition. Use Ctrl+Z/Y to undo/redo.',
+		helpNotes: 'Notes',
+		helpNotesText:
+			'Open the notes panel to record test observations. Annotations are saved automatically alongside the test.',
+		helpPDF: 'PDF Generation',
+		helpPDFText:
+				'With the header filled and images captured, click "Generate PDF". The report includes all metadata and screenshots.',
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'No images to generate PDF',

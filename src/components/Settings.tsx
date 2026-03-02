@@ -376,36 +376,36 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 								</div>
 							</div>
 
-							{autoDeleteAfterDays === 0 ? (
-								<p className="text-xs text-amber-400 italic">
+							<button
+								onClick={async () => {
+									if (autoDeleteAfterDays === 0) return;
+									if (
+										window.confirm(
+											t('confirmCleanup').replace(
+												'{days}',
+												autoDeleteAfterDays.toString(),
+											),
+										)
+									) {
+										const result = await handleCleanupNow();
+										if (result) {
+											alert(
+												`${t('cleanupComplete')}: ${result.deletedCount} ${t('testsDeleted')}`,
+											);
+										} else {
+											alert(t('noTestsToDelete'));
+										}
+									}
+								}}
+								disabled={cleanupInProgress || autoDeleteAfterDays === 0}
+								className="w-full mt-2 px-2 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+							>
+								{cleanupInProgress ? t('cleanupInProgress') : t('cleanupNow')}
+							</button>
+							{autoDeleteAfterDays === 0 && (
+								<p className="text-xs text-amber-400 italic mt-1">
 									{t('neverDelete')}
 								</p>
-							) : (
-								<button
-									onClick={async () => {
-										if (
-											window.confirm(
-												t('confirmCleanup').replace(
-													'{days}',
-													autoDeleteAfterDays.toString(),
-												),
-											)
-										) {
-											const result = await handleCleanupNow();
-											if (result) {
-												alert(
-													`${t('cleanupComplete')}: ${result.deletedCount} ${t('testsDeleted')}`,
-												);
-											} else {
-												alert(t('noTestsToDelete'));
-											}
-										}
-									}}
-									disabled={cleanupInProgress}
-									className="w-full mt-2 px-2 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
-								>
-									{cleanupInProgress ? t('cleanupInProgress') : t('cleanupNow')}
-								</button>
 							)}
 						</div>
 					</div>
