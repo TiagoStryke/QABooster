@@ -182,7 +182,7 @@ export const translations = {
 			'Abra o painel de notas para registrar observações do teste. As anotações são salvas automaticamente junto com o teste.',
 		helpPDF: 'Geração de PDF',
 		helpPDFText:
-				'Com o cabeçalho preenchido e imagens capturadas, clique em "Gerar PDF". O relatório inclui todos os metadados e screenshots.',
+			'Com o cabeçalho preenchido e imagens capturadas, clique em "Gerar PDF". O relatório inclui todos os metadados e screenshots.',
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'Nenhuma imagem para gerar PDF',
@@ -426,7 +426,7 @@ export const translations = {
 			'Open the notes panel to record test observations. Annotations are saved automatically alongside the test.',
 		helpPDF: 'PDF Generation',
 		helpPDFText:
-				'With the header filled and images captured, click "Generate PDF". The report includes all metadata and screenshots.',
+			'With the header filled and images captured, click "Generate PDF". The report includes all metadata and screenshots.',
 
 		// Alerts/Messages
 		noImagesToGeneratePDF: 'No images to generate PDF',
