@@ -43,7 +43,7 @@ import { getNextScreenshotFilename } from './utils/filename-generator';
 // Global state
 let mainWindow: BrowserWindow | null = null;
 let overlayWindow: BrowserWindow | null = null;
-let quickOverlayWindows: BrowserWindow[] = [];            // quick print multi-monitor
+let quickOverlayWindows: BrowserWindow[] = []; // quick print multi-monitor
 let pendingQuickScreenshots: Map<number, Electron.NativeImage> = new Map(); // displayIndex → screenshot
 let tray: Tray | null = null;
 let currentFolder: string = '';
@@ -519,9 +519,15 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 	const overlayHeight = height - menuBarHeight;
 
 	// Corta o screenshot para remover a parte da barra de menus
-	const overlayImage = menuBarHeight > 0
-		? screenshot.crop({ x: 0, y: menuBarHeight, width, height: overlayHeight })
-		: screenshot;
+	const overlayImage =
+		menuBarHeight > 0
+			? screenshot.crop({
+					x: 0,
+					y: menuBarHeight,
+					width,
+					height: overlayHeight,
+				})
+			: screenshot;
 
 	// Cria overlay window
 	overlayWindow = await createOverlayWindow(
@@ -559,7 +565,11 @@ async function openAreaSelectorQuick() {
 	// Com múltiplos monitores: abre overlay em TODOS (estilo Lightshot)
 	if (displays.length > 1) {
 		// Fecha overlays anteriores
-		quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+		quickOverlayWindows.forEach((w) => {
+			try {
+				w.close();
+			} catch {}
+		});
 		quickOverlayWindows = [];
 		pendingQuickScreenshots.clear();
 
@@ -567,7 +577,11 @@ async function openAreaSelectorQuick() {
 			const display = displays[i];
 			const { x, y, width, height } = display.bounds;
 
-			const screenshot = await captureScreenshotForOverlay(mainWindow!, i, false);
+			const screenshot = await captureScreenshotForOverlay(
+				mainWindow!,
+				i,
+				false,
+			);
 			if (!screenshot) continue;
 
 			pendingQuickScreenshots.set(i, screenshot);
@@ -575,12 +589,21 @@ async function openAreaSelectorQuick() {
 			const menuBarHeight = Math.max(0, display.workArea.y - display.bounds.y);
 			const overlayY = y + menuBarHeight;
 			const overlayHeight = height - menuBarHeight;
-			const overlayImage = menuBarHeight > 0
-				? screenshot.crop({ x: 0, y: menuBarHeight, width, height: overlayHeight })
-				: screenshot;
+			const overlayImage =
+				menuBarHeight > 0
+					? screenshot.crop({
+							x: 0,
+							y: menuBarHeight,
+							width,
+							height: overlayHeight,
+						})
+					: screenshot;
 
 			const win = await createOverlayWindow(
-				x, overlayY, width, overlayHeight,
+				x,
+				overlayY,
+				width,
+				overlayHeight,
 				overlayImage.toDataURL(),
 				'area-selected-quick',
 				menuBarHeight,
@@ -682,7 +705,11 @@ ipcMain.on('area-selected-only', (_, area) => {
 // Handler para quick print (sempre clipboard, nunca salva)
 ipcMain.on('area-selected-quick', (_, area) => {
 	// Fecha TODOS os overlays do quick print (multi-monitor)
-	quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+	quickOverlayWindows.forEach((w) => {
+		try {
+			w.close();
+		} catch {}
+	});
 	quickOverlayWindows = [];
 
 	// Fecha overlay único (monitor único)
@@ -693,10 +720,16 @@ ipcMain.on('area-selected-quick', (_, area) => {
 
 	// Usa o screenshot do display correto (multi-monitor) ou pendingScreenshot (monitor único)
 	const displayIndex: number = area.displayIndex ?? 0;
-	const screenshot = pendingQuickScreenshots.get(displayIndex) ?? pendingScreenshot;
+	const screenshot =
+		pendingQuickScreenshots.get(displayIndex) ?? pendingScreenshot;
 
 	if (screenshot) {
-		const cropped = screenshot.crop({ x: area.x, y: area.y, width: area.width, height: area.height });
+		const cropped = screenshot.crop({
+			x: area.x,
+			y: area.y,
+			width: area.width,
+			height: area.height,
+		});
 		clipboard.writeImage(cropped);
 		mainWindow?.webContents.send('trigger-screenshot-flash');
 	}
@@ -707,7 +740,11 @@ ipcMain.on('area-selected-quick', (_, area) => {
 
 ipcMain.on('area-selection-cancelled', () => {
 	// Fecha overlays multi-monitor do quick print
-	quickOverlayWindows.forEach((w) => { try { w.close(); } catch {} });
+	quickOverlayWindows.forEach((w) => {
+		try {
+			w.close();
+		} catch {}
+	});
 	quickOverlayWindows = [];
 	pendingQuickScreenshots.clear();
 
