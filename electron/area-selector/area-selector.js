@@ -141,9 +141,11 @@ confirmBtn.addEventListener('click', () => {
 	const width = parseInt(selection.style.width);
 	const height = parseInt(selection.style.height);
 
+	// Adiciona o offset da barra de menus ao Y para que as coordenadas
+	// mapeiem corretamente ao screenshot completo (que inclui a barra)
 	ipcRenderer.send(window.eventName || 'area-selected-for-screenshot', {
 		x,
-		y,
+		y: y + (window.menuBarOffset || 0),
 		width,
 		height,
 	});

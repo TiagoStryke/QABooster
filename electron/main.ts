@@ -509,14 +509,27 @@ async function openAreaSelector(eventName: string, saveScreenshot: boolean) {
 	const display = displays[selectedDisplayId] || displays[0];
 	const { x, y, width, height } = display.bounds;
 
+	// macOS: a barra de menus impede a overlay de cobrir o topo do display.
+	// workArea.y indica onde a área útil começa (abaixo da barra).
+	// Precisamos cortar o screenshot de fundo para evitar a barra duplicada.
+	const menuBarHeight = Math.max(0, display.workArea.y - display.bounds.y);
+	const overlayY = y + menuBarHeight;
+	const overlayHeight = height - menuBarHeight;
+
+	// Corta o screenshot para remover a parte da barra de menus
+	const overlayImage = menuBarHeight > 0
+		? screenshot.crop({ x: 0, y: menuBarHeight, width, height: overlayHeight })
+		: screenshot;
+
 	// Cria overlay window
 	overlayWindow = await createOverlayWindow(
 		x,
-		y,
+		overlayY,
 		width,
-		height,
-		screenshot.toDataURL(),
+		overlayHeight,
+		overlayImage.toDataURL(),
 		eventName,
+		menuBarHeight,
 	);
 
 	overlayWindow.on('closed', () => {
