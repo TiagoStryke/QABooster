@@ -98,8 +98,8 @@ body {
 
 #confirmBtn {
 	position: absolute;
-	bottom: -40px;
-	right: 0;
+	bottom: 8px;
+	right: 8px;
 	background: #3b82f6;
 	color: white;
 	border: none;
