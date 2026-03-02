@@ -193,6 +193,7 @@ export const translations = {
 		errorShowingDialog: 'Erro ao mostrar diálogo',
 		errorFindingFilename: 'Erro ao buscar nome disponível',
 		errorGeneratingPDF: 'Erro ao gerar PDF',
+		noFolderSelected: 'Nenhuma pasta selecionada',
 		noFolderSelectedForScreenshot:
 			'Preencha Sistema, Tipo de Teste, Ciclo e Caso de Teste antes de capturar screenshots',
 		fillAllFieldsToStartTest:
@@ -429,6 +430,7 @@ export const translations = {
 		errorShowingDialog: 'Error showing dialog',
 		errorFindingFilename: 'Error finding available name',
 		errorGeneratingPDF: 'Error generating PDF',
+		noFolderSelected: 'No folder selected',
 		noFolderSelectedForScreenshot:
 			'Fill in System, Test Type, Test Cycle, and Test Case before capturing screenshots',
 		fillAllFieldsToStartTest:

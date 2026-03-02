@@ -183,6 +183,8 @@ function App() {
 		resetHeaderData();
 		resetImages();
 		setCurrentFolder('');
+		// Clear backend folder state so screenshots don't go to old folder
+		ipcService.setCurrentTest(null, '');
 	};
 
 	// Wrapper for handleSaveEdited to execute pending rename before saving

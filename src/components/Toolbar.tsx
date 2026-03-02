@@ -157,90 +157,114 @@ export default function Toolbar({
 		}
 	};
 
+	const handleOpenFolder = async () => {
+		if (currentFolder) {
+			try {
+				await ipcService.openFolderInFinder(currentFolder);
+			} catch (error) {
+				console.error('[Toolbar] Error opening folder:', error);
+			}
+		}
+	};
+
 	return (
-		<div className="bg-slate-800 border-b border-slate-700 p-3">
-			<div className="flex items-center justify-between mb-2">
-				<div className="flex items-center gap-2">
-					{/* Monitor Selection */}
-					{displays.length > 1 && (
-						<>
-							<select
-								value={selectedDisplay}
-								onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
-								className="input-field text-xs py-1 px-2"
-								title={t('monitor')}
-							>
-								{displays.map((display) => (
-									<option key={display.id} value={display.id}>
-										🖥️ {display.label}
-									</option>
-								))}
-							</select>
-							<div className="w-px h-6 bg-slate-700" />
-						</>
-					)}
+		<>
+			{/* Fixed Area Button */}
+			<button
+				onClick={handleAreaButtonClick}
+				disabled={isSelectingArea}
+				className={`btn-secondary text-xs py-1 px-3 flex items-center gap-1 flex-shrink-0 transition-colors ${
+					hasAreaDefined && useSavedArea
+						? 'bg-green-900 text-green-100 hover:bg-green-800'
+						: 'bg-slate-700 text-slate-300'
+				}`}
+				title={
+					hasAreaDefined && useSavedArea
+						? t('fixedAreaActive')
+						: t('defineFixedArea')
+				}
+			>
+				{hasAreaDefined && useSavedArea ? (
+					<>✓ {t('fixedAreaActive')} 🟢</>
+				) : (
+					<>📐 {t('defineFixedArea')}</>
+				)}
+			</button>
 
-					{/* Fixed Area Button - Cycles: Define → Active (green) → Off (gray) → Define */}
-					<button
-						onClick={handleAreaButtonClick}
-						disabled={isSelectingArea}
-						className={`btn-secondary text-xs py-1 px-3 flex items-center gap-2 transition-colors ${
-							hasAreaDefined && useSavedArea
-								? 'bg-green-900 text-green-100 hover:bg-green-800'
-								: 'bg-slate-700 text-slate-300'
-						}`}
-						title={
-							hasAreaDefined && useSavedArea
-								? t('fixedAreaActive')
-								: t('defineFixedArea')
-						}
+			{/* Monitor Selection */}
+			{displays.length > 1 && (
+				<select
+					value={selectedDisplay}
+					onChange={(e) => handleDisplayChange(parseInt(e.target.value))}
+					className="input-field text-xs py-1 px-2 flex-shrink-0"
+					title={t('monitor')}
+				>
+					{displays.map((display) => (
+						<option key={display.id} value={display.id}>
+							🖥️ {display.label}
+						</option>
+					))}
+				</select>
+			)}
+
+{/* Folder path - flex-1 SEMPRE reserva o espaço central, sem saltar */}
+		<div className="flex-1 flex items-center gap-2 text-xs bg-slate-900 px-3 py-1.5 rounded-lg min-w-0">
+			{currentFolder ? (
+				<>
+					<svg
+						className="w-4 h-4 text-slate-400 flex-shrink-0"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
 					>
-						{hasAreaDefined && useSavedArea ? (
-							<>✓ {t('fixedAreaActive')} 🟢</>
-						) : (
-							<>📐 {t('defineFixedArea')}</>
-						)}
-					</button>
-				</div>
-
-				<div className="flex items-center gap-2">
-					{/* Image Counter */}
-					<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full">
-						{images.length} {images.length === 1 ? t('image') : t('images')}
-					</span>
-
-					{/* Generate PDF Button */}
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+						/>
+					</svg>
+					<span className="text-slate-300 truncate">{currentFolder}</span>
 					<button
-						onClick={handleGeneratePDF}
-						disabled={isGenerating || images.length === 0}
-						className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+						onClick={handleOpenFolder}
+						className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+						title={t('openFolderInFinder')}
 					>
-						{isGenerating ? (
-							<>
-								<div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-								{t('generatingPDF')}
-							</>
-						) : (
-							<>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-									/>
-								</svg>
-								{t('generatePDF')}
-							</>
-						)}
+						<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
 					</button>
-				</div>
-			</div>
+				</>
+			) : (
+				<span className="text-slate-600 italic">{t('noFolderSelected')}</span>
+			)}
 		</div>
+
+			{/* Image Counter */}
+			<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full flex-shrink-0">
+				{images.length} {images.length === 1 ? t('image') : t('images')}
+			</span>
+
+			{/* Generate PDF Button */}
+			<button
+				onClick={handleGeneratePDF}
+				disabled={isGenerating || images.length === 0}
+				className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+			>
+				{isGenerating ? (
+					<>
+						<div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+						{t('generatingPDF')}
+					</>
+				) : (
+					<>
+						<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+						</svg>
+						{t('generatePDF')}
+					</>
+				)}
+			</button>
+		</>
 	);
 }
