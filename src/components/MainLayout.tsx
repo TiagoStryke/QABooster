@@ -83,26 +83,31 @@ export default function MainLayout({
 			<div className="flex-1 flex flex-col overflow-hidden">
 				<Header headerData={headerData} setHeaderData={setHeaderData} />
 
-				<Toolbar
-					currentFolder={currentFolder}
-					images={images}
-					headerData={headerData}
-					setHeaderData={setHeaderData}
-					onSaveHeaderData={onSaveHeaderData}
-					onNewTest={onNewTest}
-					executePendingRename={executePendingRename}
-					showEditor={showEditor}
-				/>
-
-				<FolderManager
-					currentFolder={currentFolder}
-					onFolderChange={onFolderChange}
-					executePendingRename={executePendingRename}
-					headerData={headerData}
-					showEditor={showEditor}
-					onLoadTest={onLoadTest}
-					onNewTest={onNewTest}
-				/>
+				{/* Barra unificada em uma única linha: [Continuar][Novo] | [Área Fixa][Monitor] [pasta flex-1] [N imgs][Gerar PDF] */}
+				<div className="bg-slate-800 border-b border-slate-700 px-3 py-2 flex items-center gap-2">
+					{/* Esquerda: gestão de testes */}
+					<FolderManager
+						currentFolder={currentFolder}
+						onFolderChange={onFolderChange}
+						executePendingRename={executePendingRename}
+						headerData={headerData}
+						showEditor={showEditor}
+						onLoadTest={onLoadTest}
+						onNewTest={onNewTest}
+					/>
+					<div className="w-px h-5 bg-slate-600 flex-shrink-0" />
+					{/* Direita: ferramentas de captura + pasta + PDF */}
+					<Toolbar
+						currentFolder={currentFolder}
+						images={images}
+						headerData={headerData}
+						setHeaderData={setHeaderData}
+						onSaveHeaderData={onSaveHeaderData}
+						onNewTest={onNewTest}
+						executePendingRename={executePendingRename}
+						showEditor={showEditor}
+					/>
+				</div>
 
 				<button
 					onClick={() => setIsNotesPanelOpen(!isNotesPanelOpen)}

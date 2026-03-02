@@ -207,38 +207,48 @@ export default function Toolbar({
 				</select>
 			)}
 
-{/* Folder path - flex-1 SEMPRE reserva o espaço central, sem saltar */}
-		<div className="flex-1 flex items-center gap-2 text-xs bg-slate-900 px-3 py-1.5 rounded-lg min-w-0">
-			{currentFolder ? (
-				<>
-					<svg
-						className="w-4 h-4 text-slate-400 flex-shrink-0"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-						/>
-					</svg>
-					<span className="text-slate-300 truncate">{currentFolder}</span>
-					<button
-						onClick={handleOpenFolder}
-						className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
-						title={t('openFolderInFinder')}
-					>
-						<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+			{/* Folder path - flex-1 SEMPRE reserva o espaço central, sem saltar */}
+			<div className="flex-1 flex items-center gap-2 text-xs bg-slate-900 px-3 py-1.5 rounded-lg min-w-0">
+				{currentFolder ? (
+					<>
+						<svg
+							className="w-4 h-4 text-slate-400 flex-shrink-0"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+							/>
 						</svg>
-					</button>
-				</>
-			) : (
-				<span className="text-slate-600 italic">{t('noFolderSelected')}</span>
-			)}
-		</div>
+						<span className="text-slate-300 truncate">{currentFolder}</span>
+						<button
+							onClick={handleOpenFolder}
+							className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+							title={t('openFolderInFinder')}
+						>
+							<svg
+								className="w-4 h-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+								/>
+							</svg>
+						</button>
+					</>
+				) : (
+					<span className="text-slate-600 italic">{t('noFolderSelected')}</span>
+				)}
+			</div>
 
 			{/* Image Counter */}
 			<span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full flex-shrink-0">
@@ -258,8 +268,18 @@ export default function Toolbar({
 					</>
 				) : (
 					<>
-						<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+						<svg
+							className="w-4 h-4"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+							/>
 						</svg>
 						{t('generatePDF')}
 					</>

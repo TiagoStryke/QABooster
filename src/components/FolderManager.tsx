@@ -67,28 +67,12 @@ export default function FolderManager({
 		onNewTest();
 	};
 
-	const handleOpenFolder = async () => {
-		if (currentFolder) {
-			try {
-				console.log('[FolderManager] Opening folder:', currentFolder);
-				const result = await ipcService.openFolderInFinder(currentFolder);
-
-				if (!result.success) {
-					console.error('[FolderManager] Failed to open folder:', result.error);
-					alert(`${t('errorOpeningFolder')}: ${result.error}`);
-				}
-			} catch (error) {
-				console.error('[FolderManager] Error opening folder:', error);
-				alert(`${t('errorOpeningFolder')}: ${error}`);
-			}
-		}
-	};
-
 	return (
-		<div className="bg-slate-800 border-b border-slate-700 p-3 flex items-center gap-3">
+		<>
+			{/* Apenas os botões de controle de teste */}
 			<button
 				onClick={handleContinueTest}
-				className="btn-secondary text-xs py-1.5 px-3"
+				className="btn-secondary text-xs py-1.5 px-3 flex-shrink-0"
 			>
 				<svg
 					className="w-4 h-4 inline mr-1"
@@ -108,7 +92,7 @@ export default function FolderManager({
 
 			<button
 				onClick={handleNewTestClick}
-				className="btn-primary text-xs py-1.5 px-3"
+				className="btn-primary text-xs py-1.5 px-3 flex-shrink-0"
 			>
 				<svg
 					className="w-4 h-4 inline mr-1"
@@ -126,52 +110,12 @@ export default function FolderManager({
 				{t('newTest')}
 			</button>
 
-			{currentFolder && (
-				<div className="flex-1 flex items-center gap-2 text-xs bg-slate-900 px-3 py-1.5 rounded-lg">
-					<svg
-						className="w-4 h-4 text-slate-400 flex-shrink-0"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-						/>
-					</svg>
-					<span className="text-slate-300 truncate flex-1">
-						{currentFolder}
-					</span>
-					<button
-						onClick={handleOpenFolder}
-						className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
-						title={t('openFolderInFinder')}
-					>
-						<svg
-							className="w-4 h-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-							/>
-						</svg>
-					</button>
-				</div>
-			)}
-
 			{showTestSelector && (
 				<TestSelector
 					onSelect={handleTestSelected}
 					onClose={() => setShowTestSelector(false)}
 				/>
 			)}
-		</div>
+		</>
 	);
 }
