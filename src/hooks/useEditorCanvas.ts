@@ -475,7 +475,7 @@ export function useEditorCanvas({
 		const canvas = fabricCanvasRef.current;
 		if (!canvas) return;
 
-		const text = new fabric.IText('Digite aqui', {
+		const text = new fabric.IText('', {
 			left: 100,
 			top: 100,
 			fill: color,

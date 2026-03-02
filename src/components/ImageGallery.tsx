@@ -12,6 +12,7 @@ interface ImageGalleryProps {
 	onImagePreview: (image: ImageData) => void;
 	onImageReorder: (images: ImageData[]) => void;
 	selectedImage: ImageData | null;
+	width?: number;
 }
 
 const ItemType = 'IMAGE';
@@ -176,6 +177,7 @@ export default function ImageGallery({
 	onImagePreview,
 	onImageReorder,
 	selectedImage,
+	width,
 }: ImageGalleryProps) {
 	const { t } = useLanguage();
 	const galleryRef = useRef<HTMLDivElement>(null);
@@ -206,7 +208,8 @@ export default function ImageGallery({
 		<DndProvider backend={HTML5Backend}>
 			<div
 				ref={galleryRef}
-				className="w-80 bg-slate-800 border-r border-slate-700 overflow-y-auto p-4"
+				className="bg-slate-800 border-r border-slate-700 overflow-y-auto p-4 flex-shrink-0"
+				style={{ width: width ? `${width}px` : '320px' }}
 			>
 				<h2 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
 					<svg

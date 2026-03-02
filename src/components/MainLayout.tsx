@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { TestRecord } from '../interfaces';
 import { HeaderData, ImageData } from '../interfaces';
@@ -52,6 +53,29 @@ export default function MainLayout({
 	handleSaveEdited,
 }: MainLayoutProps) {
 	const { t } = useLanguage();
+
+	const [galleryWidth, setGalleryWidth] = useState(320);
+	const isResizing = useRef(false);
+
+	const handleResizerMouseDown = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		isResizing.current = true;
+
+		const onMouseMove = (moveEvent: MouseEvent) => {
+			if (!isResizing.current) return;
+			const newWidth = Math.max(200, Math.min(600, moveEvent.clientX));
+			setGalleryWidth(newWidth);
+		};
+
+		const onMouseUp = () => {
+			isResizing.current = false;
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', onMouseUp);
+		};
+
+		document.addEventListener('mousemove', onMouseMove);
+		document.addEventListener('mouseup', onMouseUp);
+	}, []);
 
 	return (
 		<div className="h-screen flex bg-slate-900">
@@ -109,6 +133,14 @@ export default function MainLayout({
 						onImagePreview={handleImagePreview}
 						onImageReorder={handleImageReorder}
 						selectedImage={selectedImage}
+						width={galleryWidth}
+					/>
+
+					{/* Resizer handle */}
+					<div
+						onMouseDown={handleResizerMouseDown}
+						className="w-1.5 bg-slate-700 hover:bg-primary-500 cursor-col-resize flex-shrink-0 transition-colors"
+						title="Arraste para redimensionar a galeria"
 					/>
 
 					{showEditor && selectedImage && (
