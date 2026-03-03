@@ -266,3 +266,42 @@
 		--tw-ring-color: var(--color-primary) !important;
 	}
 }
+
+/* ===== react-day-picker dark theme ===== */
+.rdp-picker-dark {
+	color: #e2e8f0;
+}
+.rdp-picker-dark .rdp-root {
+	--rdp-accent-color: var(--color-primary);
+	--rdp-accent-background-color: color-mix(
+		in srgb,
+		var(--color-primary) 22%,
+		transparent
+	);
+	--rdp-day-height: 34px;
+	--rdp-day-width: 34px;
+	--rdp-day_button-height: 32px;
+	--rdp-day_button-width: 32px;
+	--rdp-nav_button-height: 1.75rem;
+	--rdp-nav_button-width: 1.75rem;
+}
+.rdp-picker-dark .rdp-day_button:hover:not([disabled]) {
+	background-color: #334155;
+}
+.rdp-picker-dark .rdp-button_previous,
+.rdp-picker-dark .rdp-button_next {
+	color: #94a3b8;
+}
+.rdp-picker-dark .rdp-button_previous:hover,
+.rdp-picker-dark .rdp-button_next:hover {
+	background-color: #334155;
+	color: #f1f5f9;
+}
+.rdp-picker-dark .rdp-weekday {
+	color: #64748b;
+	font-size: 11px;
+}
+.rdp-picker-dark .rdp-day.rdp-today > .rdp-day_button {
+	border-color: var(--color-primary);
+	color: var(--color-primary-light);
+}

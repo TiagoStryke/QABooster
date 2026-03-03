@@ -69,6 +69,8 @@ export const translations = {
 		noTestsYet: 'Nenhum teste cadastrado ainda',
 		screenshots: 'screenshots',
 		testsFound: 'testes encontrados',
+		filterByDate: 'Filtrar por data',
+		clearDateFilter: 'Limpar filtro de data',
 		confirmDeleteTest:
 			'Tem certeza que deseja deletar este teste e todos os seus arquivos?',
 		deleteTestFailed: 'Erro ao deletar teste',
@@ -313,6 +315,8 @@ export const translations = {
 		noTestsYet: 'No tests registered yet',
 		screenshots: 'screenshots',
 		testsFound: 'tests found',
+		filterByDate: 'Filter by date',
+		clearDateFilter: 'Clear date filter',
 		confirmDeleteTest:
 			'Are you sure you want to delete this test and all its files?',
 		deleteTestFailed: 'Error deleting test',

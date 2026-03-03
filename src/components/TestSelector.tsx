@@ -11,7 +11,10 @@
  * - Sort by updated date
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/src/style.css';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ipcService } from '../services/ipc-service';
 
@@ -53,6 +56,21 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 	const [filterStatus, setFilterStatus] = useState<
 		'all' | 'in-progress' | 'completed'
 	>('all');
+	const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+	const [showPicker, setShowPicker] = useState(false);
+	const pickerRef = useRef<HTMLDivElement>(null);
+
+	// Close picker on outside click
+	useEffect(() => {
+		if (!showPicker) return;
+		const handler = (e: MouseEvent) => {
+			if (!pickerRef.current?.contains(e.target as Node)) {
+				setShowPicker(false);
+			}
+		};
+		document.addEventListener('mousedown', handler);
+		return () => document.removeEventListener('mousedown', handler);
+	}, [showPicker]);
 
 	// Load all tests on mount
 	useEffect(() => {
@@ -62,7 +80,7 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 	// Filter tests when search or filter changes
 	useEffect(() => {
 		filterTests();
-	}, [searchQuery, filterStatus, tests]);
+	}, [searchQuery, filterStatus, dateRange, tests]);
 
 	const loadTests = async () => {
 		try {
@@ -97,8 +115,29 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 			);
 		}
 
+		// Filter by date range (based on updatedAt)
+		if (dateRange?.from) {
+			const from = new Date(dateRange.from);
+			from.setHours(0, 0, 0, 0);
+			filtered = filtered.filter((test) => new Date(test.updatedAt) >= from);
+		}
+		if (dateRange?.to) {
+			const to = new Date(dateRange.to);
+			to.setHours(23, 59, 59, 999);
+			filtered = filtered.filter((test) => new Date(test.updatedAt) <= to);
+		}
+
 		setFilteredTests(filtered);
 	};
+
+	const formatDateShort = (d: Date) =>
+		d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+	const dateLabel = dateRange?.from
+		? dateRange.to
+			? `${formatDateShort(dateRange.from)} – ${formatDateShort(dateRange.to)}`
+			: `${formatDateShort(dateRange.from)} – ...`
+		: null;
 
 	const handleDelete = async (testId: string) => {
 		if (!confirm(t('confirmDeleteTest'))) return;
@@ -214,19 +253,90 @@ export default function TestSelector({ onSelect, onClose }: TestSelectorProps) {
 						</button>
 					</div>
 
-					{/* Search and Filters */}
-					<div className="flex gap-3">
+					{/* Search and Filters – single row */}
+					<div className="flex items-center gap-2">
+						{/* Search */}
 						<input
 							type="text"
 							placeholder={t('searchTests')}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="flex-1 px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:border-primary-500 focus:outline-none"
+							className="flex-1 min-w-0 px-3 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:border-primary-500 focus:outline-none text-sm"
 						/>
+
+						{/* Date Range Picker */}
+						<div ref={pickerRef} className="relative flex-shrink-0">
+							<button
+								onClick={() => setShowPicker((v) => !v)}
+								className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors whitespace-nowrap ${
+									dateRange?.from
+										? 'bg-primary-500/20 border-primary-500/60 text-primary-300'
+										: 'bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+								}`}
+							>
+								<svg
+									className="w-3.5 h-3.5 flex-shrink-0"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+									/>
+								</svg>
+								<span>{dateLabel ?? t('filterByDate')}</span>
+								{dateRange?.from && (
+									<span
+										onClick={(e) => {
+											e.stopPropagation();
+											setDateRange(undefined);
+										}}
+										className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-slate-600 hover:bg-red-600 text-slate-300 hover:text-white text-xs leading-none transition-colors"
+										title={t('clearDateFilter')}
+									>
+										×
+									</span>
+								)}
+							</button>
+
+							{/* Calendar popover */}
+							{showPicker && (
+								<div className="absolute top-full mt-1 right-0 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 rdp-picker-dark">
+									<DayPicker
+										mode="range"
+										selected={dateRange}
+										onSelect={(range) => {
+											setDateRange(range);
+											// Only close when a real range is selected (two different days)
+											if (
+												range?.from &&
+												range?.to &&
+												range.from.getTime() !== range.to.getTime()
+											) {
+												setShowPicker(false);
+											}
+										}}
+									/>
+									{dateRange?.from && (
+										<p className="text-center text-[10px] text-slate-500 mt-1 pb-1">
+											{dateRange.to &&
+											dateRange.from.getTime() !== dateRange.to.getTime()
+												? ''
+												: 'Clique em outro dia para fechar o período'}
+										</p>
+									)}
+								</div>
+							)}
+						</div>
+
+						{/* Status filter */}
 						<select
 							value={filterStatus}
 							onChange={(e) => setFilterStatus(e.target.value as any)}
-							className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:border-primary-500 focus:outline-none"
+							className="flex-shrink-0 px-3 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:border-primary-500 focus:outline-none text-sm"
 						>
 							<option value="all">{t('allTests')}</option>
 							<option value="in-progress">{t('inProgress')}</option>
