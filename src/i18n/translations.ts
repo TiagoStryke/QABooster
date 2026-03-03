@@ -231,6 +231,8 @@ export const translations = {
 			'Limpeza automática desabilitada (0 dias). Configure os dias antes de executar.',
 		confirmUnsavedMessage:
 			'Deseja salvar as alterações antes de fechar o editor?',
+		confirmUnsavedSwitchMessage:
+			'Deseja salvar as alterações antes de abrir outra imagem?',
 		saveButton: 'Salvar',
 		discardButton: 'Descartar',
 		closeEditorFirst:
@@ -474,6 +476,8 @@ export const translations = {
 			'Auto-cleanup disabled (0 days). Configure days before running.',
 		confirmUnsavedMessage:
 			'Do you want to save the changes before closing the editor?',
+		confirmUnsavedSwitchMessage:
+			'Do you want to save the changes before opening another image?',
 		saveButton: 'Save',
 		discardButton: 'Discard',
 		closeEditorFirst:

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, screen } from 'electron';
 import { getAllDisplays } from '../services/display-service';
 
 /**
@@ -15,7 +15,10 @@ export function registerDisplayHandlers(
 
 	// Set selected display
 	ipcMain.handle('set-display', async (_, displayId: number) => {
-		setSelectedDisplayId(displayId);
+		const displays = screen.getAllDisplays();
+		// Clamp to valid range in case of stale localStorage value
+		const clampedId = Math.min(Math.max(0, displayId), displays.length - 1);
+		setSelectedDisplayId(clampedId);
 		return true;
 	});
 }

@@ -49,13 +49,21 @@ export async function captureFullscreenScreenshot(
 
 		console.log('[SCREENSHOT] Sources found:', sources.length);
 
-		if (sources.length <= options.selectedDisplayId) {
-			console.log('[SCREENSHOT] ❌ Selected display not found!');
+		if (sources.length === 0) {
+			console.log('[SCREENSHOT] ❌ No display sources found!');
 			return null;
 		}
 
+		// Clamp index to valid range (guards against stale localStorage value)
+		const sourceIndex = Math.min(options.selectedDisplayId, sources.length - 1);
+		if (sourceIndex !== options.selectedDisplayId) {
+			console.log(
+				`[SCREENSHOT] ⚠️ selectedDisplayId ${options.selectedDisplayId} out of range, using index ${sourceIndex}`,
+			);
+		}
+
 		console.log('[SCREENSHOT] Getting thumbnail from source...');
-		let image = sources[options.selectedDisplayId].thumbnail;
+		let image = sources[sourceIndex].thumbnail;
 		console.log('[SCREENSHOT] Thumbnail obtained, size:', image.getSize());
 
 		// Add cursor if enabled and within bounds
@@ -126,11 +134,13 @@ export async function captureAreaScreenshot(
 		thumbnailSize: { width, height },
 	});
 
-	if (sources.length <= options.selectedDisplayId) {
+	if (sources.length === 0) {
 		return null;
 	}
 
-	let image = sources[options.selectedDisplayId].thumbnail;
+	// Clamp index to valid range (guards against stale localStorage value)
+	const sourceIndex = Math.min(options.selectedDisplayId, sources.length - 1);
+	let image = sources[sourceIndex].thumbnail;
 
 	// Add cursor if enabled and within bounds
 	if (options.cursorInScreenshots) {

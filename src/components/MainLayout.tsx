@@ -29,6 +29,11 @@ interface MainLayoutProps {
 	handleImageReorder: (newOrder: ImageData[]) => void;
 	handleCloseEditor: () => void;
 	handleSaveEdited: (dataUrl: string) => Promise<void>;
+	// Unsaved-changes guard for image switching
+	pendingImageSelect: ImageData | null;
+	confirmSwitchImage: (image: ImageData) => void;
+	clearPendingImageSelect: () => void;
+	setEditorHasUnsavedChanges: (v: boolean) => void;
 }
 
 export default function MainLayout({
@@ -51,6 +56,10 @@ export default function MainLayout({
 	handleImageReorder,
 	handleCloseEditor,
 	handleSaveEdited,
+	pendingImageSelect,
+	confirmSwitchImage,
+	clearPendingImageSelect,
+	setEditorHasUnsavedChanges,
 }: MainLayoutProps) {
 	const { t } = useLanguage();
 
@@ -153,6 +162,10 @@ export default function MainLayout({
 							image={selectedImage}
 							onClose={handleCloseEditor}
 							onSave={handleSaveEdited}
+							pendingImage={pendingImageSelect}
+							onSwitchReady={confirmSwitchImage}
+							onSwitchCancelled={clearPendingImageSelect}
+							onHasUnsavedChangesChange={setEditorHasUnsavedChanges}
 						/>
 					)}
 				</div>

@@ -21,6 +21,12 @@ interface UseImageManagerReturn {
 	handleCloseEditor: () => void;
 	handleSaveEdited: (dataUrl: string) => Promise<void>;
 	resetImages: () => void;
+	// Unsaved-changes guard for image switching
+	editorHasUnsavedChanges: boolean;
+	setEditorHasUnsavedChanges: (v: boolean) => void;
+	pendingImageSelect: ImageData | null;
+	clearPendingImageSelect: () => void;
+	confirmSwitchImage: (image: ImageData) => void;
 }
 
 /**
@@ -33,8 +39,28 @@ export function useImageManager({
 	const [images, setImages] = useState<ImageData[]>([]);
 	const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
 	const [showEditor, setShowEditor] = useState(false);
+	const [editorHasUnsavedChanges, setEditorHasUnsavedChanges] = useState(false);
+	const [pendingImageSelect, setPendingImageSelect] =
+		useState<ImageData | null>(null);
 
 	const handleImageSelect = (image: ImageData) => {
+		// If editor is open and has unsaved changes, intercept and store as pending
+		if (showEditor && editorHasUnsavedChanges) {
+			setPendingImageSelect(image);
+			return;
+		}
+		setSelectedImage(image);
+		setShowEditor(true);
+	};
+
+	const clearPendingImageSelect = () => {
+		setPendingImageSelect(null);
+	};
+
+	// Called after user confirms switch (save or discard handled by editor)
+	const confirmSwitchImage = (image: ImageData) => {
+		setPendingImageSelect(null);
+		setEditorHasUnsavedChanges(false);
 		setSelectedImage(image);
 		setShowEditor(true);
 	};
@@ -64,6 +90,8 @@ export function useImageManager({
 	const handleCloseEditor = () => {
 		setShowEditor(false);
 		setSelectedImage(null);
+		setEditorHasUnsavedChanges(false);
+		setPendingImageSelect(null);
 	};
 
 	const handleSaveEdited = async (dataUrl: string) => {
@@ -105,5 +133,10 @@ export function useImageManager({
 		handleCloseEditor,
 		handleSaveEdited,
 		resetImages,
+		editorHasUnsavedChanges,
+		setEditorHasUnsavedChanges,
+		pendingImageSelect,
+		clearPendingImageSelect,
+		confirmSwitchImage,
 	};
 }

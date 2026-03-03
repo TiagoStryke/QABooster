@@ -38,6 +38,10 @@ function App() {
 		handleCloseEditor,
 		handleSaveEdited,
 		resetImages,
+		pendingImageSelect,
+		confirmSwitchImage,
+		clearPendingImageSelect,
+		setEditorHasUnsavedChanges,
 	} = useImageManager({
 		loadImages: async () => {},
 	});
@@ -219,6 +223,10 @@ function App() {
 			handleImageReorder={handleImageReorder}
 			handleCloseEditor={handleCloseEditor}
 			handleSaveEdited={handleSaveEditedWithRename}
+			pendingImageSelect={pendingImageSelect}
+			confirmSwitchImage={confirmSwitchImage}
+			clearPendingImageSelect={clearPendingImageSelect}
+			setEditorHasUnsavedChanges={setEditorHasUnsavedChanges}
 		/>
 	);
 }
